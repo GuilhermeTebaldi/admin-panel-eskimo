@@ -23,9 +23,9 @@ export default function LoginPage() {
       const res = await axios.post(`${API_URL}/auth/login`, { email, password });
       localStorage.setItem("token", res.data.token);
       alert("✅ Login realizado com sucesso!");
-      navigate("/cadastro");
+      navigate("/"); // ou "/cadastro" se sua tela de cadastro estiver nessa rota
     } catch (err) {
-      console.error("Erro ao logar:", err);
+      console.error("Erro ao logar:", err.response?.data || err.message);
       alert("❌ Email ou senha inválidos.");
     } finally {
       setLoading(false);
