@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-const API_URL = "http://localhost:8080/api";
+const API_URL = "https://backend-eskimo.onrender.com/api";
 const pageSize = 1000;
 
 export default function ProductList() {
