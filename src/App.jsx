@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 const API_URL = "https://backend-eskimo.onrender.com/api";
 
 
+
 export default function AdminPanel() {
   const navigate = useNavigate();
 
