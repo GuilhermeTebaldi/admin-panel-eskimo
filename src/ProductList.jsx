@@ -126,7 +126,8 @@ export default function ProductList() {
     
     <div style={{ minHeight: "100vh", padding: "2rem", background: "#f0fdf4", display: "flex", flexDirection: "column", alignItems: "center" }}>
       <div style={{ width: "100%", maxWidth: "1150px", background: "white", padding: "2.5rem", borderRadius: "1.5rem", boxShadow: "0 10px 30px rgba(0,0,0,0.08)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
+
           <h1 style={{ fontSize: "2.25rem", fontWeight: "bold", color: "#065f46" }}>📦 Lista de Produtos ({filteredProducts.length})</h1>
           <div style={{ display: "flex", gap: "0.75rem" }}>
 
@@ -160,7 +161,8 @@ export default function ProductList() {
           </select>
         </div>
 
-        <div style={{ overflowX: "auto", borderRadius: "0.5rem", border: "1px solid #d1fae5" }}>
+        <div className="overflow-x-auto w-full">
+
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead style={{ background: "#d1fae5", color: "#065f46" }}>
               <tr>
@@ -210,7 +212,8 @@ export default function ProductList() {
               />
             </div>
           ))}
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginTop: "1.5rem" }}>
+          <div className="flex flex-col sm:flex-row gap-2 mb-4">
+
             <button onClick={handleUpdate} style={btnPrimary}>💾 Salvar Alterações</button>
             <button onClick={handleCancelEdit} style={{ ...btnOutline, color: "#dc2626" }}>Cancelar</button>
           </div>
