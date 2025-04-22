@@ -3,7 +3,10 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
+
+
 const API_URL = "https://backend-eskimo.onrender.com/api";
+
 
 
 const pageSize = 1000;
@@ -121,6 +124,7 @@ export default function ProductList() {
   };
 
   return (
+    
     <div style={{ minHeight: "100vh", padding: "2rem", background: "#f0fdf4", display: "flex", flexDirection: "column", alignItems: "center" }}>
       <div style={{ width: "100%", maxWidth: "1150px", background: "white", padding: "2.5rem", borderRadius: "1.5rem", boxShadow: "0 10px 30px rgba(0,0,0,0.08)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
@@ -128,6 +132,13 @@ export default function ProductList() {
           <div style={{ display: "flex", gap: "0.75rem" }}>
             <button onClick={() => navigate("/cadastro")} style={btnPrimary}>← Novo Produto</button>
             <button onClick={handleLogout} style={btnDanger}>Sair</button>
+            <Button
+  className="mb-4"
+  onClick={() => navigate("/categorias")}
+>
+  📂 Ver Categorias
+</Button>
+
           </div>
         </div>
 

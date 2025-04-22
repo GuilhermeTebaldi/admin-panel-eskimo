@@ -39,6 +39,7 @@ export default function AdminPanel() {
           Authorization: `Bearer ${localStorage.getItem("token")}`
         }
       });
+      
       alert("✅ Produto cadastrado com sucesso!");
       setForm({ name: "", description: "", price: "", imageUrl: "", stock: "", categoryId: "1" });
     } catch (error) {
