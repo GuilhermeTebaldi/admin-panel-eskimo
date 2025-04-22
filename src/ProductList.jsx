@@ -8,7 +8,6 @@ import { useNavigate } from "react-router-dom";
 const API_URL = "https://backend-eskimo.onrender.com/api";
 
 
-
 const pageSize = 1000;
 
 export default function ProductList() {
