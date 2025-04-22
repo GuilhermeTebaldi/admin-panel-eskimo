@@ -136,7 +136,7 @@ export default function ProductList() {
 </button>
 
 <button onClick={() => navigate("/cadastro")} style={btnPrimary}>
-  ← Novo Produto
+  ← Voltar
 </button>
 
 <button onClick={handleLogout} style={btnDanger}>
