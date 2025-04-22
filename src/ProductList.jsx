@@ -130,9 +130,7 @@ export default function ProductList() {
           <h1 style={{ fontSize: "2.25rem", fontWeight: "bold", color: "#065f46" }}>📦 Lista de Produtos ({filteredProducts.length})</h1>
           <div style={{ display: "flex", gap: "0.75rem" }}>
 
-<button onClick={() => navigate("/categorias")} style={btnPrimary}>
-  📂 Ver Categorias
-</button>
+
 
 <button onClick={() => navigate("/cadastro")} style={btnPrimary}>
   ← Voltar
