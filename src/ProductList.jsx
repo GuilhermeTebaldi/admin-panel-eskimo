@@ -131,7 +131,6 @@ export default function ProductList() {
           <h1 style={{ fontSize: "2.25rem", fontWeight: "bold", color: "#065f46" }}>📦 Lista de Produtos ({filteredProducts.length})</h1>
           <div style={{ display: "flex", gap: "0.75rem" }}>
             <button onClick={() => navigate("/cadastro")} style={btnPrimary}>← Novo Produto</button>
-            <button onClick={handleLogout} style={btnDanger}>Sair</button>
             <Button
   className="mb-4"
   onClick={() => navigate("/categorias")}
@@ -139,6 +138,8 @@ export default function ProductList() {
   📂 Ver Categorias
 </Button>
 
+            <button onClick={handleLogout} style={btnDanger}>Sair</button>
+            
           </div>
         </div>
 
