@@ -1,4 +1,5 @@
-// Melhorias no layout da listagem de produtos com filtro por categoria e contagem total
+// admin-panel/src/ProductList.jsx (LISTAGEM E EDIÇÃO COM SUBCATEGORIAS)
+
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -8,6 +9,7 @@ const pageSize = 1000;
 
 export default function ProductList() {
   const [products, setProducts] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [editingProduct, setEditingProduct] = useState(null);
@@ -18,27 +20,36 @@ export default function ProductList() {
     price: "",
     imageUrl: "",
     stock: "",
-    categoryId: ""
+    categoryId: "",
+    subcategoryId: ""
   });
 
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchProducts();
+    fetchSubcategories();
   }, [searchTerm]);
 
   const fetchProducts = async () => {
     try {
       const res = await axios.get(`${API_URL}/products/list`, {
         params: { name: searchTerm, page: 1, pageSize },
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`
-        }
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       });
       const ordered = (res.data.items || res.data).sort((a, b) => a.name.localeCompare(b.name));
       setProducts(ordered);
     } catch (err) {
       console.error("Erro ao buscar produtos:", err);
+    }
+  };
+
+  const fetchSubcategories = async () => {
+    try {
+      const result = await axios.get(`${API_URL}/subcategories`);
+      setSubcategories(result.data);
+    } catch (err) {
+      console.error("Erro ao buscar subcategorias:", err);
     }
   };
 
@@ -50,9 +61,7 @@ export default function ProductList() {
     if (!window.confirm("Tem certeza que deseja excluir este produto?")) return;
     try {
       await axios.delete(`${API_URL}/products/${id}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`
-        }
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       });
       alert("🗑 Produto excluído com sucesso!");
       fetchProducts();
@@ -71,7 +80,8 @@ export default function ProductList() {
       price: product.price.toString(),
       imageUrl: product.imageUrl,
       stock: product.stock.toString(),
-      categoryId: product.categoryId.toString()
+      categoryId: product.categoryId.toString(),
+      subcategoryId: product.subcategoryId ? product.subcategoryId.toString() : ""
     });
   };
 
@@ -81,11 +91,10 @@ export default function ProductList() {
         ...form,
         price: parseFloat(form.price),
         stock: parseInt(form.stock),
-        categoryId: parseInt(form.categoryId)
+        categoryId: parseInt(form.categoryId),
+        subcategoryId: form.subcategoryId ? parseInt(form.subcategoryId) : null
       }, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`
-        }
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       });
       alert("✅ Produto atualizado com sucesso!");
       setEditingProduct(null);
@@ -98,15 +107,7 @@ export default function ProductList() {
 
   const handleCancelEdit = () => {
     setEditingProduct(null);
-    setForm({
-      id: null,
-      name: "",
-      description: "",
-      price: "",
-      imageUrl: "",
-      stock: "",
-      categoryId: ""
-    });
+    setForm({ id: null, name: "", description: "", price: "", imageUrl: "", stock: "", categoryId: "", subcategoryId: "" });
   };
 
   const handleChange = (e) => {
@@ -118,34 +119,31 @@ export default function ProductList() {
     navigate("/");
   };
 
+  const filteredSubcategories = subcategories.filter(
+    (s) => s.categoryId === parseInt(form.categoryId)
+  );
+
   return (
     <div style={{ minHeight: "100vh", padding: "2rem", background: "#f0fdf4", display: "flex", flexDirection: "column", alignItems: "center" }}>
       <div style={{ width: "100%", maxWidth: "1150px", background: "white", padding: "2.5rem", borderRadius: "1.5rem", boxShadow: "0 10px 30px rgba(0,0,0,0.08)" }}>
         <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
           <h1 style={{ fontSize: "2.25rem", fontWeight: "bold", color: "#065f46" }}>📦 Lista de Produtos ({filteredProducts.length})</h1>
           <div style={{ display: "flex", gap: "0.75rem" }}>
-            <button onClick={() => navigate("/cadastro")} style={btnPrimary}>
-              ← Voltar
-            </button>
-            <button onClick={handleLogout} style={btnDanger}>
-              Sair
-            </button>
+            <button onClick={() => navigate("/cadastro")} style={btnPrimary}>← Voltar</button>
+            <button onClick={handleLogout} style={btnDanger}>Sair</button>
           </div>
         </div>
 
         <div style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem" }}>
-          <input
-            placeholder="🔍 Buscar por nome..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={inputStyle}
-          />
+          <input placeholder="🔍 Buscar por nome..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={inputStyle} />
           <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} style={inputStyle}>
             <option value="">Todas as Categorias</option>
             <option value="Picolé">Picolé</option>
             <option value="Pote de Sorvete">Pote de Sorvete</option>
             <option value="Açaí">Açaí</option>
             <option value="Sundae">Sundae</option>
+            <option value="Extras">Extras</option>
+            <option value="Kids">Kids</option>
           </select>
         </div>
 
@@ -189,18 +187,35 @@ export default function ProductList() {
       {editingProduct && (
         <div style={{ position: "fixed", top: 0, right: 0, width: "100%", maxWidth: "400px", height: "100vh", background: "#ffffff", boxShadow: "-2px 0 10px rgba(0,0,0,0.1)", padding: "2rem", overflowY: "auto", zIndex: 1000 }}>
           <h2 style={{ fontSize: "1.75rem", fontWeight: "bold", color: "#065f46", marginBottom: "1.5rem" }}>✏️ Editar Produto</h2>
-          {[{ name: "name", label: "Nome" }, { name: "description", label: "Descrição" }, { name: "price", label: "Preço" }, { name: "imageUrl", label: "Imagem (URL)" }, { name: "stock", label: "Estoque" }, { name: "categoryId", label: "Categoria" }].map(({ name, label }) => (
-            <div key={name} style={{ marginBottom: "1rem" }}>
-              <label htmlFor={name} style={labelStyle}>{label}</label>
+
+          {["name", "description", "price", "imageUrl", "stock", "categoryId"].map((field) => (
+            <div key={field} style={{ marginBottom: "1rem" }}>
+              <label htmlFor={field} style={labelStyle}>{field.charAt(0).toUpperCase() + field.slice(1)}</label>
               <input
-                id={name}
-                name={name}
-                value={form[name]}
+                id={field}
+                name={field}
+                value={form[field]}
                 onChange={handleChange}
                 style={inputStyle}
               />
             </div>
           ))}
+
+          <div style={{ marginBottom: "1rem" }}>
+            <label style={labelStyle}>Subcategoria</label>
+            <select
+              name="subcategoryId"
+              value={form.subcategoryId}
+              onChange={handleChange}
+              style={inputStyle}
+            >
+              <option value="">Selecione a subcategoria</option>
+              {filteredSubcategories.map((sub) => (
+                <option key={sub.id} value={sub.id}>{sub.name}</option>
+              ))}
+            </select>
+          </div>
+
           <div className="flex flex-col sm:flex-row gap-2 mb-4">
             <button onClick={handleUpdate} style={btnPrimary}>💾 Salvar Alterações</button>
             <button onClick={handleCancelEdit} style={{ ...btnOutline, color: "#dc2626" }}>Cancelar</button>
@@ -210,6 +225,8 @@ export default function ProductList() {
     </div>
   );
 }
+
+// estilos mantidos (labelStyle, inputStyle, thStyle, tdStyle, btnPrimary, btnDanger, btnDangerSmall, btnOutline)
 
 const labelStyle = {
   display: "block",
