@@ -1,7 +1,14 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
+//const API_URL = "https://backend-eskimo.onrender.com/api/categories"; // ou http://localhost:8080/api/categories
+//const API_URL = "http://localhost:8080/api/categories";
 const API_URL = "https://backend-eskimo.onrender.com/api/categories";
+
 
 export default function CategoryList() {
   const [categories, setCategories] = useState([]);
@@ -9,8 +16,16 @@ export default function CategoryList() {
   const [editingId, setEditingId] = useState(null);
 
   const fetchCategories = async () => {
-    const res = await axios.get(API_URL);
-    setCategories(res.data);
+    try {
+      const res = await axios.get(API_URL, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      setCategories(res.data);
+    } catch (err) {
+      console.error("Erro ao buscar categorias:", err);
+    }
   };
 
   useEffect(() => {
@@ -19,52 +34,97 @@ export default function CategoryList() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (editingId) {
-      await axios.put(`${API_URL}/${editingId}`, { name });
-    } else {
-      await axios.post(API_URL, { name });
+    try {
+      if (editingId) {
+        await axios.put(
+          `${API_URL}/${editingId}`,
+          { name },
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+      } else {
+        await axios.post(
+          API_URL,
+          { name },
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+      }
+      setName("");
+      setEditingId(null);
+      fetchCategories();
+    } catch (err) {
+      console.error("Erro ao salvar categoria:", err);
     }
-    setName("");
-    setEditingId(null);
-    fetchCategories();
   };
 
   const handleDelete = async (id) => {
-    await axios.delete(`${API_URL}/${id}`);
-    fetchCategories();
+    if (!window.confirm("Deseja excluir esta categoria?")) return;
+    try {
+      await axios.delete(`${API_URL}/${id}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      fetchCategories();
+    } catch (err) {
+      console.error("Erro ao excluir categoria:", err);
+    }
   };
 
-  const handleEdit = (cat) => {
-    setName(cat.name);
-    setEditingId(cat.id);
+  const handleEdit = (category) => {
+    setName(category.name);
+    setEditingId(category.id);
   };
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h2 style={{ fontSize: "2rem", fontWeight: "bold" }}>📂 Categorias</h2>
-      <form onSubmit={handleSubmit} style={{ marginBottom: "1rem" }}>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Nova categoria"
-          required
-          style={{ padding: "0.5rem", borderRadius: "0.5rem", border: "1px solid #ccc" }}
-        />
-        <button type="submit" style={{ marginLeft: "0.5rem", padding: "0.5rem 1rem" }}>
+    <div className="p-6">
+      <h2 className="text-2xl font-bold mb-4">📂 Gerenciar Categorias</h2>
+
+      <form onSubmit={handleSubmit} className="mb-6 flex gap-4 items-end">
+        <div>
+          <Label>Nome da Categoria</Label>
+          <Input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+        </div>
+        <Button type="submit">
           {editingId ? "Atualizar" : "Cadastrar"}
-        </button>
+        </Button>
       </form>
 
-      <ul>
-        {categories.map((cat) => (
-          <li key={cat.id} style={{ marginBottom: "0.5rem" }}>
-            {cat.name}{" "}
-            <button onClick={() => handleEdit(cat)}>✏️</button>{" "}
-            <button onClick={() => handleDelete(cat.id)}>🗑</button>
-          </li>
-        ))}
-      </ul>
+      <Card className="p-4">
+        {categories.length === 0 ? (
+          <p className="text-gray-500">Nenhuma categoria cadastrada.</p>
+        ) : (
+          categories.map((cat) => (
+            <div
+              key={cat.id}
+              className="flex justify-between items-center border-b py-2"
+            >
+              <span>{cat.name}</span>
+              <div className="flex gap-2">
+                <Button onClick={() => handleEdit(cat)}>Editar</Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => handleDelete(cat.id)}
+                >
+                  Excluir
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
+      </Card>
     </div>
   );
 }

@@ -3,11 +3,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-
-
 const API_URL = "https://backend-eskimo.onrender.com/api";
-
-
 const pageSize = 1000;
 
 export default function ProductList() {
@@ -123,26 +119,18 @@ export default function ProductList() {
   };
 
   return (
-    
     <div style={{ minHeight: "100vh", padding: "2rem", background: "#f0fdf4", display: "flex", flexDirection: "column", alignItems: "center" }}>
       <div style={{ width: "100%", maxWidth: "1150px", background: "white", padding: "2.5rem", borderRadius: "1.5rem", boxShadow: "0 10px 30px rgba(0,0,0,0.08)" }}>
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
-
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
           <h1 style={{ fontSize: "2.25rem", fontWeight: "bold", color: "#065f46" }}>📦 Lista de Produtos ({filteredProducts.length})</h1>
           <div style={{ display: "flex", gap: "0.75rem" }}>
-
-
-
-<button onClick={() => navigate("/cadastro")} style={btnPrimary}>
-  ← Voltar
-</button>
-
-<button onClick={handleLogout} style={btnDanger}>
-  Sair
-</button>
-
-</div>
-
+            <button onClick={() => navigate("/cadastro")} style={btnPrimary}>
+              ← Voltar
+            </button>
+            <button onClick={handleLogout} style={btnDanger}>
+              Sair
+            </button>
+          </div>
         </div>
 
         <div style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem" }}>
@@ -162,7 +150,6 @@ export default function ProductList() {
         </div>
 
         <div className="overflow-x-auto w-full">
-
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead style={{ background: "#d1fae5", color: "#065f46" }}>
               <tr>
@@ -170,13 +157,14 @@ export default function ProductList() {
                 <th style={thStyle}>Preço</th>
                 <th style={thStyle}>Estoque</th>
                 <th style={thStyle}>Categoria</th>
+                <th style={thStyle}>Subcategoria</th>
                 <th style={thStyle}>Ações</th>
               </tr>
             </thead>
             <tbody>
               {filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan="5" style={{ textAlign: "center", padding: "1rem", color: "#6b7280" }}>Nenhum produto encontrado.</td>
+                  <td colSpan="6" style={{ textAlign: "center", padding: "1rem", color: "#6b7280" }}>Nenhum produto encontrado.</td>
                 </tr>
               ) : (
                 filteredProducts.map((p) => (
@@ -185,6 +173,7 @@ export default function ProductList() {
                     <td style={tdStyle}>R$ {p.price.toFixed(2)}</td>
                     <td style={tdStyle}>{p.stock}</td>
                     <td style={tdStyle}>{p.categoryName}</td>
+                    <td style={tdStyle}>{p.subcategoryName || "—"}</td>
                     <td style={tdStyle}>
                       <button onClick={() => handleEdit(p)} style={{ ...btnOutline, marginRight: "0.5rem" }}>Editar</button>
                       <button onClick={() => handleDelete(p.id)} style={btnDangerSmall}>Excluir</button>
@@ -213,7 +202,6 @@ export default function ProductList() {
             </div>
           ))}
           <div className="flex flex-col sm:flex-row gap-2 mb-4">
-
             <button onClick={handleUpdate} style={btnPrimary}>💾 Salvar Alterações</button>
             <button onClick={handleCancelEdit} style={{ ...btnOutline, color: "#dc2626" }}>Cancelar</button>
           </div>
@@ -222,8 +210,6 @@ export default function ProductList() {
     </div>
   );
 }
-
-// ... estilos mantidos (labelStyle, inputStyle, thStyle, tdStyle, btnPrimary, btnDanger, btnDangerSmall, btnOutline)
 
 const labelStyle = {
   display: "block",

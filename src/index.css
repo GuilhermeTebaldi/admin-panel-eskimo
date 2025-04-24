@@ -2,9 +2,5 @@
 @import "tailwindcss/utilities";
 
 body {
-  @apply bg-[#f0fdf4] text-[#111827];
-}
-
-input, button {
-  @apply outline-none focus:ring-2;
+  font-family: 'Inter', sans-serif;
 }
