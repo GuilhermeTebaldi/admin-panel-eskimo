@@ -133,7 +133,7 @@ export default function AdminPanel() {
           <Input label="Preço" name="price" value={form.price} onChange={handleChange} />
           <Input label="Imagem (URL)" name="imageUrl" value={form.imageUrl} onChange={handleChange} />
           <Input label="Estoque" name="stock" value={form.stock} onChange={handleChange} />
-          <Input label="Categoria (1 = Picolé, 2 = Pote, 3 = Açaí, 4 = Sundae)" name="categoryId" value={form.categoryId} onChange={handleChange} />
+          <Input label="Categoria (1=Picolé, 2=Pote, 3=Açaí, 4=Sundae 6=Extras 7=Kids)" name="categoryId" value={form.categoryId} onChange={handleChange} />
 
           <div style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
             <label style={{ marginBottom: "0.25rem", fontSize: "0.875rem", color: "#374151" }}>
