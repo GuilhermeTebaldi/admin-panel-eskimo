@@ -20,6 +20,8 @@ export default function AdminPanel() {
   const [subcategories, setSubcategories] = useState([]);
   const [filteredSubcategories, setFilteredSubcategories] = useState([]);
   const [subcategoryId, setSubcategoryId] = useState("");
+  
+
 
   useEffect(() => {
     fetchCategories();
@@ -175,9 +177,56 @@ function Input({ label, name, value, onChange }) {
     </div>
   );
 }
+const labelStyle = {
+  marginBottom: "0.25rem",
+  fontSize: "0.875rem",
+  color: "#374151",
+};
 
-const labelStyle = { marginBottom: "0.25rem", fontSize: "0.875rem", color: "#374151" };
-const inputStyle = { width: "100%", padding: "0.75rem", borderRadius: "0.5rem", border: "1px solid #cbd5e1", background: "#f9fdfb", color: "#111827", fontSize: "1rem", boxSizing: "border-box" };
-const btnPrimary = { background: "#059669", color: "white", padding: "0.75rem", fontWeight: "bold", border: "none", borderRadius: "0.5rem", cursor: "pointer", fontSize: "1rem", transition: "background 0.3s" };
-const btnDanger = { background: "#dc2626", color: "white", padding: "0.5rem 1rem", borderRadius: "0.5rem", border: "none", cursor: "pointer", fontWeight: "bold" };
-const btnOutline = { background: "#f9fafb", color: "#065f46", padding: "0.5rem", fontWeight: "bold", border: "1px solid #d1fae5", borderRadius: "0.5rem", cursor: "pointer", fontSize: "1rem", transition: "all 0.3s" };
+const inputStyle = {
+  width: "100%",
+  padding: "0.75rem",
+  borderRadius: "0.75rem",
+  border: "1px solid #cbd5e1",
+  background: "#f9fdfb",
+  color: "#111827",
+  fontSize: "1rem",
+  boxSizing: "border-box",
+  outline: "none",
+  transition: "border-color 0.3s ease",
+};
+
+const btnPrimary = {
+  background: "#059669",
+  color: "white",
+  padding: "0.75rem 1.5rem",
+  fontWeight: "bold",
+  border: "none",
+  borderRadius: "0.75rem",
+  cursor: "pointer",
+  fontSize: "1rem",
+  transition: "background-color 0.3s ease",
+};
+
+const btnDanger = {
+  background: "#dc2626",
+  color: "white",
+  padding: "0.5rem 1.25rem",
+  borderRadius: "0.75rem",
+  border: "none",
+  cursor: "pointer",
+  fontWeight: "bold",
+  transition: "background-color 0.3s ease",
+};
+
+const btnOutline = {
+  background: "transparent",
+  color: "#065f46",
+  padding: "0.75rem 1.5rem",
+  fontWeight: "bold",
+  border: "2px solid #065f46",
+  borderRadius: "0.75rem",
+  cursor: "pointer",
+  fontSize: "1rem",
+  transition: "all 0.3s ease",
+};

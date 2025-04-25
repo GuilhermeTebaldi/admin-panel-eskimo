@@ -1,17 +1,53 @@
-import { StrictMode } from "react";
+import { StrictMode, useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import "./index.css";
+
 import App from "./App.jsx";
 import ProductList from "./ProductList.jsx";
 import Login from "./Login.jsx";
 import PrivateRoute from "./PrivateRoute.jsx";
 import HomePublic from "./HomePublic";
-import CategoryManager from "./pages/CategoryManager"; // ✅ corrigido
+import CategoryManager from "./pages/CategoryManager";
 
-createRoot(document.getElementById("root")).render(
-  <StrictMode>
-    <BrowserRouter>
+// 🦊 Cria o componente SplashScreen diretamente aqui
+function SplashScreen() {
+  return (
+    <div style={{
+      minHeight: "100vh",
+      background: "linear-gradient(to bottom right, #e0f2f1, #f0fdf4)",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center",
+      alignItems: "center",
+      animation: "fadeIn 0.8s ease-in-out"
+    }}>
+      <h1 style={{ fontSize: "2.5rem", color: "#065f46", fontWeight: "bold" }}>
+  Volpesites
+      </h1>
+      <p style={{ fontSize: "1.2rem", color: "#065f46", marginTop: "1rem" }}>
+        Carregando...
+      </p>
+    </div>
+  );
+}
+
+function MainApp() {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1500); // 1.5 segundos de splash
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) {
+    return <SplashScreen />;
+  }
+
+  return (
+    <>
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/efapi" element={<HomePublic />} />
@@ -19,6 +55,26 @@ createRoot(document.getElementById("root")).render(
         <Route path="/produtos" element={<PrivateRoute><ProductList /></PrivateRoute>} />
         <Route path="/categorias" element={<PrivateRoute><CategoryManager /></PrivateRoute>} />
       </Routes>
+      <ToastContainer
+        position="top-center"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
+    </>
+  );
+}
+
+createRoot(document.getElementById("root")).render(
+  <StrictMode>
+    <BrowserRouter>
+      <MainApp />
     </BrowserRouter>
   </StrictMode>
 );

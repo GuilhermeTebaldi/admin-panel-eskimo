@@ -1,17 +1,62 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React</title>
+    <title>Volpesites </title>
+
+    <style>
+      /* Preloader */
+      #preloader {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background: linear-gradient(to bottom right, #e0f2f1, #f0fdf4);
+        color: #065f46;
+        font-family: 'Inter', sans-serif;
+        font-weight: bold;
+        font-size: 2rem;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        z-index: 9999;
+      }
+      #preloader p {
+        margin-top: 1rem;
+        font-size: 1.2rem;
+        color: #059669;
+      }
+    </style>
   </head>
+
   <body>
+    <!-- Preloader (antes do React carregar) -->
+    <div id="preloader">
+     Volpesites
+      <p>Carregando...</p>
+    </div>
+
     <div id="root"></div>
+
+    <script type="module">
+      // Remove o preloader assim que o React montar
+      window.addEventListener('DOMContentLoaded', () => {
+        const root = document.getElementById('root');
+        if (root) {
+          new MutationObserver(() => {
+            const preloader = document.getElementById('preloader');
+            if (preloader) preloader.remove();
+          }).observe(root, { childList: true });
+        }
+      });
+    </script>
+
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
