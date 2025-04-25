@@ -94,52 +94,16 @@ export default function AdminPanel() {
   };
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      width: "100vw",
-      background: "linear-gradient(to bottom right, #ecfdf5, #d1fae5)",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      padding: "2rem",
-      boxSizing: "border-box"
-    }}>
-      <div style={{
-        width: "100%",
-        maxWidth: "1000px",
-        background: "white",
-        borderRadius: "1.5rem",
-        padding: "3rem",
-        boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
-        textAlign: "center",
-        boxSizing: "border-box"
-      }}>
+    <div style={{ minHeight: "100vh", background: "#f0fdf4", display: "flex", justifyContent: "center", alignItems: "center", padding: "2rem", animation: "fadeIn 0.8s ease-in-out" }}>
+      <div style={{ width: "100%", maxWidth: "1000px", background: "white", borderRadius: "1.5rem", padding: "3rem", boxShadow: "0 10px 30px rgba(0,0,0,0.1)", textAlign: "center" }}>
         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1rem" }}>
-          <button
-            onClick={handleLogout}
-            style={{
-              backgroundColor: "#ef4444",
-              color: "white",
-              padding: "0.5rem 1rem",
-              border: "none",
-              borderRadius: "0.5rem",
-              cursor: "pointer"
-            }}
-          >
-            🚪 Sair
-          </button>
+          <button onClick={handleLogout} style={btnDanger}>🚪 Sair</button>
         </div>
 
-        <h1 style={{ fontSize: "3rem", color: "#065f46", fontWeight: "800", marginBottom: "1.5rem", fontFamily: "Arial Black, sans-serif", letterSpacing: "1px" }}>
-          Eskimó
-        </h1>
-        <h1 style={{ fontSize: "2.5rem", color: "#065f46", fontWeight: "bold", marginBottom: "1rem" }}>
-          Cadastro de Produto
-        </h1>
+        <h1 style={{ fontSize: "3rem", color: "#065f46", fontWeight: "800", marginBottom: "1.5rem" }}>Eskimó</h1>
+        <h2 style={{ fontSize: "2rem", color: "#065f46", fontWeight: "bold", marginBottom: "1rem" }}>Cadastro de Produto</h2>
 
-        <p style={{ fontSize: "1rem", color: "#4b5563", marginBottom: "2rem" }}>
-          Preencha os campos abaixo para adicionar um novo produto ao sistema.
-        </p>
+        <p style={{ fontSize: "1rem", color: "#4b5563", marginBottom: "2rem" }}>Preencha os campos abaixo para adicionar um novo produto.</p>
 
         <form onSubmit={handleSubmit} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginBottom: "2rem" }}>
           <Input label="Nome" name="name" value={form.name} onChange={handleChange} />
@@ -148,98 +112,49 @@ export default function AdminPanel() {
           <Input label="Imagem (URL)" name="imageUrl" value={form.imageUrl} onChange={handleChange} />
           <Input label="Estoque" name="stock" value={form.stock} onChange={handleChange} />
 
-          {/* Select dinâmico para categorias */}
           <div style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
-            <label style={{ marginBottom: "0.25rem", fontSize: "0.875rem", color: "#374151" }}>
-              Categoria
-            </label>
+            <label style={labelStyle}>Categoria</label>
             <select
               name="categoryId"
               value={form.categoryId}
               onChange={handleChange}
               required
-              style={{
-                width: "100%",
-                padding: "0.5rem",
-                borderRadius: "0.5rem",
-                border: "1px solid #cbd5e1",
-                background: "#f9fdfb",
-                color: "#111827",
-                fontSize: "1rem",
-                boxSizing: "border-box"
-              }}
+              style={inputStyle}
             >
               <option value="">Selecione uma categoria</option>
               {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
             </select>
           </div>
 
-          {/* Select para subcategorias */}
           <div style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
-            <label style={{ marginBottom: "0.25rem", fontSize: "0.875rem", color: "#374151" }}>
-              Subcategoria
-            </label>
+            <label style={labelStyle}>Subcategoria</label>
             <select
               value={subcategoryId}
               onChange={(e) => setSubcategoryId(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "0.5rem",
-                borderRadius: "0.5rem",
-                border: "1px solid #cbd5e1",
-                background: "#f9fdfb",
-                color: "#111827",
-                fontSize: "1rem",
-                boxSizing: "border-box"
-              }}
+              style={inputStyle}
             >
               <option value="">Selecione uma subcategoria</option>
               {filteredSubcategories.map((sub) => (
-                <option key={sub.id} value={sub.id}>
-                  {sub.name}
-                </option>
+                <option key={sub.id} value={sub.id}>{sub.name}</option>
               ))}
             </select>
           </div>
 
           <div style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            <button
-              type="submit"
-              style={{
-                backgroundColor: "#10b981",
-                color: "white",
-                padding: "0.75rem",
-                fontWeight: "bold",
-                border: "none",
-                borderRadius: "0.5rem",
-                cursor: "pointer",
-                fontSize: "1rem"
-              }}
-            >
-              Cadastrar Produto
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate("/produtos")}
-              style={{
-                backgroundColor: "#f9fafb",
-                color: "#065f46",
-                padding: "0.5rem",
-                fontWeight: "bold",
-                border: "1px solid #d1fae5",
-                borderRadius: "0.5rem",
-                cursor: "pointer",
-                fontSize: "1rem"
-              }}
-            >
-              📦 Ver Produtos Cadastrados
-            </button>
+            <button type="submit" style={btnPrimary}>Cadastrar Produto</button>
+            <button type="button" onClick={() => navigate("/produtos")} style={btnOutline}>📦 Ver Produtos</button>
           </div>
-        </form>
+        </form><h1 style={{ 
+  fontSize: "1.0rem", 
+  color: "#065f46", 
+  fontWeight: "bold", 
+  marginBottom: "1rem", 
+  textAlign: "center" // ✅ adiciona centralização
+}}>
+  Volpesites 🦊
+</h1>
       </div>
     </div>
   );
@@ -248,26 +163,21 @@ export default function AdminPanel() {
 function Input({ label, name, value, onChange }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
-      <label htmlFor={name} style={{ marginBottom: "0.25rem", fontSize: "0.875rem", color: "#374151" }}>
-        {label}
-      </label>
+      <label htmlFor={name} style={labelStyle}>{label}</label>
       <input
         id={name}
         name={name}
         value={value}
         onChange={onChange}
         required
-        style={{
-          width: "100%",
-          padding: "0.5rem",
-          borderRadius: "0.5rem",
-          border: "1px solid #cbd5e1",
-          background: "#f9fdfb",
-          color: "#111827",
-          fontSize: "1rem",
-          boxSizing: "border-box"
-        }}
+        style={inputStyle}
       />
     </div>
   );
 }
+
+const labelStyle = { marginBottom: "0.25rem", fontSize: "0.875rem", color: "#374151" };
+const inputStyle = { width: "100%", padding: "0.75rem", borderRadius: "0.5rem", border: "1px solid #cbd5e1", background: "#f9fdfb", color: "#111827", fontSize: "1rem", boxSizing: "border-box" };
+const btnPrimary = { background: "#059669", color: "white", padding: "0.75rem", fontWeight: "bold", border: "none", borderRadius: "0.5rem", cursor: "pointer", fontSize: "1rem", transition: "background 0.3s" };
+const btnDanger = { background: "#dc2626", color: "white", padding: "0.5rem 1rem", borderRadius: "0.5rem", border: "none", cursor: "pointer", fontWeight: "bold" };
+const btnOutline = { background: "#f9fafb", color: "#065f46", padding: "0.5rem", fontWeight: "bold", border: "1px solid #d1fae5", borderRadius: "0.5rem", cursor: "pointer", fontSize: "1rem", transition: "all 0.3s" };

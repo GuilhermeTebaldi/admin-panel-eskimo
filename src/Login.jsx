@@ -23,7 +23,7 @@ export default function LoginPage() {
       const res = await axios.post(`${API_URL}/auth/login`, { email, password });
       localStorage.setItem("token", res.data.token);
       alert("✅ Login realizado com sucesso!");
-      navigate("/cadastro"); // ou "/cadastro" se sua tela de cadastro estiver nessa rota
+      navigate("/cadastro");
     } catch (err) {
       console.error("Erro ao logar:", err.response?.data || err.message);
       alert("❌ Email ou senha inválidos.");
@@ -33,40 +33,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "linear-gradient(to bottom right, #e0f2f1, #f0fdf4)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        padding: "2rem",
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: "420px",
-          background: "white",
-          padding: "2.5rem",
-          borderRadius: "1.5rem",
-          boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
-        }}
-      >
-        <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-          <h1 style={{ fontSize: "2rem", color: "#065f46", fontWeight: "800", marginBottom: "0.5rem" }}>
-            🔒 Acesso Eskimó
-          </h1>
-          <p style={{ color: "#4b5563", fontSize: "0.95rem" }}>
-            Entre com seu e-mail e senha para continuar
-          </p>
-        </div>
+    <div style={{ minHeight: "100vh", background: "linear-gradient(to bottom right, #e0f2f1, #f0fdf4)", display: "flex", justifyContent: "center", alignItems: "center", padding: "2rem", animation: "fadeIn 0.8s ease-in-out" }}>
+      <div style={{ width: "100%", maxWidth: "420px", background: "white", padding: "2.5rem", borderRadius: "1.5rem", boxShadow: "0 10px 25px rgba(0,0,0,0.1)", textAlign: "center" }}>
+        <h1 style={{ fontSize: "2.5rem", color: "#065f46", fontWeight: "bold", marginBottom: "1rem" }}>🔒 Acesso Eskimó</h1>
+        <p style={{ color: "#6b7280", fontSize: "1rem", marginBottom: "2rem" }}>Entre com seu e-mail e senha para continuar</p>
 
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-            <label htmlFor="email" style={{ fontSize: "0.875rem", color: "#374151" }}>
-              Email
-            </label>
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+          <div style={{ textAlign: "left" }}>
+            <label htmlFor="email" style={labelStyle}>Email</label>
             <input
               type="email"
               id="email"
@@ -74,20 +48,12 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Digite seu email"
               required
-              style={{
-                padding: "0.5rem 0.75rem",
-                borderRadius: "0.75rem",
-                border: "1px solid #cbd5e1",
-                background: "#f9fdfb",
-                fontSize: "1rem",
-              }}
+              style={inputStyle}
             />
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-            <label htmlFor="password" style={{ fontSize: "0.875rem", color: "#374151" }}>
-              Senha
-            </label>
+          <div style={{ textAlign: "left" }}>
+            <label htmlFor="password" style={labelStyle}>Senha</label>
             <input
               type="password"
               id="password"
@@ -95,35 +61,53 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Digite sua senha"
               required
-              style={{
-                padding: "0.5rem 0.75rem",
-                borderRadius: "0.75rem",
-                border: "1px solid #cbd5e1",
-                background: "#f9fdfb",
-                fontSize: "1rem",
-              }}
+              style={inputStyle}
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            style={{
-              backgroundColor: "#059669",
-              color: "white",
-              fontWeight: "bold",
-              fontSize: "1rem",
-              padding: "0.75rem",
-              borderRadius: "0.75rem",
-              border: "none",
-              cursor: "pointer",
-              transition: "0.3s",
-            }}
+            style={{ ...btnPrimary, opacity: loading ? 0.7 : 1 }}
           >
             {loading ? "Entrando..." : "Entrar"}
           </button>
+
+          <h2 style={{ fontSize: "1.2rem", color: "#065f46", fontWeight: "bold", marginTop: "2rem" }}>
+            Volpesites 🦊
+          </h2>
         </form>
       </div>
     </div>
   );
 }
+
+const labelStyle = {
+  fontSize: "0.875rem",
+  color: "#374151",
+  marginBottom: "0.5rem",
+  display: "block"
+};
+
+const inputStyle = {
+  width: "100%",
+  padding: "0.75rem",
+  borderRadius: "0.75rem",
+  border: "1px solid #cbd5e1",
+  background: "#f9fdfb",
+  fontSize: "1rem",
+  boxSizing: "border-box"
+};
+
+const btnPrimary = {
+  backgroundColor: "#059669",
+  color: "white",
+  fontWeight: "bold",
+  fontSize: "1rem",
+  padding: "0.75rem",
+  borderRadius: "0.75rem",
+  border: "none",
+  cursor: "pointer",
+  transition: "all 0.3s",
+  boxSizing: "border-box"
+};

@@ -244,8 +244,11 @@ export default function ProductList() {
             <button onClick={handleUpdate} style={btnPrimary}>💾 Salvar</button>
             <button onClick={handleCancelEdit} style={{ ...btnOutline, color: "#dc2626" }}>Cancelar</button>
           </div>
+          
         </div>
-      )}
+      )}<h1 style={{ fontSize: "1.0rem", color: "#065f46", fontWeight: "bold", marginBottom: "1rem" }}>
+      Volpesites 🦊
+    </h1>
     </div>
   );
 }

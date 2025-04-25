@@ -232,7 +232,15 @@ export default function CategoryManager() {
             </li>
           ))}
         </ul>
-      </section>
+      </section><h1 style={{ 
+  fontSize: "1.0rem", 
+  color: "#065f46", 
+  fontWeight: "bold", 
+  marginBottom: "1rem", 
+  textAlign: "center" // ✅ adiciona centralização
+}}>
+  Volpesites 🦊
+</h1>
     </div>
   );
 }
