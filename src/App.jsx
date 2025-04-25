@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import Home from "../site-efapi/Home";
 
 const API_URL = "https://backend-eskimo.onrender.com/api";
 
@@ -14,25 +13,40 @@ export default function AdminPanel() {
     price: "",
     imageUrl: "",
     stock: "100",
-    categoryId: "1"
+    categoryId: ""
   });
 
+  const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
   const [filteredSubcategories, setFilteredSubcategories] = useState([]);
   const [subcategoryId, setSubcategoryId] = useState("");
 
   useEffect(() => {
-    const fetchSubcategories = async () => {
-      try {
-        const result = await axios.get(`${API_URL}/subcategories`);
-        setSubcategories(result.data);
-      } catch (error) {
-        console.error("Erro ao carregar subcategorias:", error);
-      }
-    };
-
+    fetchCategories();
     fetchSubcategories();
   }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const result = await axios.get(`${API_URL}/categories`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+      });
+      setCategories(result.data);
+    } catch (error) {
+      console.error("Erro ao carregar categorias:", error);
+    }
+  };
+
+  const fetchSubcategories = async () => {
+    try {
+      const result = await axios.get(`${API_URL}/subcategories`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+      });
+      setSubcategories(result.data);
+    } catch (error) {
+      console.error("Erro ao carregar subcategorias:", error);
+    }
+  };
 
   useEffect(() => {
     const filtered = subcategories.filter(
@@ -66,7 +80,7 @@ export default function AdminPanel() {
       });
 
       alert("✅ Produto cadastrado com sucesso!");
-      setForm({ name: "", description: "", price: "", imageUrl: "", stock: "", categoryId: "1" });
+      setForm({ name: "", description: "", price: "", imageUrl: "", stock: "100", categoryId: "" });
       setSubcategoryId("");
     } catch (error) {
       console.error("Erro:", error.response?.data || error.message);
@@ -133,8 +147,38 @@ export default function AdminPanel() {
           <Input label="Preço" name="price" value={form.price} onChange={handleChange} />
           <Input label="Imagem (URL)" name="imageUrl" value={form.imageUrl} onChange={handleChange} />
           <Input label="Estoque" name="stock" value={form.stock} onChange={handleChange} />
-          <Input label="1=Picolé, 2=Pote, 3=Açaí, 4=Sundae 6=Extras 7=Kids" name="categoryId" value={form.categoryId} onChange={handleChange} />
 
+          {/* Select dinâmico para categorias */}
+          <div style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
+            <label style={{ marginBottom: "0.25rem", fontSize: "0.875rem", color: "#374151" }}>
+              Categoria
+            </label>
+            <select
+              name="categoryId"
+              value={form.categoryId}
+              onChange={handleChange}
+              required
+              style={{
+                width: "100%",
+                padding: "0.5rem",
+                borderRadius: "0.5rem",
+                border: "1px solid #cbd5e1",
+                background: "#f9fdfb",
+                color: "#111827",
+                fontSize: "1rem",
+                boxSizing: "border-box"
+              }}
+            >
+              <option value="">Selecione uma categoria</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Select para subcategorias */}
           <div style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
             <label style={{ marginBottom: "0.25rem", fontSize: "0.875rem", color: "#374151" }}>
               Subcategoria

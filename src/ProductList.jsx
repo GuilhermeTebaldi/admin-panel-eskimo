@@ -1,5 +1,3 @@
-// admin-panel/src/ProductList.jsx (LISTAGEM E EDIÇÃO COM SUBCATEGORIAS)
-
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -9,6 +7,7 @@ const pageSize = 1000;
 
 export default function ProductList() {
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
@@ -28,6 +27,7 @@ export default function ProductList() {
 
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
     fetchSubcategories();
   }, [searchTerm]);
 
@@ -44,9 +44,22 @@ export default function ProductList() {
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      const result = await axios.get(`${API_URL}/categories`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+      });
+      setCategories(result.data);
+    } catch (err) {
+      console.error("Erro ao buscar categorias:", err);
+    }
+  };
+
   const fetchSubcategories = async () => {
     try {
-      const result = await axios.get(`${API_URL}/subcategories`);
+      const result = await axios.get(`${API_URL}/subcategories`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+      });
       setSubcategories(result.data);
     } catch (err) {
       console.error("Erro ao buscar subcategorias:", err);
@@ -54,20 +67,18 @@ export default function ProductList() {
   };
 
   const filteredProducts = categoryFilter
-    ? products.filter((p) => p.categoryName.toLowerCase() === categoryFilter.toLowerCase())
+    ? products.filter((p) => p.categoryName?.toLowerCase() === categoryFilter.toLowerCase())
     : products;
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Tem certeza que deseja excluir este produto?")) return;
+    if (!window.confirm("Deseja excluir este produto?")) return;
     try {
       await axios.delete(`${API_URL}/products/${id}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       });
-      alert("🗑 Produto excluído com sucesso!");
       fetchProducts();
     } catch (err) {
-      console.error("Erro ao excluir:", err);
-      alert("❌ Erro ao excluir produto.");
+      console.error("Erro ao excluir produto:", err);
     }
   };
 
@@ -100,7 +111,7 @@ export default function ProductList() {
       setEditingProduct(null);
       fetchProducts();
     } catch (err) {
-      console.error("Erro ao atualizar:", err);
+      console.error("Erro ao atualizar produto:", err);
       alert("❌ Erro ao atualizar produto.");
     }
   };
@@ -130,6 +141,7 @@ export default function ProductList() {
           <h1 style={{ fontSize: "2.25rem", fontWeight: "bold", color: "#065f46" }}>📦 Lista de Produtos ({filteredProducts.length})</h1>
           <div style={{ display: "flex", gap: "0.75rem" }}>
             <button onClick={() => navigate("/cadastro")} style={btnPrimary}>← Voltar</button>
+            <button onClick={() => navigate("/categorias")} style={btnOutline}>Categorias</button>
             <button onClick={handleLogout} style={btnDanger}>Sair</button>
           </div>
         </div>
@@ -138,12 +150,9 @@ export default function ProductList() {
           <input placeholder="🔍 Buscar por nome..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={inputStyle} />
           <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} style={inputStyle}>
             <option value="">Todas as Categorias</option>
-            <option value="Picolé">Picolé</option>
-            <option value="Pote de Sorvete">Pote de Sorvete</option>
-            <option value="Açaí">Açaí</option>
-            <option value="Sundae">Sundae</option>
-            <option value="Extras">Extras</option>
-            <option value="Kids">Kids</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.name}>{cat.name}</option>
+            ))}
           </select>
         </div>
 
@@ -188,7 +197,7 @@ export default function ProductList() {
         <div style={{ position: "fixed", top: 0, right: 0, width: "100%", maxWidth: "400px", height: "100vh", background: "#ffffff", boxShadow: "-2px 0 10px rgba(0,0,0,0.1)", padding: "2rem", overflowY: "auto", zIndex: 1000 }}>
           <h2 style={{ fontSize: "1.75rem", fontWeight: "bold", color: "#065f46", marginBottom: "1.5rem" }}>✏️ Editar Produto</h2>
 
-          {["name", "description", "price", "imageUrl", "stock", "categoryId"].map((field) => (
+          {["name", "description", "price", "imageUrl", "stock"].map((field) => (
             <div key={field} style={{ marginBottom: "1rem" }}>
               <label htmlFor={field} style={labelStyle}>{field.charAt(0).toUpperCase() + field.slice(1)}</label>
               <input
@@ -200,6 +209,21 @@ export default function ProductList() {
               />
             </div>
           ))}
+
+          <div style={{ marginBottom: "1rem" }}>
+            <label style={labelStyle}>Categoria</label>
+            <select
+              name="categoryId"
+              value={form.categoryId}
+              onChange={handleChange}
+              style={inputStyle}
+            >
+              <option value="">Selecione uma categoria</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
+            </select>
+          </div>
 
           <div style={{ marginBottom: "1rem" }}>
             <label style={labelStyle}>Subcategoria</label>
@@ -226,72 +250,12 @@ export default function ProductList() {
   );
 }
 
-// estilos mantidos (labelStyle, inputStyle, thStyle, tdStyle, btnPrimary, btnDanger, btnDangerSmall, btnOutline)
-
-const labelStyle = {
-  display: "block",
-  fontSize: "0.875rem",
-  color: "#374151",
-  marginBottom: "0.25rem"
-};
-
-const inputStyle = {
-  width: "100%",
-  padding: "0.5rem",
-  borderRadius: "0.5rem",
-  border: "1px solid #ccc"
-};
-
-const thStyle = {
-  padding: "0.75rem",
-  textAlign: "left",
-  fontWeight: "600",
-  fontSize: "0.875rem",
-  background: "#d1fae5"
-};
-
-const tdStyle = {
-  padding: "0.75rem",
-  fontSize: "0.95rem",
-  color: "#374151"
-};
-
-const btnPrimary = {
-  background: "#059669",
-  color: "white",
-  padding: "0.5rem 1rem",
-  borderRadius: "0.5rem",
-  border: "none",
-  cursor: "pointer",
-  fontWeight: "bold"
-};
-
-const btnDanger = {
-  background: "#dc2626",
-  color: "white",
-  padding: "0.5rem 1rem",
-  borderRadius: "0.5rem",
-  border: "none",
-  cursor: "pointer",
-  fontWeight: "bold"
-};
-
-const btnDangerSmall = {
-  background: "#dc2626",
-  color: "white",
-  padding: "0.25rem 0.75rem",
-  borderRadius: "0.5rem",
-  border: "none",
-  cursor: "pointer",
-  fontWeight: "bold"
-};
-
-const btnOutline = {
-  background: "transparent",
-  color: "#065f46",
-  padding: "0.25rem 0.75rem",
-  borderRadius: "0.5rem",
-  border: "1px solid #065f46",
-  cursor: "pointer",
-  fontWeight: "bold"
-};
+// Estilos
+const labelStyle = { display: "block", fontSize: "0.875rem", color: "#374151", marginBottom: "0.25rem" };
+const inputStyle = { width: "100%", padding: "0.5rem", borderRadius: "0.5rem", border: "1px solid #ccc" };
+const thStyle = { padding: "0.75rem", textAlign: "left", fontWeight: "600", fontSize: "0.875rem", background: "#d1fae5" };
+const tdStyle = { padding: "0.75rem", fontSize: "0.95rem", color: "#374151" };
+const btnPrimary = { background: "#059669", color: "white", padding: "0.5rem 1rem", borderRadius: "0.5rem", border: "none", cursor: "pointer", fontWeight: "bold" };
+const btnDanger = { background: "#dc2626", color: "white", padding: "0.5rem 1rem", borderRadius: "0.5rem", border: "none", cursor: "pointer", fontWeight: "bold" };
+const btnDangerSmall = { background: "#dc2626", color: "white", padding: "0.25rem 0.75rem", borderRadius: "0.5rem", border: "none", cursor: "pointer", fontWeight: "bold" };
+const btnOutline = { background: "transparent", color: "#065f46", padding: "0.25rem 0.75rem", borderRadius: "0.5rem", border: "1px solid #065f46", cursor: "pointer", fontWeight: "bold" };
