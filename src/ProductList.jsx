@@ -136,17 +136,17 @@ export default function ProductList() {
 
   return (
     <div style={{ minHeight: "100vh", padding: "2rem", background: "#f0fdf4", display: "flex", flexDirection: "column", alignItems: "center" }}>
-      <div style={{ width: "100%", maxWidth: "1150px", background: "white", padding: "2.5rem", borderRadius: "1.5rem", boxShadow: "0 10px 30px rgba(0,0,0,0.08)" }}>
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
-          <h1 style={{ fontSize: "2.25rem", fontWeight: "bold", color: "#065f46" }}>📦 Lista de Produtos ({filteredProducts.length})</h1>
-          <div style={{ display: "flex", gap: "0.75rem" }}>
-            <button onClick={() => navigate("/cadastro")} style={btnPrimary}>← Voltar</button>
-            <button onClick={() => navigate("/categorias")} style={btnOutline}>Categorias</button>
-            <button onClick={handleLogout} style={btnDanger}>Sair</button>
+      <div style={{ width: "100%", maxWidth: "1150px", background: "white", padding: "2.5rem", borderRadius: "1.5rem", boxShadow: "0 10px 30px rgba(0,0,0,0.08)", animation: "fadeIn 0.8s ease-in-out" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "2rem" }}>
+          <h1 style={{ fontSize: "2.5rem", fontWeight: "bold", color: "#065f46", textAlign: "center" }}>📦 Lista de Produtos ({filteredProducts.length})</h1>
+          <div style={{ display: "flex", justifyContent: "center", gap: "1rem", flexWrap: "wrap" }}>
+            <button onClick={() => navigate("/cadastro")} style={{ ...btnPrimary }}>← Voltar</button>
+            <button onClick={() => navigate("/categorias")} style={{ ...btnOutline }}>Categorias</button>
+            <button onClick={handleLogout} style={{ ...btnDanger }}>Sair</button>
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem" }}>
+        <div style={{ display: "flex", gap: "1rem", marginBottom: "2rem", flexWrap: "wrap", justifyContent: "center" }}>
           <input placeholder="🔍 Buscar por nome..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={inputStyle} />
           <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} style={inputStyle}>
             <option value="">Todas as Categorias</option>
@@ -156,7 +156,7 @@ export default function ProductList() {
           </select>
         </div>
 
-        <div className="overflow-x-auto w-full">
+        <div style={{ overflowX: "auto", borderRadius: "0.5rem" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead style={{ background: "#d1fae5", color: "#065f46" }}>
               <tr>
@@ -194,7 +194,7 @@ export default function ProductList() {
       </div>
 
       {editingProduct && (
-        <div style={{ position: "fixed", top: 0, right: 0, width: "100%", maxWidth: "400px", height: "100vh", background: "#ffffff", boxShadow: "-2px 0 10px rgba(0,0,0,0.1)", padding: "2rem", overflowY: "auto", zIndex: 1000 }}>
+        <div style={{ position: "fixed", top: 0, right: 0, width: "100%", maxWidth: "400px", height: "100vh", background: "#ffffff", boxShadow: "-2px 0 10px rgba(0,0,0,0.1)", padding: "2rem", overflowY: "auto", zIndex: 1000, animation: "fadeInRight 0.5s ease-in-out" }}>
           <h2 style={{ fontSize: "1.75rem", fontWeight: "bold", color: "#065f46", marginBottom: "1.5rem" }}>✏️ Editar Produto</h2>
 
           {["name", "description", "price", "imageUrl", "stock"].map((field) => (
@@ -240,8 +240,8 @@ export default function ProductList() {
             </select>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-2 mb-4">
-            <button onClick={handleUpdate} style={btnPrimary}>💾 Salvar Alterações</button>
+          <div style={{ display: "flex", gap: "1rem", marginTop: "2rem" }}>
+            <button onClick={handleUpdate} style={btnPrimary}>💾 Salvar</button>
             <button onClick={handleCancelEdit} style={{ ...btnOutline, color: "#dc2626" }}>Cancelar</button>
           </div>
         </div>
@@ -250,12 +250,11 @@ export default function ProductList() {
   );
 }
 
-// Estilos
 const labelStyle = { display: "block", fontSize: "0.875rem", color: "#374151", marginBottom: "0.25rem" };
-const inputStyle = { width: "100%", padding: "0.5rem", borderRadius: "0.5rem", border: "1px solid #ccc" };
-const thStyle = { padding: "0.75rem", textAlign: "left", fontWeight: "600", fontSize: "0.875rem", background: "#d1fae5" };
+const inputStyle = { width: "100%", padding: "0.75rem", borderRadius: "0.5rem", border: "1px solid #ccc" };
+const thStyle = { padding: "0.75rem", textAlign: "left", fontWeight: "600", fontSize: "0.9rem" };
 const tdStyle = { padding: "0.75rem", fontSize: "0.95rem", color: "#374151" };
-const btnPrimary = { background: "#059669", color: "white", padding: "0.5rem 1rem", borderRadius: "0.5rem", border: "none", cursor: "pointer", fontWeight: "bold" };
+const btnPrimary = { background: "#059669", color: "white", padding: "0.5rem 1rem", borderRadius: "0.5rem", border: "none", cursor: "pointer", fontWeight: "bold", transition: "background 0.3s", hover: { backgroundColor: "#047857" } };
 const btnDanger = { background: "#dc2626", color: "white", padding: "0.5rem 1rem", borderRadius: "0.5rem", border: "none", cursor: "pointer", fontWeight: "bold" };
 const btnDangerSmall = { background: "#dc2626", color: "white", padding: "0.25rem 0.75rem", borderRadius: "0.5rem", border: "none", cursor: "pointer", fontWeight: "bold" };
-const btnOutline = { background: "transparent", color: "#065f46", padding: "0.25rem 0.75rem", borderRadius: "0.5rem", border: "1px solid #065f46", cursor: "pointer", fontWeight: "bold" };
+const btnOutline = { background: "transparent", color: "#065f46", padding: "0.5rem 1rem", borderRadius: "0.5rem", border: "2px solid #065f46", cursor: "pointer", fontWeight: "bold", transition: "all 0.3s" };
