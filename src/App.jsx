@@ -147,6 +147,10 @@ export default function AdminPanel() {
           <div style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
             <button type="submit" style={btnPrimary}>Cadastrar Produto</button>
             <button type="button" onClick={() => navigate("/produtos")} style={btnOutline}>📦 Ver Produtos</button>
+            <a href="/pedidos" className="text-blue-600 hover:underline">
+  Ver Pedidos
+</a>
+
           </div>
         </form><h1 style={{ 
   fontSize: "1.0rem", 

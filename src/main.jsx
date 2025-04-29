@@ -5,6 +5,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import "./index.css";
 
+import Pedidos from "./Pedidos";
 import App from "./App.jsx";
 import ProductList from "./ProductList.jsx";
 import Login from "./Login.jsx";
@@ -25,7 +26,7 @@ function SplashScreen() {
       animation: "fadeIn 0.8s ease-in-out"
     }}>
       <h1 style={{ fontSize: "2.5rem", color: "#065f46", fontWeight: "bold" }}>
-  Volpesites
+        Volpesites
       </h1>
       <p style={{ fontSize: "1.2rem", color: "#065f46", marginTop: "1rem" }}>
         Carregando...
@@ -54,7 +55,11 @@ function MainApp() {
         <Route path="/cadastro" element={<PrivateRoute><App /></PrivateRoute>} />
         <Route path="/produtos" element={<PrivateRoute><ProductList /></PrivateRoute>} />
         <Route path="/categorias" element={<PrivateRoute><CategoryManager /></PrivateRoute>} />
+        
+        {/* ✅ ROTA NOVA PARA PEDIDOS */}
+        <Route path="/pedidos" element={<PrivateRoute><Pedidos /></PrivateRoute>} />
       </Routes>
+
       <ToastContainer
         position="top-center"
         autoClose={3000}
