@@ -3,6 +3,7 @@ import axios from "axios";
 
 const API_URL = "https://backend-eskimo.onrender.com/api";
 
+
 export default function Pedidos() {
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
