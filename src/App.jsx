@@ -150,10 +150,11 @@ export default function AdminPanel() {
             <button
   type="button"
   onClick={() => navigate("/pedidos")}
-  className="rounded-full border border-green-600 px-4 py-2 text-sm font-semibold text-green-600 transition hover:bg-green-600 hover:text-white"
+  style={btnOutline}
 >
   ✅ Ver Pedidos
 </button>
+
 
 
 
