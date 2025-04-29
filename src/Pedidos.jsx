@@ -73,9 +73,12 @@ export default function Pedidos() {
   const gerarRelatoriosPDF = async () => {
     setGerandoRelatorio(true);
     toast.info("Gerando PDFs das lojas...");
-
+  
     try {
-      const mensagem = encodeURIComponent("Segue os relatórios das 3 lojas em anexo.");
+      const mensagem = encodeURIComponent(
+        `Segue os relatórios das 3 lojas:\n📄 Efapi: ${API_URL}/reports/efapi\n📄 Palmital: ${API_URL}/reports/palmital\n📄 Passo dos Fortes: ${API_URL}/reports/passodosfortes`
+      );
+  
       if (numeroWhatsapp) {
         const link = `https://wa.me/${numeroWhatsapp}?text=${mensagem}`;
         window.open(link, "_blank");
@@ -89,6 +92,7 @@ export default function Pedidos() {
       setGerandoRelatorio(false);
     }
   };
+  
 
   const pedidosFiltrados = pedidos.filter((p) => {
     const statusOk = filtroStatus === "todos" || p.status === filtroStatus;
