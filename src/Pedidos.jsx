@@ -26,7 +26,18 @@ export default function Pedidos() {
   useEffect(() => {
     fetchPedidos();
   }, []);
+  const marcarComoEntregue = async (id) => {
 
+    try {
+      await axios.patch(`${API_URL}/orders/${id}/deliver`);
+      toast.success("Pedido marcado como entregue!");
+      fetchPedidos();
+    } catch (err) {
+      console.error("Erro ao marcar como entregue:", err);
+      toast.error("Erro ao atualizar pedido.");
+    }
+  };
+  
   const confirmarPedido = async () => {
     if (!pedidoSelecionado) return;
 
@@ -143,22 +154,33 @@ export default function Pedidos() {
                   ))}
                 </ul>
 
-                <div className="mt-4 flex gap-2">
-                  {pedido.status === "pendente" && (
-                    <button
-                      onClick={() => setPedidoSelecionado(pedido)}
-                      className="rounded bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
-                    >
-                      ✅ Confirmar Pagamento
-                    </button>
-                  )}
-                  <button
-                    onClick={() => excluirPedido(pedido.id)}
-                    className="rounded bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
-                  >
-                    🗑 Excluir Pedido
-                  </button>
-                </div>
+                <div className="mt-4 flex gap-2 flex-wrap">
+  {pedido.status === "pendente" && (
+    <button
+      onClick={() => setPedidoSelecionado(pedido)}
+      className="rounded bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
+    >
+      ✅ Confirmar Pagamento
+    </button>
+  )}
+
+  {pedido.status === "pago" && (
+    <button
+      onClick={() => marcarComoEntregue(pedido.id)}
+      className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+    >
+      📬 Marcar como Entregue
+    </button>
+  )}
+
+  <button
+    onClick={() => excluirPedido(pedido.id)}
+    className="rounded bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+  >
+    🗑 Excluir Pedido
+  </button>
+</div>
+
               </div>
             ))}
           </div>
