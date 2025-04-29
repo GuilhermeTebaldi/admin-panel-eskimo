@@ -109,6 +109,7 @@ export default function Pedidos() {
               >
                 <div className="mb-3 space-y-1 text-sm text-gray-700">
                   <div><strong>Cliente:</strong> {pedido.customerName}</div>
+                  <div><strong>Telefone:</strong> {pedido.phoneNumber || "Não informado"}</div>
                   <div><strong>Unidade:</strong> {pedido.store}</div>
                   <div><strong>Entrega:</strong> {pedido.deliveryType}</div>
                   {pedido.address && (
