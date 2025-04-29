@@ -11,6 +11,8 @@ export default function Pedidos() {
   const [pedidoSelecionado, setPedidoSelecionado] = useState(null);
   const [filtroStatus, setFiltroStatus] = useState("todos");
   const [filtroStore, setFiltroStore] = useState("todos");
+  const [numeroWhatsapp, setNumeroWhatsapp] = useState("");
+  const [gerandoRelatorio, setGerandoRelatorio] = useState(false);
 
   const lojasFixas = ["Efapi", "Palmital", "Passo dos Fortes"];
 
@@ -19,15 +21,17 @@ export default function Pedidos() {
     axios
       .get(`${API_URL}/orders`)
       .then((res) => setPedidos(res.data))
-      .catch((err) => console.error("Erro ao buscar pedidos:", err))
+      .catch(() => {
+        toast.error("Erro ao buscar pedidos.");
+      })
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
     fetchPedidos();
   }, []);
-  const marcarComoEntregue = async (id) => {
 
+  const marcarComoEntregue = async (id) => {
     try {
       await axios.patch(`${API_URL}/orders/${id}/deliver`);
       toast.success("Pedido marcado como entregue!");
@@ -37,7 +41,7 @@ export default function Pedidos() {
       toast.error("Erro ao atualizar pedido.");
     }
   };
-  
+
   const confirmarPedido = async () => {
     if (!pedidoSelecionado) return;
 
@@ -63,6 +67,26 @@ export default function Pedidos() {
     } catch (err) {
       console.error("Erro ao excluir pedido:", err);
       toast.error("Erro ao excluir pedido.");
+    }
+  };
+
+  const gerarRelatoriosPDF = async () => {
+    setGerandoRelatorio(true);
+    toast.info("Gerando PDFs das lojas...");
+
+    try {
+      const mensagem = encodeURIComponent("Segue os relatórios das 3 lojas em anexo.");
+      if (numeroWhatsapp) {
+        const link = `https://wa.me/${numeroWhatsapp}?text=${mensagem}`;
+        window.open(link, "_blank");
+      } else {
+        toast.warning("Nenhum número de WhatsApp informado.");
+      }
+    } catch (err) {
+      console.error("Erro ao gerar relatórios:", err);
+      toast.error("Erro ao gerar relatórios");
+    } finally {
+      setGerandoRelatorio(false);
     }
   };
 
@@ -106,6 +130,45 @@ export default function Pedidos() {
             </button>
           </div>
         </div>
+
+        <div className="mb-10 rounded-lg border border-blue-200 bg-white p-4 shadow-sm">
+          <h2 className="mb-2 text-lg font-bold text-blue-800">📤 Prestação de Contas</h2>
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+            <input
+              type="tel"
+              placeholder="Número do WhatsApp (ex: 554999999999)"
+              className="w-full rounded border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-200"
+              value={numeroWhatsapp}
+              onChange={(e) => setNumeroWhatsapp(e.target.value)}
+            />
+            <button
+              onClick={gerarRelatoriosPDF}
+              disabled={gerandoRelatorio}
+              className="mt-2 w-full rounded bg-blue-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-700 sm:mt-0 sm:w-auto"
+            >
+              {gerandoRelatorio ? "Gerando..." : "📄 Gerar & Enviar PDFs"}
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2 mt-3">
+            <a href={`${API_URL}/reports/efapi`} target="_blank" className="text-sm text-blue-600 hover:underline">
+              ⬇️ Baixar PDF - Efapi
+            </a>
+            <a href={`${API_URL}/reports/palmital`} target="_blank" className="text-sm text-blue-600 hover:underline">
+              ⬇️ Baixar PDF - Palmital
+            </a>
+            <a href={`${API_URL}/reports/passodosfortes`} target="_blank" className="text-sm text-blue-600 hover:underline">
+              ⬇️ Baixar PDF - Passo dos Fortes
+            </a>
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            O sistema gera 3 arquivos PDF (Efapi, Palmital, Passo) com os pedidos e abre o WhatsApp para envio.
+          </p>
+        </div>
+
+        {/* Resto da tela permanece igual... */}
+
+    
+
 
         {loading ? (
           <div className="text-center text-lg text-gray-500">Carregando pedidos...</div>
