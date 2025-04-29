@@ -75,16 +75,18 @@ export default function Pedidos() {
     toast.info("Gerando PDFs das lojas...");
   
     try {
+      // Garante que o número comece com 55 (Brasil)
+      let numero = numeroWhatsapp.trim();
+      if (!numero.startsWith("55")) {
+        numero = "55" + numero;
+      }
+  
       const mensagem = encodeURIComponent(
-        `Segue os relatórios das 3 lojas:\n📄 Efapi: ${API_URL}/reports/efapi\n📄 Palmital: ${API_URL}/reports/palmital\n📄 Passo dos Fortes: ${API_URL}/reports/passodosfortes`
+        `Segue os relatórios das 3 lojas em PDF:\n📄 Efapi: ${API_URL}/reports/efapi\n📄 Palmital: ${API_URL}/reports/palmital\n📄 Passo dos Fortes: ${API_URL}/reports/passodosfortes`
       );
   
-      if (numeroWhatsapp) {
-        const link = `https://wa.me/${numeroWhatsapp}?text=${mensagem}`;
-        window.open(link, "_blank");
-      } else {
-        toast.warning("Nenhum número de WhatsApp informado.");
-      }
+      const link = `https://wa.me/${numero}?text=${mensagem}`;
+      window.open(link, "_blank");
     } catch (err) {
       console.error("Erro ao gerar relatórios:", err);
       toast.error("Erro ao gerar relatórios");
@@ -92,6 +94,7 @@ export default function Pedidos() {
       setGerandoRelatorio(false);
     }
   };
+  
   
 
   const pedidosFiltrados = pedidos.filter((p) => {
