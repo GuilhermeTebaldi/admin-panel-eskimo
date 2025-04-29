@@ -10,6 +10,9 @@ export default function Pedidos() {
   const [loading, setLoading] = useState(true);
   const [pedidoSelecionado, setPedidoSelecionado] = useState(null);
   const [filtroStatus, setFiltroStatus] = useState("todos");
+  const [filtroStore, setFiltroStore] = useState("todos");
+
+  const lojasFixas = ["Efapi", "Palmital", "Passo dos Fortes"];
 
   const fetchPedidos = () => {
     setLoading(true);
@@ -52,10 +55,11 @@ export default function Pedidos() {
     }
   };
 
-  const pedidosFiltrados =
-    filtroStatus === "todos"
-      ? pedidos
-      : pedidos.filter((p) => p.status === filtroStatus);
+  const pedidosFiltrados = pedidos.filter((p) => {
+    const statusOk = filtroStatus === "todos" || p.status === filtroStatus;
+    const storeOk = filtroStore === "todos" || p.store === filtroStore;
+    return statusOk && storeOk;
+  });
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-white to-gray-50 py-10 px-4 text-gray-800">
@@ -63,6 +67,16 @@ export default function Pedidos() {
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-3xl font-extrabold text-gray-900">📦 Pedidos Recebidos</h1>
           <div className="flex flex-wrap gap-2">
+            <select
+              className="rounded-md border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700 shadow-sm hover:border-gray-400"
+              value={filtroStore}
+              onChange={(e) => setFiltroStore(e.target.value)}
+            >
+              <option value="todos">Todas as Unidades</option>
+              {lojasFixas.map((store) => (
+                <option key={store} value={store}>{store}</option>
+              ))}
+            </select>
             <select
               className="rounded-md border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700 shadow-sm hover:border-gray-400"
               value={filtroStatus}
@@ -167,7 +181,7 @@ export default function Pedidos() {
               </button>
               <button
                 onClick={confirmarPedido}
-                className="rounded bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700"
+                className="rounded bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
               >
                 Confirmar
               </button>
