@@ -1,31 +1,56 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-const API_URL = "https://backend-eskimo.onrender.com/api"; // ou http://localhost:8080/api se local
+const API_URL = "https://backend-eskimo.onrender.com/api";
 
 export default function Pedidos() {
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchPedidos = () => {
+    setLoading(true);
     axios
       .get(`${API_URL}/orders`)
       .then((res) => setPedidos(res.data))
       .catch((err) => console.error("Erro ao buscar pedidos:", err))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchPedidos();
   }, []);
-<div className="mb-4">
-  <button
-    onClick={() => window.history.back()}
-    className="rounded bg-blue-500 px-4 py-2 text-white shadow hover:bg-blue-600 transition"
-  >
-    ← Voltar para o Painel
-  </button>
-</div>
+
+  const confirmarPedido = async (id) => {
+    try {
+      await axios.patch(`${API_URL}/orders/${id}/confirm`);
+      fetchPedidos();
+    } catch (err) {
+      console.error("Erro ao confirmar pedido:", err);
+    }
+  };
+
+  const excluirPedido = async (id) => {
+    const confirmar = window.confirm("Tem certeza que deseja excluir este pedido?");
+    if (!confirmar) return;
+
+    try {
+      await axios.delete(`${API_URL}/orders/${id}`);
+      fetchPedidos();
+    } catch (err) {
+      console.error("Erro ao excluir pedido:", err);
+    }
+  };
 
   return (
     <div className="p-6">
       <h1 className="mb-4 text-2xl font-bold">📦 Pedidos Recebidos</h1>
+
+      <button
+        onClick={() => window.history.back()}
+        className="mb-4 rounded bg-gray-200 px-4 py-1 text-sm text-gray-700 hover:bg-gray-300"
+      >
+        ← Voltar
+      </button>
 
       {loading ? (
         <p>Carregando pedidos...</p>
@@ -53,6 +78,19 @@ export default function Pedidos() {
                   </>
                 )}
                 <strong>Total:</strong> R$ {pedido.total.toFixed(2)}
+                <br />
+                <strong>Status:</strong>{" "}
+                <span
+                  className={`font-bold ${
+                    pedido.status === "pago"
+                      ? "text-green-600"
+                      : pedido.status === "entregue"
+                      ? "text-blue-600"
+                      : "text-yellow-600"
+                  }`}
+                >
+                  {pedido.status.toUpperCase()}
+                </span>
               </div>
 
               <ul className="mt-2 space-y-1 text-sm text-gray-700">
@@ -67,6 +105,23 @@ export default function Pedidos() {
                   </li>
                 ))}
               </ul>
+
+              <div className="mt-4 flex gap-2">
+                {pedido.status === "pendente" && (
+                  <button
+                    onClick={() => confirmarPedido(pedido.id)}
+                    className="rounded bg-green-600 px-4 py-1 text-sm text-white hover:bg-green-700"
+                  >
+                    ✅ Confirmar Pagamento
+                  </button>
+                )}
+                <button
+                  onClick={() => excluirPedido(pedido.id)}
+                  className="rounded bg-red-600 px-4 py-1 text-sm text-white hover:bg-red-700"
+                >
+                  🗑 Excluir Pedido
+                </button>
+              </div>
             </div>
           ))}
         </div>
