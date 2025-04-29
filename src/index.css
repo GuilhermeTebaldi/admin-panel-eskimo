@@ -1,6 +1,10 @@
-@import "tailwindcss/preflight";
-@import "tailwindcss/utilities";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-body {
+html,
+body,
+#root {
+  height: 100%;
   font-family: 'Inter', sans-serif;
 }
