@@ -58,6 +58,8 @@ function MainApp() {
         
         {/* ✅ ROTA NOVA PARA PEDIDOS */}
         <Route path="/pedidos" element={<PrivateRoute><Pedidos /></PrivateRoute>} />
+        
+
       </Routes>
 
       <ToastContainer
