@@ -189,6 +189,7 @@ export default function Pedidos() {
                 className="rounded-xl border border-gray-100 bg-white p-6 shadow-md hover:shadow-lg transition"
               >
                 <div className="mb-3 space-y-1 text-sm text-gray-700">
+                <div><strong>Número do Pedido:</strong> #{pedido.id}</div>
                   <div><strong>Cliente:</strong> {pedido.customerName}</div>
                   <div><strong>Telefone:</strong> {pedido.phoneNumber || "Não informado"}</div>
                   <div><strong>Unidade:</strong> {pedido.store}</div>
