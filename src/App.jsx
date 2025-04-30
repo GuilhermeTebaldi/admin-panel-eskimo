@@ -20,8 +20,6 @@ export default function AdminPanel() {
   const [subcategories, setSubcategories] = useState([]);
   const [filteredSubcategories, setFilteredSubcategories] = useState([]);
   const [subcategoryId, setSubcategoryId] = useState("");
-  
-
 
   useEffect(() => {
     fetchCategories();
@@ -147,27 +145,20 @@ export default function AdminPanel() {
           <div style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
             <button type="submit" style={btnPrimary}>Cadastrar Produto</button>
             <button type="button" onClick={() => navigate("/produtos")} style={btnOutline}>📦 Ver Produtos</button>
-            <button
-  type="button"
-  onClick={() => navigate("/pedidos")}
-  style={btnOutline}
->
-  ✅ Ver Pedidos
-</button>
-
-
-
-
+            <button type="button" onClick={() => navigate("/pedidos")} style={btnOutline}>✅ Ver Pedidos</button>
+            <button type="button" onClick={() => navigate("/configuracoes")} style={btnOutline}>⚙️ Configurações de Entrega</button>
           </div>
-        </form><h1 style={{ 
-  fontSize: "1.0rem", 
-  color: "#065f46", 
-  fontWeight: "bold", 
-  marginBottom: "1rem", 
-  textAlign: "center" // ✅ adiciona centralização
-}}>
-  Volpesites 🦊
-</h1>
+        </form>
+
+        <h1 style={{ 
+          fontSize: "1.0rem", 
+          color: "#065f46", 
+          fontWeight: "bold", 
+          marginBottom: "1rem", 
+          textAlign: "center"
+        }}>
+          Volpesites 🦊
+        </h1>
       </div>
     </div>
   );
@@ -188,6 +179,7 @@ function Input({ label, name, value, onChange }) {
     </div>
   );
 }
+
 const labelStyle = {
   marginBottom: "0.25rem",
   fontSize: "0.875rem",

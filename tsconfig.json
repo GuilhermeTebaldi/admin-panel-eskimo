@@ -10,7 +10,10 @@
     "moduleResolution": "node",
     "allowJs": true,
     "checkJs": false,
-    "noEmit": true
+    "noEmit": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true, 
+    "strict": false
   },
   "include": ["src"],
   "exclude": ["node_modules"]

@@ -194,6 +194,7 @@ export default function Pedidos() {
                   <div><strong>Telefone:</strong> {pedido.phoneNumber || "Não informado"}</div>
                   <div><strong>Unidade:</strong> {pedido.store}</div>
                   <div><strong>Entrega:</strong> {pedido.deliveryType}</div>
+                
                   {pedido.address && (
                     <div className="text-gray-600">
                       <strong>Endereço:</strong> {pedido.address}, {pedido.street}, nº {pedido.number} {pedido.complement && `, ${pedido.complement}`}

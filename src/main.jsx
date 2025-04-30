@@ -5,7 +5,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import "./index.css";
 import './index.css';
-
+import SettingsManager from "./SettingsManager";
 
 import Pedidos from "./Pedidos";
 import App from "./App.jsx";
@@ -57,6 +57,7 @@ function MainApp() {
         <Route path="/cadastro" element={<PrivateRoute><App /></PrivateRoute>} />
         <Route path="/produtos" element={<PrivateRoute><ProductList /></PrivateRoute>} />
         <Route path="/categorias" element={<PrivateRoute><CategoryManager /></PrivateRoute>} />
+        <Route path="/configuracoes" element={<SettingsManager />} />
         
         {/* ✅ ROTA NOVA PARA PEDIDOS */}
         <Route path="/pedidos" element={<PrivateRoute><Pedidos /></PrivateRoute>} />
