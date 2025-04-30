@@ -216,13 +216,23 @@ export default function Pedidos() {
                 </div>
 
                 <ul className="mt-3 divide-y divide-gray-100 text-sm">
-                  {pedido.items.map((item, index) => (
-                    <li key={index} className="flex justify-between py-1">
-                      <span>{item.name} (x{item.quantity})</span>
-                      <span className="font-medium">R$ {(item.price * item.quantity).toFixed(2)}</span>
-                    </li>
-                  ))}
-                </ul>
+  {pedido.items.map((item, index) => (
+    <li key={index} className="flex items-center justify-between gap-4 py-2">
+      <div className="flex items-center gap-2">
+        <img
+          src={item.imageUrl}
+          alt={item.name}
+          className="h-10 w-10 rounded-md object-cover border border-gray-200"
+        />
+        <span>
+          {item.name} (x{item.quantity})
+        </span>
+      </div>
+      <span className="font-medium">R$ {(item.price * item.quantity).toFixed(2)}</span>
+    </li>
+  ))}
+</ul>
+
 
                 <div className="mt-4 flex gap-2 flex-wrap">
   {pedido.status === "pendente" && (

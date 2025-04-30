@@ -154,42 +154,68 @@ export default function ProductList() {
         </div>
 
         <div style={{ overflowX: "auto", borderRadius: "0.5rem" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead style={{ background: "#d1fae5", color: "#065f46" }}>
-              <tr>
-                <th style={thStyle}>Nome</th>
-                <th style={thStyle}>Preço</th>
-                <th style={thStyle}>Estoque</th>
-                <th style={thStyle}>Categoria</th>
-                <th style={thStyle}>Subcategoria</th>
-                <th style={thStyle}>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <tr><td colSpan="6" style={loadingStyle}>🔄 Carregando produtos...</td></tr>
-              ) : filteredProducts.length === 0 ? (
-                <tr><td colSpan="6" style={emptyStyle}>Nenhum produto encontrado.</td></tr>
-              ) : (
-                filteredProducts.map((p) => (
-                  <tr key={p.id} style={{ animation: "fadeInRow 0.5s ease both", borderTop: "1px solid #e5e7eb" }}>
-                    <td style={tdStyle}>{p.name}</td>
-                    <td style={tdStyle}>R$ {p.price.toFixed(2)}</td>
-                    <td style={tdStyle}>{p.stock}</td>
-                    <td style={tdStyle}>{p.categoryName}</td>
-                    <td style={tdStyle}>{p.subcategoryName || "—"}</td>
-                    <td style={tdStyle}>
-                      <button onClick={() => handleEdit(p)} style={{ ...btnOutline, marginRight: "0.5rem" }} className="btn-outline">Editar</button>
-                      <button onClick={() => handleDelete(p.id)} style={btnDangerSmall} className="btn-danger">Excluir</button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
+  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+    <thead style={{ background: "#d1fae5", color: "#065f46" }}>
+      <tr>
+        <th style={thStyle}>Nome</th>
+        <th style={thStyle}>Preço</th>
+        <th style={thStyle}>Estoque</th>
+        <th style={thStyle}>Categoria</th>
+        <th style={thStyle}>Subcategoria</th>
+        <th style={thStyle}>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {isLoading ? (
+        <tr><td colSpan="6" style={loadingStyle}>🔄 Carregando produtos...</td></tr>
+      ) : filteredProducts.length === 0 ? (
+        <tr><td colSpan="6" style={emptyStyle}>Nenhum produto encontrado.</td></tr>
+      ) : (
+        filteredProducts.map((p) => (
+          <tr key={p.id} style={{ animation: "fadeInRow 0.5s ease both", borderTop: "1px solid #e5e7eb" }}>
+            <td style={tdStyle}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                <img
+                  src={p.imageUrl}
+                  alt={p.name}
+                  style={{
+                    width: "50px",
+                    height: "50px",
+                    objectFit: "cover",
+                    borderRadius: "0.5rem",
+                    border: "1px solid #e5e7eb"
+                  }}
+                />
+                <span>{p.name}</span>
+              </div>
+            </td>
+            <td style={tdStyle}>R$ {p.price.toFixed(2)}</td>
+            <td style={tdStyle}>{p.stock}</td>
+            <td style={tdStyle}>{p.categoryName}</td>
+            <td style={tdStyle}>{p.subcategoryName || "—"}</td>
+            <td style={tdStyle}>
+              <button
+                onClick={() => handleEdit(p)}
+                style={{ ...btnOutline, marginRight: "0.5rem" }}
+                className="btn-outline"
+              >
+                Editar
+              </button>
+              <button
+                onClick={() => handleDelete(p.id)}
+                style={btnDangerSmall}
+                className="btn-danger"
+              >
+                Excluir
+              </button>
+            </td>
+          </tr>
+        ))
+      )}
+    </tbody>
+  </table>
+</div>
+</div>
       {editingProduct && (
         <div style={editorStyle}>
           <h2 style={{ fontSize: "1.75rem", fontWeight: "bold", color: "#065f46", marginBottom: "1.5rem" }}>✏️ Editar Produto</h2>
