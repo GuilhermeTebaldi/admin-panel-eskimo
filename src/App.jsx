@@ -36,7 +36,6 @@ export default function AdminPanel() {
       console.error("Erro ao carregar categorias:", error);
     }
   };
-
   const fetchSubcategories = async () => {
     try {
       const result = await axios.get(`${API_URL}/subcategories`, {
