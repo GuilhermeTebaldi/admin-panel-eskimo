@@ -261,6 +261,42 @@ export default function ProductList() {
           </div>
           <div style={{ marginBottom: "1.5rem" }}>
             <label style={{ ...labelStyle, marginBottom: "0.5rem" }}>Exibir nas unidades:</label>
+            {/* 👉 Botão para selecionar todas as lojas */}
+  <button
+    type="button"
+    onClick={() => setVisibleStores(["efapi", "palmital", "passo"])}
+    style={{
+      background: "#e0f2fe",
+      color: "#0369a1",
+      padding: "0.3rem 0.8rem",
+      borderRadius: "0.5rem",
+      fontSize: "0.75rem",
+      marginBottom: "0.5rem",
+    }}
+  >
+    ✅ Selecionar todas as lojas
+  </button>
+
+  <div style={{ display: "flex", gap: "1.5rem" }}>
+    {["efapi", "palmital", "passo"].map((store) => (
+      <label key={store} style={{ fontSize: "1rem", color: "#374151" }}>
+        <input
+          type="checkbox"
+          checked={visibleStores.includes(store)}
+          onChange={() => {
+            setVisibleStores((prev) =>
+              prev.includes(store)
+                ? prev.filter((s) => s !== store)
+                : [...prev, store]
+            );
+          }}
+          style={{ marginRight: "0.5rem" }}
+        />
+        {store.charAt(0).toUpperCase() + store.slice(1)}
+      </label>
+    ))}
+  </div>
+
             <div style={{ display: "flex", gap: "1.5rem" }}>
               {["efapi", "palmital", "passo"].map((store) => (
                 <label key={store} style={{ fontSize: "1rem", color: "#374151" }}>
@@ -278,6 +314,7 @@ export default function ProductList() {
                   />
                   {store.charAt(0).toUpperCase() + store.slice(1)}
                 </label>
+                
               ))}
             </div>
           </div>
