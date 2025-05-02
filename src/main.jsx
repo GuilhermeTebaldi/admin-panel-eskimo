@@ -58,7 +58,6 @@ function MainApp() {
         <Route path="/produtos" element={<PrivateRoute><ProductList /></PrivateRoute>} />
         <Route path="/categorias" element={<PrivateRoute><CategoryManager /></PrivateRoute>} />
         <Route path="/configuracoes" element={<SettingsManager />} />
-        
         {/* ✅ ROTA NOVA PARA PEDIDOS */}
         <Route path="/pedidos" element={<PrivateRoute><Pedidos /></PrivateRoute>} />
         

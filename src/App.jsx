@@ -21,6 +21,8 @@ export default function AdminPanel() {
   const [filteredSubcategories, setFilteredSubcategories] = useState([]);
   const [subcategoryId, setSubcategoryId] = useState("");
 
+  const [visibleStores, setVisibleStores] = useState([]); // ✅ lojas visíveis
+
   useEffect(() => {
     fetchCategories();
     fetchSubcategories();
@@ -36,6 +38,7 @@ export default function AdminPanel() {
       console.error("Erro ao carregar categorias:", error);
     }
   };
+
   const fetchSubcategories = async () => {
     try {
       const result = await axios.get(`${API_URL}/subcategories`, {
@@ -59,6 +62,14 @@ export default function AdminPanel() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const handleStoreToggle = (store) => {
+    setVisibleStores((prev) =>
+      prev.includes(store)
+        ? prev.filter((s) => s !== store)
+        : [...prev, store]
+    );
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const data = {
@@ -72,15 +83,26 @@ export default function AdminPanel() {
     };
 
     try {
-      await axios.post(`${API_URL}/products`, data, {
+      const res = await axios.post(`${API_URL}/products`, data, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`
+        }
+      });
+
+      const productId = res.data.id;
+
+      // ✅ Envia visibilidade por loja
+      await axios.post(`${API_URL}/products/${productId}/visibility`, visibleStores, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`
         }
       });
 
       alert("✅ Produto cadastrado com sucesso!");
+
       setForm({ name: "", description: "", price: "", imageUrl: "", stock: "100", categoryId: "" });
       setSubcategoryId("");
+      setVisibleStores([]); // limpa visibilidade também
     } catch (error) {
       console.error("Erro:", error.response?.data || error.message);
       alert("❌ Erro ao salvar produto.");
@@ -139,6 +161,24 @@ export default function AdminPanel() {
                 <option key={sub.id} value={sub.id}>{sub.name}</option>
               ))}
             </select>
+          </div>
+
+          {/* ✅ CHECKBOX DE LOJAS */}
+          <div style={{ gridColumn: "span 2", textAlign: "left" }}>
+            <label style={{ ...labelStyle, marginBottom: "0.5rem" }}>Exibir nas unidades:</label>
+            <div style={{ display: "flex", gap: "1.5rem" }}>
+              {["efapi", "palmital", "passo"].map((store) => (
+                <label key={store} style={{ fontSize: "1rem", color: "#374151" }}>
+                  <input
+                    type="checkbox"
+                    checked={visibleStores.includes(store)}
+                    onChange={() => handleStoreToggle(store)}
+                    style={{ marginRight: "0.5rem" }}
+                  />
+                  {store.charAt(0).toUpperCase() + store.slice(1)}
+                </label>
+              ))}
+            </div>
           </div>
 
           <div style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
