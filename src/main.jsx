@@ -4,9 +4,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import "./index.css";
-import './index.css';
-import SettingsManager from "./SettingsManager";
 
+import SettingsManager from "./SettingsManager";
 import Pedidos from "./Pedidos";
 import App from "./App.jsx";
 import ProductList from "./ProductList.jsx";
@@ -14,8 +13,9 @@ import Login from "./Login.jsx";
 import PrivateRoute from "./PrivateRoute.jsx";
 import HomePublic from "./HomePublic";
 import CategoryManager from "./pages/CategoryManager";
+import EstoquePorLoja from "./pages/EstoquePorLoja";
 
-// 🦊 Cria o componente SplashScreen diretamente aqui
+// 🦊 Splash screen para carregamento inicial
 function SplashScreen() {
   return (
     <div style={{
@@ -37,17 +37,16 @@ function SplashScreen() {
   );
 }
 
+// 🌐 App principal com rotas
 function MainApp() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 1500); // 1.5 segundos de splash
+    const timer = setTimeout(() => setLoading(false), 1500);
     return () => clearTimeout(timer);
   }, []);
 
-  if (loading) {
-    return <SplashScreen />;
-  }
+  if (loading) return <SplashScreen />;
 
   return (
     <>
@@ -57,11 +56,9 @@ function MainApp() {
         <Route path="/cadastro" element={<PrivateRoute><App /></PrivateRoute>} />
         <Route path="/produtos" element={<PrivateRoute><ProductList /></PrivateRoute>} />
         <Route path="/categorias" element={<PrivateRoute><CategoryManager /></PrivateRoute>} />
-        <Route path="/configuracoes" element={<SettingsManager />} />
-        {/* ✅ ROTA NOVA PARA PEDIDOS */}
+        <Route path="/configuracoes" element={<PrivateRoute><SettingsManager /></PrivateRoute>} />
         <Route path="/pedidos" element={<PrivateRoute><Pedidos /></PrivateRoute>} />
-        
-
+        <Route path="/estoque" element={<PrivateRoute><EstoquePorLoja /></PrivateRoute>} />
       </Routes>
 
       <ToastContainer
@@ -70,7 +67,6 @@ function MainApp() {
         hideProgressBar={false}
         newestOnTop
         closeOnClick
-        rtl={false}
         pauseOnFocusLoss
         draggable
         pauseOnHover
@@ -80,6 +76,7 @@ function MainApp() {
   );
 }
 
+// 🧠 Renderização do app
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>

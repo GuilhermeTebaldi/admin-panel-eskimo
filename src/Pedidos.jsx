@@ -174,9 +174,6 @@ export default function Pedidos() {
 
         {/* Resto da tela permanece igual... */}
 
-    
-
-
         {loading ? (
           <div className="text-center text-lg text-gray-500">Carregando pedidos...</div>
         ) : pedidosFiltrados.length === 0 ? (

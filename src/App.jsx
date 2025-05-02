@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import EstoquePorLoja from "./pages/EstoquePorLoja";
 
 const API_URL = "https://backend-eskimo.onrender.com/api";
 
@@ -186,6 +187,10 @@ export default function AdminPanel() {
             <button type="button" onClick={() => navigate("/produtos")} style={btnOutline}>📦 Ver Produtos</button>
             <button type="button" onClick={() => navigate("/pedidos")} style={btnOutline}>✅ Ver Pedidos</button>
             <button type="button" onClick={() => navigate("/configuracoes")} style={btnOutline}>⚙️ Configurações de Entrega</button>
+            <button type="button" onClick={() => navigate("/estoque")} style={btnOutline}>
+    🏪 Estoque por Loja
+  </button>
+
           </div>
         </form>
 
