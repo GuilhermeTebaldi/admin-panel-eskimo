@@ -15,6 +15,7 @@ export default function ProductList() {
   const [editingProduct, setEditingProduct] = useState(null);
   const [form, setForm] = useState({ id: null, name: "", description: "", price: "", imageUrl: "", stock: "", categoryId: "", subcategoryId: "" });
   const [isLoading, setIsLoading] = useState(false);
+  const [visibleStores, setVisibleStores] = useState([]);
 
   const navigate = useNavigate();
 
@@ -71,7 +72,7 @@ export default function ProductList() {
     }
   };
 
-  const handleEdit = (product) => {
+  const handleEdit = async (product) => {
     setEditingProduct(product);
     setForm({
       id: product.id,
@@ -83,6 +84,16 @@ export default function ProductList() {
       categoryId: product.categoryId.toString(),
       subcategoryId: product.subcategoryId ? product.subcategoryId.toString() : "",
     });
+
+    try {
+      const res = await axios.get(`${API_URL}/products/${product.id}/visibility`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      setVisibleStores(res.data);
+    } catch (err) {
+      console.error("Erro ao buscar visibilidade:", err);
+      setVisibleStores([]);
+    }
   };
 
   const handleUpdate = async () => {
@@ -96,6 +107,11 @@ export default function ProductList() {
       }, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
+
+      await axios.post(`${API_URL}/products/${form.id}/visibility`, visibleStores, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+
       alert("✅ Produto atualizado com sucesso!");
       setEditingProduct(null);
       fetchProducts();
@@ -108,6 +124,7 @@ export default function ProductList() {
   const handleCancelEdit = () => {
     setEditingProduct(null);
     setForm({ id: null, name: "", description: "", price: "", imageUrl: "", stock: "", categoryId: "", subcategoryId: "" });
+    setVisibleStores([]);
   };
 
   const handleChange = (e) => {
@@ -119,7 +136,6 @@ export default function ProductList() {
     navigate("/");
   };
 
-  // CSS Global (aplicado 1x)
   if (typeof window !== "undefined") {
     const styleTag = document.createElement("style");
     styleTag.innerHTML = `
@@ -216,7 +232,7 @@ export default function ProductList() {
   </table>
 </div>
 </div>
-      {editingProduct && (
+{editingProduct && (
         <div style={editorStyle}>
           <h2 style={{ fontSize: "1.75rem", fontWeight: "bold", color: "#065f46", marginBottom: "1.5rem" }}>✏️ Editar Produto</h2>
           {["name", "description", "price", "imageUrl", "stock"].map((field) => (
@@ -242,6 +258,28 @@ export default function ProductList() {
                 <option key={sub.id} value={sub.id}>{sub.name}</option>
               ))}
             </select>
+          </div>
+          <div style={{ marginBottom: "1.5rem" }}>
+            <label style={{ ...labelStyle, marginBottom: "0.5rem" }}>Exibir nas unidades:</label>
+            <div style={{ display: "flex", gap: "1.5rem" }}>
+              {["efapi", "palmital", "passo"].map((store) => (
+                <label key={store} style={{ fontSize: "1rem", color: "#374151" }}>
+                  <input
+                    type="checkbox"
+                    checked={visibleStores.includes(store)}
+                    onChange={() => {
+                      setVisibleStores((prev) =>
+                        prev.includes(store)
+                          ? prev.filter((s) => s !== store)
+                          : [...prev, store]
+                      );
+                    }}
+                    style={{ marginRight: "0.5rem" }}
+                  />
+                  {store.charAt(0).toUpperCase() + store.slice(1)}
+                </label>
+              ))}
+            </div>
           </div>
           <div style={{ display: "flex", gap: "1rem", marginTop: "2rem" }}>
             <button onClick={handleUpdate} style={btnPrimary}>💾 Salvar</button>
