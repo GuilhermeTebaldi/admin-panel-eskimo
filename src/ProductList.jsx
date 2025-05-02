@@ -108,7 +108,7 @@ export default function ProductList() {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
 
-      await axios.post(`${API_URL}/products/${form.id}/visibility`, { stores: visibleStores }, {
+      await axios.post(`${API_URL}/products/${form.id}/visibility`, visibleStores, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
 
@@ -116,7 +116,7 @@ export default function ProductList() {
       setEditingProduct(null);
       fetchProducts();
     } catch (err) {
-      console.error("Erro ao atualizar produto:", err);
+      console.error("Erro ao atualizar produto:", err.response?.data || err);
       alert("❌ Erro ao atualizar produto.");
     }
   };
