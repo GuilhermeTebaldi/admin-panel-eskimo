@@ -277,25 +277,7 @@ export default function ProductList() {
     ✅ Selecionar todas as lojas
   </button>
 
-  <div style={{ display: "flex", gap: "1.5rem" }}>
-    {["efapi", "palmital", "passo"].map((store) => (
-      <label key={store} style={{ fontSize: "1rem", color: "#374151" }}>
-        <input
-          type="checkbox"
-          checked={visibleStores.includes(store)}
-          onChange={() => {
-            setVisibleStores((prev) =>
-              prev.includes(store)
-                ? prev.filter((s) => s !== store)
-                : [...prev, store]
-            );
-          }}
-          style={{ marginRight: "0.5rem" }}
-        />
-        {store.charAt(0).toUpperCase() + store.slice(1)}
-      </label>
-    ))}
-  </div>
+  
 
             <div style={{ display: "flex", gap: "1.5rem" }}>
               {["efapi", "palmital", "passo"].map((store) => (
