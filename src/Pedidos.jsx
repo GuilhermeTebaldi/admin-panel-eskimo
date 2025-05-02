@@ -202,10 +202,11 @@ export default function Pedidos() {
                       <strong>Endereço:</strong> {pedido.address}, {pedido.street}, nº {pedido.number} {pedido.complement && `, ${pedido.complement}`}
                     </div>
                   )}
+                   <div> <strong>Entrega (frete):</strong> R$ {pedido.deliveryFee?.toFixed(2) ?? "0,00"}</div>
                   <div>
                     <strong>Total:</strong> R$ {pedido.total.toFixed(2)}
                   </div>
-                  <div> <strong>Entrega (frete):</strong> R$ {pedido.deliveryFee?.toFixed(2) ?? "0,00"}</div>
+                 
                   <div>
                     <strong>Status:</strong>{" "}
                     <span className={`font-semibold ${
