@@ -1,7 +1,7 @@
+// admin-panel/src/App.jsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import EstoquePorLoja from "./pages/EstoquePorLoja";
 
 const API_URL = "https://backend-eskimo.onrender.com/api";
 
@@ -13,7 +13,6 @@ export default function AdminPanel() {
     description: "",
     price: "",
     imageUrl: "",
-    stock: "100",
     categoryId: ""
   });
 
@@ -21,8 +20,7 @@ export default function AdminPanel() {
   const [subcategories, setSubcategories] = useState([]);
   const [filteredSubcategories, setFilteredSubcategories] = useState([]);
   const [subcategoryId, setSubcategoryId] = useState("");
-
-  const [visibleStores, setVisibleStores] = useState([]); // ✅ lojas visíveis
+  const [visibleStores, setVisibleStores] = useState([]);
 
   useEffect(() => {
     fetchCategories();
@@ -31,9 +29,7 @@ export default function AdminPanel() {
 
   const fetchCategories = async () => {
     try {
-      const result = await axios.get(`${API_URL}/categories`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-      });
+      const result = await axios.get(`${API_URL}/categories`, auth());
       setCategories(result.data);
     } catch (error) {
       console.error("Erro ao carregar categorias:", error);
@@ -42,9 +38,7 @@ export default function AdminPanel() {
 
   const fetchSubcategories = async () => {
     try {
-      const result = await axios.get(`${API_URL}/subcategories`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-      });
+      const result = await axios.get(`${API_URL}/subcategories`, auth());
       setSubcategories(result.data);
     } catch (error) {
       console.error("Erro ao carregar subcategorias:", error);
@@ -78,32 +72,20 @@ export default function AdminPanel() {
       description: form.description,
       price: parseFloat(form.price),
       imageUrl: form.imageUrl,
-      stock: parseInt(form.stock),
       categoryId: parseInt(form.categoryId),
       subcategoryId: subcategoryId ? parseInt(subcategoryId) : null
     };
 
     try {
-      const res = await axios.post(`${API_URL}/products`, data, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`
-        }
-      });
-
+      const res = await axios.post(`${API_URL}/products`, data, auth());
       const productId = res.data.id;
 
-      // ✅ Envia visibilidade por loja
-      await axios.post(`${API_URL}/products/${productId}/visibility`, visibleStores, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`
-        }
-      });
+      await axios.post(`${API_URL}/products/${productId}/visibility`, visibleStores, auth());
 
       alert("✅ Produto cadastrado com sucesso!");
-
-      setForm({ name: "", description: "", price: "", imageUrl: "", stock: "100", categoryId: "" });
+      setForm({ name: "", description: "", price: "", imageUrl: "", categoryId: "" });
       setSubcategoryId("");
-      setVisibleStores([]); // limpa visibilidade também
+      setVisibleStores([]);
     } catch (error) {
       console.error("Erro:", error.response?.data || error.message);
       alert("❌ Erro ao salvar produto.");
@@ -116,55 +98,25 @@ export default function AdminPanel() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f0fdf4", display: "flex", justifyContent: "center", alignItems: "center", padding: "2rem", animation: "fadeIn 0.8s ease-in-out" }}>
-      <div style={{ width: "100%", maxWidth: "1000px", background: "white", borderRadius: "1.5rem", padding: "3rem", boxShadow: "0 10px 30px rgba(0,0,0,0.1)", textAlign: "center" }}>
+    <div style={containerStyle}>
+      <div style={cardStyle}>
         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1rem" }}>
           <button onClick={handleLogout} style={btnDanger}>🚪 Sair</button>
         </div>
 
-        <h1 style={{ fontSize: "3rem", color: "#065f46", fontWeight: "800", marginBottom: "1.5rem" }}>Eskimó</h1>
-        <h2 style={{ fontSize: "2rem", color: "#065f46", fontWeight: "bold", marginBottom: "1rem" }}>Cadastro de Produto</h2>
+        <h1 style={titleStyle}>Eskimó</h1>
+        <h2 style={subtitleStyle}>Cadastro de Produto</h2>
+        <p style={textStyle}>Preencha os campos abaixo para adicionar um novo produto.</p>
 
-        <p style={{ fontSize: "1rem", color: "#4b5563", marginBottom: "2rem" }}>Preencha os campos abaixo para adicionar um novo produto.</p>
-
-        <form onSubmit={handleSubmit} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginBottom: "2rem" }}>
+        <form onSubmit={handleSubmit} style={formGridStyle}>
           <Input label="Nome" name="name" value={form.name} onChange={handleChange} />
           <Input label="Descrição" name="description" value={form.description} onChange={handleChange} />
           <Input label="Preço" name="price" value={form.price} onChange={handleChange} />
           <Input label="Imagem (URL)" name="imageUrl" value={form.imageUrl} onChange={handleChange} />
-          <Input label="Estoque" name="stock" value={form.stock} onChange={handleChange} />
 
-          <div style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
-            <label style={labelStyle}>Categoria</label>
-            <select
-              name="categoryId"
-              value={form.categoryId}
-              onChange={handleChange}
-              required
-              style={inputStyle}
-            >
-              <option value="">Selecione uma categoria</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
-              ))}
-            </select>
-          </div>
+          <Dropdown label="Categoria" name="categoryId" value={form.categoryId} onChange={handleChange} options={categories} />
+          <Dropdown label="Subcategoria" value={subcategoryId} onChange={(e) => setSubcategoryId(e.target.value)} options={filteredSubcategories} />
 
-          <div style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
-            <label style={labelStyle}>Subcategoria</label>
-            <select
-              value={subcategoryId}
-              onChange={(e) => setSubcategoryId(e.target.value)}
-              style={inputStyle}
-            >
-              <option value="">Selecione uma subcategoria</option>
-              {filteredSubcategories.map((sub) => (
-                <option key={sub.id} value={sub.id}>{sub.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* ✅ CHECKBOX DE LOJAS */}
           <div style={{ gridColumn: "span 2", textAlign: "left" }}>
             <label style={{ ...labelStyle, marginBottom: "0.5rem" }}>Exibir nas unidades:</label>
             <div style={{ display: "flex", gap: "1.5rem" }}>
@@ -182,27 +134,16 @@ export default function AdminPanel() {
             </div>
           </div>
 
-          <div style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          <div style={buttonGroupStyle}>
             <button type="submit" style={btnPrimary}>Cadastrar Produto</button>
             <button type="button" onClick={() => navigate("/produtos")} style={btnOutline}>📦 Ver Produtos</button>
             <button type="button" onClick={() => navigate("/pedidos")} style={btnOutline}>✅ Ver Pedidos</button>
             <button type="button" onClick={() => navigate("/configuracoes")} style={btnOutline}>⚙️ Configurações de Entrega</button>
-            <button type="button" onClick={() => navigate("/estoque")} style={btnOutline}>
-    🏪 Estoque por Loja
-  </button>
-
+            <button type="button" onClick={() => navigate("/estoque")} style={btnOutline}>🏪 Estoque por Loja</button>
           </div>
         </form>
 
-        <h1 style={{ 
-          fontSize: "1.0rem", 
-          color: "#065f46", 
-          fontWeight: "bold", 
-          marginBottom: "1rem", 
-          textAlign: "center"
-        }}>
-          Volpesites 🦊
-        </h1>
+        <h1 style={{ fontSize: "1.0rem", color: "#065f46", fontWeight: "bold", textAlign: "center" }}>Volpesites 🦊</h1>
       </div>
     </div>
   );
@@ -212,68 +153,73 @@ function Input({ label, name, value, onChange }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
       <label htmlFor={name} style={labelStyle}>{label}</label>
-      <input
-        id={name}
-        name={name}
-        value={value}
-        onChange={onChange}
-        required
-        style={inputStyle}
-      />
+      <input id={name} name={name} value={value} onChange={onChange} required style={inputStyle} />
     </div>
   );
 }
 
+function Dropdown({ label, name, value, onChange, options }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
+      <label style={labelStyle}>{label}</label>
+      <select name={name} value={value} onChange={onChange} style={inputStyle} required>
+        <option value="">Selecione...</option>
+        {options.map((opt) => (
+          <option key={opt.id} value={opt.id}>{opt.name}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+const auth = () => ({
+  headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+});
+
+const containerStyle = {
+  minHeight: "100vh", background: "#f0fdf4", display: "flex", justifyContent: "center", alignItems: "center", padding: "2rem", animation: "fadeIn 0.8s ease-in-out"
+};
+
+const cardStyle = {
+  width: "100%", maxWidth: "1000px", background: "white", borderRadius: "1.5rem", padding: "3rem", boxShadow: "0 10px 30px rgba(0,0,0,0.1)", textAlign: "center"
+};
+
+const formGridStyle = {
+  display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginBottom: "2rem"
+};
+
+const titleStyle = {
+  fontSize: "3rem", color: "#065f46", fontWeight: "800", marginBottom: "1.5rem"
+};
+
+const subtitleStyle = {
+  fontSize: "2rem", color: "#065f46", fontWeight: "bold", marginBottom: "1rem"
+};
+
+const textStyle = {
+  fontSize: "1rem", color: "#4b5563", marginBottom: "2rem"
+};
+
+const buttonGroupStyle = {
+  gridColumn: "span 2", display: "flex", flexDirection: "column", gap: "0.75rem"
+};
+
 const labelStyle = {
-  marginBottom: "0.25rem",
-  fontSize: "0.875rem",
-  color: "#374151",
+  marginBottom: "0.25rem", fontSize: "0.875rem", color: "#374151"
 };
 
 const inputStyle = {
-  width: "100%",
-  padding: "0.75rem",
-  borderRadius: "0.75rem",
-  border: "1px solid #cbd5e1",
-  background: "#f9fdfb",
-  color: "#111827",
-  fontSize: "1rem",
-  boxSizing: "border-box",
-  outline: "none",
-  transition: "border-color 0.3s ease",
+  width: "100%", padding: "0.75rem", borderRadius: "0.75rem", border: "1px solid #cbd5e1", background: "#f9fdfb", color: "#111827", fontSize: "1rem", boxSizing: "border-box", outline: "none", transition: "border-color 0.3s ease"
 };
 
 const btnPrimary = {
-  background: "#059669",
-  color: "white",
-  padding: "0.75rem 1.5rem",
-  fontWeight: "bold",
-  border: "none",
-  borderRadius: "0.75rem",
-  cursor: "pointer",
-  fontSize: "1rem",
-  transition: "background-color 0.3s ease",
+  background: "#059669", color: "white", padding: "0.75rem 1.5rem", fontWeight: "bold", border: "none", borderRadius: "0.75rem", cursor: "pointer", fontSize: "1rem", transition: "background-color 0.3s ease"
 };
 
 const btnDanger = {
-  background: "#dc2626",
-  color: "white",
-  padding: "0.5rem 1.25rem",
-  borderRadius: "0.75rem",
-  border: "none",
-  cursor: "pointer",
-  fontWeight: "bold",
-  transition: "background-color 0.3s ease",
+  background: "#dc2626", color: "white", padding: "0.5rem 1.25rem", borderRadius: "0.75rem", border: "none", cursor: "pointer", fontWeight: "bold", transition: "background-color 0.3s ease"
 };
 
 const btnOutline = {
-  background: "transparent",
-  color: "#065f46",
-  padding: "0.75rem 1.5rem",
-  fontWeight: "bold",
-  border: "2px solid #065f46",
-  borderRadius: "0.75rem",
-  cursor: "pointer",
-  fontSize: "1rem",
-  transition: "all 0.3s ease",
+  background: "transparent", color: "#065f46", padding: "0.75rem 1.5rem", fontWeight: "bold", border: "2px solid #065f46", borderRadius: "0.75rem", cursor: "pointer", fontSize: "1rem", transition: "all 0.3s ease"
 };

@@ -59,6 +59,8 @@ function MainApp() {
         <Route path="/configuracoes" element={<PrivateRoute><SettingsManager /></PrivateRoute>} />
         <Route path="/pedidos" element={<PrivateRoute><Pedidos /></PrivateRoute>} />
         <Route path="/estoque" element={<PrivateRoute><EstoquePorLoja /></PrivateRoute>} />
+       
+
       </Routes>
 
       <ToastContainer
