@@ -108,7 +108,7 @@ export default function ProductList() {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
 
-      await axios.post(`${API_URL}/products/${form.id}/visibility`, visibleStores, {
+      await axios.post(`${API_URL}/products/${form.id}/visibility`, { stores: visibleStores }, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
 
