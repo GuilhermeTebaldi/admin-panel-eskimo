@@ -194,6 +194,8 @@ export default function Pedidos() {
                   <div><strong>Telefone:</strong> {pedido.phoneNumber || "Não informado"}</div>
                   <div><strong>Unidade:</strong> {pedido.store}</div>
                   <div><strong>Entrega:</strong> {pedido.deliveryType}</div>
+                 
+
                 
                   {pedido.address && (
                     <div className="text-gray-600">
@@ -203,6 +205,7 @@ export default function Pedidos() {
                   <div>
                     <strong>Total:</strong> R$ {pedido.total.toFixed(2)}
                   </div>
+                  <div> <strong>Entrega (frete):</strong> R$ {pedido.deliveryFee?.toFixed(2) ?? "0,00"}</div>
                   <div>
                     <strong>Status:</strong>{" "}
                     <span className={`font-semibold ${
