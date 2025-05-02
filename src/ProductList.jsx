@@ -157,6 +157,44 @@ export default function ProductList() {
             <button onClick={() => navigate("/categorias")} style={btnOutline} className="btn-outline">Categorias</button>
             <button onClick={handleLogout} style={btnDanger} className="btn-danger">Sair</button>
           </div>
+          <button
+  onClick={async () => {
+    if (!window.confirm("Tem certeza que deseja exibir TODOS os produtos em todas as lojas?")) return;
+    try {
+      for (const p of products) {
+        await axios.post(`${API_URL}/products/${p.id}/visibility`, ["efapi", "palmital", "passo"], {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        });
+      }
+      alert("✅ Todos os produtos agora aparecem em todas as lojas.");
+    } catch (err) {
+      console.error("Erro ao aplicar visibilidade em massa:", err);
+      alert("❌ Ocorreu um erro ao atualizar os produtos.");
+    }
+  }}
+  style={{
+    background: "rgba(250, 204, 21, 0.25)",
+    color: "#1e293b",
+    border: "1px solid rgba(202, 138, 4, 0.5)",
+    borderRadius: "16px",
+    padding: "14px 30px",
+    fontWeight: "600",
+    backdropFilter: "blur(8px)",
+    WebkitBackdropFilter: "blur(8px)",
+    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
+    transition: "all 0.3s ease-in-out",
+    cursor: "pointer"
+  }}
+  onMouseEnter={(e) => {
+    e.target.style.background = "rgba(250, 204, 21, 0.35)";
+  }}
+  onMouseLeave={(e) => {
+    e.target.style.background = "rgba(250, 204, 21, 0.25)";
+  }}
+>
+  ✅ Exibir todos os produtos em todas as lojas
+</button>
+
         </div>
 
         <div style={searchGroupStyle}>
