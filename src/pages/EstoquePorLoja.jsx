@@ -5,7 +5,10 @@ const API_URL = "https://backend-eskimo.onrender.com/api";
 
 export default function EstoquePorLoja() {
   const [produtos, setProdutos] = useState([]);
+  const [categorias, setCategorias] = useState([]);
   const [estoques, setEstoques] = useState({});
+  const [filtroNome, setFiltroNome] = useState("");
+  const [filtroCategoria, setFiltroCategoria] = useState("");
   const lojas = ["efapi", "palmital", "passo"];
 
   useEffect(() => {
@@ -15,12 +18,16 @@ export default function EstoquePorLoja() {
         const produtosOrdenados = (res.data.items || res.data).sort((a, b) => a.name.localeCompare(b.name));
         setProdutos(produtosOrdenados);
 
+        const categoriasUnicas = [...new Set(produtosOrdenados.map(p => p.categoryName).filter(Boolean))];
+        setCategorias(categoriasUnicas);
+
         const estoqueRes = await axios.get(`${API_URL}/stock`);
         const dados = {};
         for (const item of estoqueRes.data) {
           lojas.forEach((loja) => {
             const key = `${item.productId}-${loja}`;
-            dados[key] = item[loja.charAt(0).toUpperCase() + loja.slice(1)] || 0;
+            dados[key] = item[loja] || 0;
+
           });
         }
         setEstoques(dados);
@@ -41,7 +48,8 @@ export default function EstoquePorLoja() {
     try {
       const payload = {};
       lojas.forEach((loja) => {
-        payload[loja] = parseInt(estoques[`${productId}-${loja}`]) || 0;
+        payload[loja.toLowerCase()] = parseInt(estoques[`${productId}-${loja}`]) || 0;
+
       });
 
       await axios.post(`${API_URL}/stock/${productId}`, payload, {
@@ -55,9 +63,31 @@ export default function EstoquePorLoja() {
     }
   };
 
+  const produtosFiltrados = produtos.filter(p =>
+    p.name.toLowerCase().includes(filtroNome.toLowerCase()) &&
+    (filtroCategoria === "" || p.categoryName === filtroCategoria)
+  );
+
   return (
     <div style={pageStyle}>
       <h1 style={titleStyle}>📦 Estoque por Loja</h1>
+
+      <div style={{ marginBottom: "1rem", display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+        <input
+          type="text"
+          placeholder="🔍 Buscar por nome..."
+          value={filtroNome}
+          onChange={(e) => setFiltroNome(e.target.value)}
+          style={inputFiltro}
+        />
+        <select value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)} style={inputFiltro}>
+          <option value="">Todas as categorias</option>
+          {categorias.map((cat) => (
+            <option key={cat} value={cat}>{cat}</option>
+          ))}
+        </select>
+      </div>
+
       <div style={{ overflowX: "auto", borderRadius: "0.5rem" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead style={{ background: "#d1fae5", color: "#065f46" }}>
@@ -70,7 +100,7 @@ export default function EstoquePorLoja() {
             </tr>
           </thead>
           <tbody>
-            {produtos.map((produto) => (
+            {produtosFiltrados.map((produto) => (
               <tr key={produto.id} style={{ borderTop: "1px solid #e5e7eb" }}>
                 <td style={tdStyle}>{produto.name}</td>
                 {lojas.map((loja) => (
@@ -103,4 +133,5 @@ const titleStyle = { fontSize: "2rem", fontWeight: "bold", color: "#065f46", mar
 const thStyle = { padding: "0.75rem", textAlign: "left", fontWeight: "600", fontSize: "0.9rem" };
 const tdStyle = { padding: "0.75rem", fontSize: "0.95rem", color: "#374151" };
 const inputStyle = { width: "80px", padding: "0.4rem", border: "1px solid #ccc", borderRadius: "0.5rem" };
+const inputFiltro = { padding: "0.5rem", borderRadius: "0.5rem", border: "1px solid #d1d5db", minWidth: "200px" };
 const btnPrimary = { background: "#059669", color: "white", padding: "0.4rem 0.8rem", borderRadius: "0.5rem", border: "none", cursor: "pointer", fontWeight: "bold" };
