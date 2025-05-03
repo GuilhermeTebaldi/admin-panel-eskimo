@@ -60,6 +60,18 @@ export default function EstoquePorLoja() {
       await axios.post(`${API_URL}/stock/${productId}`, payload, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
+      
+      // Atualiza estoque na tela
+      const estoqueRes = await axios.get(`${API_URL}/stock`);
+      const dados = {};
+      for (const item of estoqueRes.data) {
+        lojas.forEach((loja) => {
+          const key = `${item.productId}-${loja}`;
+          dados[key] = item[loja] ?? 0;
+        });
+      }
+      setEstoques(dados);
+      
     } catch (err) {
       console.error("Erro ao salvar estoque:", err);
     }
@@ -70,10 +82,13 @@ export default function EstoquePorLoja() {
       for (const produto of produtosFiltrados) {
         await salvarEstoque(produto.id);
       }
-      alert("✅ Todos os estoques foram salvos!");
+      alert("✅ Estoque salvo com sucesso!");
+
+      
     } catch (err) {
       console.error("Erro ao salvar todos os estoques:", err);
-      alert("❌ Erro ao salvar todos os estoques.");
+      alert("❌ Erro ao salvar estoque.");
+
     }
   };
 
@@ -154,7 +169,8 @@ export default function EstoquePorLoja() {
                     <input
                       type="number"
                       min="0"
-                      value={estoques[`${produto.id}-${loja}`] || 0}
+                      value={estoques[`${produto.id}-${loja}`] ?? ""}
+
                       onChange={(e) => handleChange(produto.id, loja, e.target.value)}
                       style={inputStyle}
                     />
