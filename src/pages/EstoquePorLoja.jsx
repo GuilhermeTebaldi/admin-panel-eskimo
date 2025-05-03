@@ -1,3 +1,4 @@
+// admin-panel/src/pages/EstoquePorLoja.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
@@ -9,6 +10,7 @@ export default function EstoquePorLoja() {
   const [estoques, setEstoques] = useState({});
   const [filtroNome, setFiltroNome] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState("");
+  const [estoquePadrao, setEstoquePadrao] = useState("");
   const lojas = ["efapi", "palmital", "passo"];
 
   useEffect(() => {
@@ -27,7 +29,6 @@ export default function EstoquePorLoja() {
           lojas.forEach((loja) => {
             const key = `${item.productId}-${loja}`;
             dados[key] = item[loja] || 0;
-
           });
         }
         setEstoques(dados);
@@ -49,7 +50,6 @@ export default function EstoquePorLoja() {
       const payload = {};
       lojas.forEach((loja) => {
         payload[loja.toLowerCase()] = parseInt(estoques[`${productId}-${loja}`]) || 0;
-
       });
 
       await axios.post(`${API_URL}/stock/${productId}`, payload, {
@@ -61,6 +61,18 @@ export default function EstoquePorLoja() {
       console.error("Erro ao salvar estoque:", err);
       alert("❌ Erro ao atualizar estoques.");
     }
+  };
+
+  const aplicarEstoquePadrao = (loja) => {
+    const valor = parseInt(estoquePadrao);
+    if (isNaN(valor)) return alert("Insira um valor válido");
+
+    const novosEstoques = { ...estoques };
+    produtosFiltrados.forEach((p) => {
+      const key = `${p.id}-${loja}`;
+      novosEstoques[key] = valor;
+    });
+    setEstoques(novosEstoques);
   };
 
   const produtosFiltrados = produtos.filter(p =>
@@ -86,6 +98,18 @@ export default function EstoquePorLoja() {
             <option key={cat} value={cat}>{cat}</option>
           ))}
         </select>
+        <input
+          type="number"
+          placeholder="Estoque p/ aplicar"
+          value={estoquePadrao}
+          onChange={(e) => setEstoquePadrao(e.target.value)}
+          style={inputFiltro}
+        />
+        {lojas.map((loja) => (
+          <button key={loja} onClick={() => aplicarEstoquePadrao(loja)} style={btnApply}>
+            Aplicar p/ {loja.charAt(0).toUpperCase() + loja.slice(1)}
+          </button>
+        ))}
       </div>
 
       <div style={{ overflowX: "auto", borderRadius: "0.5rem" }}>
@@ -135,3 +159,4 @@ const tdStyle = { padding: "0.75rem", fontSize: "0.95rem", color: "#374151" };
 const inputStyle = { width: "80px", padding: "0.4rem", border: "1px solid #ccc", borderRadius: "0.5rem" };
 const inputFiltro = { padding: "0.5rem", borderRadius: "0.5rem", border: "1px solid #d1d5db", minWidth: "200px" };
 const btnPrimary = { background: "#059669", color: "white", padding: "0.4rem 0.8rem", borderRadius: "0.5rem", border: "none", cursor: "pointer", fontWeight: "bold" };
+const btnApply = { background: "#facc15", color: "#1e293b", padding: "0.4rem 0.8rem", borderRadius: "0.5rem", border: "none", cursor: "pointer", fontWeight: "bold" };

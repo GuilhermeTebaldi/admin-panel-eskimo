@@ -13,9 +13,8 @@ export default function ProductList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [editingProduct, setEditingProduct] = useState(null);
-  const [form, setForm] = useState({ id: null, name: "", description: "", price: "", imageUrl: "", stock: "", categoryId: "", subcategoryId: "" });
+  const [form, setForm] = useState({ id: null, name: "", description: "", price: "", imageUrl: "", categoryId: "", subcategoryId: "" });
   const [isLoading, setIsLoading] = useState(false);
-  const [visibleStores, setVisibleStores] = useState([]);
 
   const navigate = useNavigate();
 
@@ -72,7 +71,7 @@ export default function ProductList() {
     }
   };
 
-  const handleEdit = async (product) => {
+  const handleEdit = (product) => {
     setEditingProduct(product);
     setForm({
       id: product.id,
@@ -80,20 +79,9 @@ export default function ProductList() {
       description: product.description,
       price: product.price.toString(),
       imageUrl: product.imageUrl,
-      stock: product.stock.toString(),
       categoryId: product.categoryId.toString(),
       subcategoryId: product.subcategoryId ? product.subcategoryId.toString() : "",
     });
-
-    try {
-      const res = await axios.get(`${API_URL}/products/${product.id}/visibility`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      setVisibleStores(res.data);
-    } catch (err) {
-      console.error("Erro ao buscar visibilidade:", err);
-      setVisibleStores([]);
-    }
   };
 
   const handleUpdate = async () => {
@@ -101,14 +89,9 @@ export default function ProductList() {
       await axios.put(`${API_URL}/products/${form.id}`, {
         ...form,
         price: parseFloat(form.price),
-        stock: parseInt(form.stock),
         categoryId: parseInt(form.categoryId),
         subcategoryId: form.subcategoryId ? parseInt(form.subcategoryId) : null,
       }, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-
-      await axios.post(`${API_URL}/products/${form.id}/visibility`, visibleStores, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
 
@@ -123,8 +106,7 @@ export default function ProductList() {
 
   const handleCancelEdit = () => {
     setEditingProduct(null);
-    setForm({ id: null, name: "", description: "", price: "", imageUrl: "", stock: "", categoryId: "", subcategoryId: "" });
-    setVisibleStores([]);
+    setForm({ id: null, name: "", description: "", price: "", imageUrl: "", categoryId: "", subcategoryId: "" });
   };
 
   const handleChange = (e) => {
@@ -157,44 +139,7 @@ export default function ProductList() {
             <button onClick={() => navigate("/categorias")} style={btnOutline} className="btn-outline">Categorias</button>
             <button onClick={handleLogout} style={btnDanger} className="btn-danger">Sair</button>
           </div>
-          <button
-  onClick={async () => {
-    if (!window.confirm("Tem certeza que deseja exibir TODOS os produtos em todas as lojas?")) return;
-    try {
-      for (const p of products) {
-        await axios.post(`${API_URL}/products/${p.id}/visibility`, ["efapi", "palmital", "passo"], {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        });
-      }
-      alert("✅ Todos os produtos agora aparecem em todas as lojas.");
-    } catch (err) {
-      console.error("Erro ao aplicar visibilidade em massa:", err);
-      alert("❌ Ocorreu um erro ao atualizar os produtos.");
-    }
-  }}
-  style={{
-    background: "rgba(250, 204, 21, 0.25)",
-    color: "#1e293b",
-    border: "1px solid rgba(202, 138, 4, 0.5)",
-    borderRadius: "16px",
-    padding: "14px 30px",
-    fontWeight: "600",
-    backdropFilter: "blur(8px)",
-    WebkitBackdropFilter: "blur(8px)",
-    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
-    transition: "all 0.3s ease-in-out",
-    cursor: "pointer"
-  }}
-  onMouseEnter={(e) => {
-    e.target.style.background = "rgba(250, 204, 21, 0.35)";
-  }}
-  onMouseLeave={(e) => {
-    e.target.style.background = "rgba(250, 204, 21, 0.25)";
-  }}
->
-  ✅ Exibir todos os produtos em todas as lojas
-</button>
-
+          
         </div>
 
         <div style={searchGroupStyle}>
@@ -213,7 +158,7 @@ export default function ProductList() {
       <tr>
         <th style={thStyle}>Nome</th>
         <th style={thStyle}>Preço</th>
-        <th style={thStyle}>Estoque</th>
+       
         <th style={thStyle}>Categoria</th>
         <th style={thStyle}>Subcategoria</th>
         <th style={thStyle}>Ações</th>
@@ -244,7 +189,7 @@ export default function ProductList() {
               </div>
             </td>
             <td style={tdStyle}>R$ {p.price.toFixed(2)}</td>
-            <td style={tdStyle}>{p.stock}</td>
+           
             <td style={tdStyle}>{p.categoryName}</td>
             <td style={tdStyle}>{p.subcategoryName || "—"}</td>
             <td style={tdStyle}>
@@ -271,79 +216,44 @@ export default function ProductList() {
 </div>
 </div>
 {editingProduct && (
-        <div style={editorStyle}>
-          <h2 style={{ fontSize: "1.75rem", fontWeight: "bold", color: "#065f46", marginBottom: "1.5rem" }}>✏️ Editar Produto</h2>
-          {["name", "description", "price", "imageUrl", "stock"].map((field) => (
-            <div key={field} style={{ marginBottom: "1rem" }}>
-              <label htmlFor={field} style={labelStyle}>{field.charAt(0).toUpperCase() + field.slice(1)}</label>
-              <input id={field} name={field} value={form[field]} onChange={handleChange} style={inputStyle} />
-            </div>
-          ))}
-          <div style={{ marginBottom: "1rem" }}>
-            <label style={labelStyle}>Categoria</label>
-            <select name="categoryId" value={form.categoryId} onChange={handleChange} style={inputStyle}>
-              <option value="">Selecione uma categoria</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
-              ))}
-            </select>
-          </div>
-          <div style={{ marginBottom: "1rem" }}>
-            <label style={labelStyle}>Subcategoria</label>
-            <select name="subcategoryId" value={form.subcategoryId} onChange={handleChange} style={inputStyle}>
-              <option value="">Selecione a subcategoria</option>
-              {filteredSubcategories.map((sub) => (
-                <option key={sub.id} value={sub.id}>{sub.name}</option>
-              ))}
-            </select>
-          </div>
-          <div style={{ marginBottom: "1.5rem" }}>
-            <label style={{ ...labelStyle, marginBottom: "0.5rem" }}>Exibir nas unidades:</label>
-            {/* 👉 Botão para selecionar todas as lojas */}
-  <button
-    type="button"
-    onClick={() => setVisibleStores(["efapi", "palmital", "passo"])}
-    style={{
-      background: "#e0f2fe",
-      color: "#0369a1",
-      padding: "0.3rem 0.8rem",
-      borderRadius: "0.5rem",
-      fontSize: "0.75rem",
-      marginBottom: "0.5rem",
-    }}
-  >
-    ✅ Selecionar todas as lojas
-  </button>
+  <div style={editorStyle}>
+    <h2 style={{ fontSize: "1.75rem", fontWeight: "bold", color: "#065f46", marginBottom: "1.5rem" }}>✏️ Editar Produto</h2>
+    {["name", "description", "price", "imageUrl"].map((field) => (
+      <div key={field} style={{ marginBottom: "1rem" }}>
+        <label htmlFor={field} style={labelStyle}>
+          {field.charAt(0).toUpperCase() + field.slice(1)}
+        </label>
+        <input id={field} name={field} value={form[field]} onChange={handleChange} style={inputStyle} />
+      </div>
+    ))}
+    <div style={{ marginBottom: "1rem" }}>
+      <label style={labelStyle}>Categoria</label>
+      <select name="categoryId" value={form.categoryId} onChange={handleChange} style={inputStyle}>
+        <option value="">Selecione uma categoria</option>
+        {categories.map((cat) => (
+          <option key={cat.id} value={cat.id}>{cat.name}</option>
+        ))}
+      </select>
+    </div>
+    <div style={{ marginBottom: "1rem" }}>
+      <label style={labelStyle}>Subcategoria</label>
+      <select name="subcategoryId" value={form.subcategoryId} onChange={handleChange} style={inputStyle}>
+        <option value="">Selecione a subcategoria</option>
+        {filteredSubcategories.map((sub) => (
+          <option key={sub.id} value={sub.id}>{sub.name}</option>
+        ))}
+      </select>
+    </div>
 
-  
+       
+    
 
-            <div style={{ display: "flex", gap: "1.5rem" }}>
-              {["efapi", "palmital", "passo"].map((store) => (
-                <label key={store} style={{ fontSize: "1rem", color: "#374151" }}>
-                  <input
-                    type="checkbox"
-                    checked={visibleStores.includes(store)}
-                    onChange={() => {
-                      setVisibleStores((prev) =>
-                        prev.includes(store)
-                          ? prev.filter((s) => s !== store)
-                          : [...prev, store]
-                      );
-                    }}
-                    style={{ marginRight: "0.5rem" }}
-                  />
-                  {store.charAt(0).toUpperCase() + store.slice(1)}
-                </label>
-                
-              ))}
-            </div>
-          </div>
-          <div style={{ display: "flex", gap: "1rem", marginTop: "2rem" }}>
-            <button onClick={handleUpdate} style={btnPrimary}>💾 Salvar</button>
-            <button onClick={handleCancelEdit} style={{ ...btnOutline, color: "#dc2626" }} className="btn-outline">Cancelar</button>
-          </div>
-        </div>
-      )}
+    <div style={{ display: "flex", gap: "1rem", marginTop: "2rem" }}>
+      <button onClick={handleUpdate} style={btnPrimary}>💾 Salvar</button>
+      <button onClick={handleCancelEdit} style={{ ...btnOutline, color: "#dc2626" }} className="btn-outline">Cancelar</button>
+    </div>
+  </div>
+)}
 
       <h1 style={{ fontSize: "1.0rem", color: "#065f46", fontWeight: "bold", marginBottom: "1rem" }}>Volpesites 🦊</h1>
     </div>
