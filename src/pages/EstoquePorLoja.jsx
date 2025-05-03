@@ -7,9 +7,11 @@ const API_URL = "https://backend-eskimo.onrender.com/api";
 export default function EstoquePorLoja() {
   const [produtos, setProdutos] = useState([]);
   const [categorias, setCategorias] = useState([]);
+  const [subcategorias, setSubcategorias] = useState([]);
   const [estoques, setEstoques] = useState({});
   const [filtroNome, setFiltroNome] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState("");
+  const [filtroSubcategoria, setFiltroSubcategoria] = useState("");
   const [estoquePadrao, setEstoquePadrao] = useState("");
   const lojas = ["efapi", "palmital", "passo"];
 
@@ -23,12 +25,15 @@ export default function EstoquePorLoja() {
         const categoriasUnicas = [...new Set(produtosOrdenados.map(p => p.categoryName).filter(Boolean))];
         setCategorias(categoriasUnicas);
 
+        const subRes = await axios.get(`${API_URL}/subcategories`);
+        setSubcategorias(subRes.data);
+
         const estoqueRes = await axios.get(`${API_URL}/stock`);
         const dados = {};
         for (const item of estoqueRes.data) {
           lojas.forEach((loja) => {
             const key = `${item.productId}-${loja}`;
-            dados[key] = item[loja] || 0;
+            dados[key] = item[loja] ?? 0;
           });
         }
         setEstoques(dados);
@@ -49,17 +54,26 @@ export default function EstoquePorLoja() {
     try {
       const payload = {};
       lojas.forEach((loja) => {
-        payload[loja.toLowerCase()] = parseInt(estoques[`${productId}-${loja}`]) || 0;
+        payload[loja] = parseInt(estoques[`${productId}-${loja}`]) || 0;
       });
 
       await axios.post(`${API_URL}/stock/${productId}`, payload, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
-
-      alert("✅ Estoques atualizados com sucesso!");
     } catch (err) {
       console.error("Erro ao salvar estoque:", err);
-      alert("❌ Erro ao atualizar estoques.");
+    }
+  };
+
+  const salvarTodos = async () => {
+    try {
+      for (const produto of produtosFiltrados) {
+        await salvarEstoque(produto.id);
+      }
+      alert("✅ Todos os estoques foram salvos!");
+    } catch (err) {
+      console.error("Erro ao salvar todos os estoques:", err);
+      alert("❌ Erro ao salvar todos os estoques.");
     }
   };
 
@@ -77,7 +91,8 @@ export default function EstoquePorLoja() {
 
   const produtosFiltrados = produtos.filter(p =>
     p.name.toLowerCase().includes(filtroNome.toLowerCase()) &&
-    (filtroCategoria === "" || p.categoryName === filtroCategoria)
+    (filtroCategoria === "" || p.categoryName === filtroCategoria) &&
+    (filtroSubcategoria === "" || p.subcategoryName === filtroSubcategoria)
   );
 
   return (
@@ -98,6 +113,12 @@ export default function EstoquePorLoja() {
             <option key={cat} value={cat}>{cat}</option>
           ))}
         </select>
+        <select value={filtroSubcategoria} onChange={(e) => setFiltroSubcategoria(e.target.value)} style={inputFiltro}>
+          <option value="">Todas as subcategorias</option>
+          {subcategorias.map((sub) => (
+            <option key={sub.id} value={sub.name}>{sub.name}</option>
+          ))}
+        </select>
         <input
           type="number"
           placeholder="Estoque p/ aplicar"
@@ -110,6 +131,7 @@ export default function EstoquePorLoja() {
             Aplicar p/ {loja.charAt(0).toUpperCase() + loja.slice(1)}
           </button>
         ))}
+        <button onClick={salvarTodos} style={btnPrimary}>💾 Salvar Todos</button>
       </div>
 
       <div style={{ overflowX: "auto", borderRadius: "0.5rem" }}>
