@@ -4,7 +4,6 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-
 //const API_URL = "https://backend-eskimo.onrender.com/api/categories"; // ou http://localhost:8080/api/categories
 //const API_URL = "http://localhost:8080/api/categories";
 const API_URL = "https://backend-eskimo.onrender.com/api/categories";
@@ -27,6 +26,7 @@ export default function CategoryList() {
       console.error("Erro ao buscar categorias:", err);
     }
   };
+  
 
   useEffect(() => {
     fetchCategories();
