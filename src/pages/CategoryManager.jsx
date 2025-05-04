@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
 
-const API_URL = "https://backend-eskimo.onrender.com/api";
+
+
+const API_URL = import.meta.env.VITE_API_URL;
+
 
 export default function CategoryManager() {
-  const navigate = useNavigate();
+ 
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
   const [newCategory, setNewCategory] = useState("");
@@ -115,7 +117,12 @@ export default function CategoryManager() {
     <div style={{ padding: "2rem", maxWidth: "1000px", margin: "0 auto" }}>
       <h1 style={titleStyle}>📂 Gerenciar Categorias</h1>
 
-      <button onClick={() => navigate("/produtos")} style={btnOutline}>← Voltar para Produtos</button>
+          <button
+              onClick={() => window.history.back()}
+              className="rounded-md border border-gray-300 bg-white px-4 py-1 text-sm text-gray-600 hover:bg-gray-100"
+            >
+              ← Voltar
+            </button>
 
       <Section title="Nova Categoria">
         <div style={rowStyle}>

@@ -1,9 +1,7 @@
-// admin-panel/src/App.jsx
+// App.jsx atualizado para funcionar em sincronia com estoque automático baseado em quantidade
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api from "@/services/api";
 import { useNavigate } from "react-router-dom";
-
-const API_URL = "https://backend-eskimo.onrender.com/api";
 
 export default function AdminPanel() {
   const navigate = useNavigate();
@@ -20,8 +18,21 @@ export default function AdminPanel() {
   const [subcategories, setSubcategories] = useState([]);
   const [filteredSubcategories, setFilteredSubcategories] = useState([]);
   const [subcategoryId, setSubcategoryId] = useState("");
-  const [visibleStores, setVisibleStores] = useState([]);
-
+  const [estoques, setEstoques] = useState({ efapi: 0, palmital: 0, passo: 0 });
+  
+  useEffect(() => {
+    const checkSync = async () => {
+      const precisaAtualizar = localStorage.getItem("categoriasAtualizadas");
+      if (precisaAtualizar === "true") {
+        await fetchCategories();
+        localStorage.removeItem("categoriasAtualizadas");
+      }
+    };
+    fetchCategories();
+    fetchSubcategories();
+    checkSync();
+  }, []);
+  
   useEffect(() => {
     fetchCategories();
     fetchSubcategories();
@@ -29,7 +40,7 @@ export default function AdminPanel() {
 
   const fetchCategories = async () => {
     try {
-      const result = await axios.get(`${API_URL}/categories`, auth());
+      const result = await api.get("/categories");
       setCategories(result.data);
     } catch (error) {
       console.error("Erro ao carregar categorias:", error);
@@ -38,7 +49,7 @@ export default function AdminPanel() {
 
   const fetchSubcategories = async () => {
     try {
-      const result = await axios.get(`${API_URL}/subcategories`, auth());
+      const result = await api.get("/subcategories");
       setSubcategories(result.data);
     } catch (error) {
       console.error("Erro ao carregar subcategorias:", error);
@@ -57,12 +68,11 @@ export default function AdminPanel() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleStoreToggle = (store) => {
-    setVisibleStores((prev) =>
-      prev.includes(store)
-        ? prev.filter((s) => s !== store)
-        : [...prev, store]
-    );
+  const handleEstoqueChange = (store, value) => {
+    setEstoques((prev) => ({
+      ...prev,
+      [store]: parseInt(value) || 0
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -77,15 +87,14 @@ export default function AdminPanel() {
     };
 
     try {
-      const res = await axios.post(`${API_URL}/products`, data, auth());
+      const res = await api.post("/products", data);
       const productId = res.data.id;
-
-      await axios.post(`${API_URL}/products/${productId}/visibility`, visibleStores, auth());
+      await api.post(`/stock/${productId}`, estoques);
 
       alert("✅ Produto cadastrado com sucesso!");
       setForm({ name: "", description: "", price: "", imageUrl: "", categoryId: "" });
       setSubcategoryId("");
-      setVisibleStores([]);
+      setEstoques({ efapi: 0, palmital: 0, passo: 0 });
     } catch (error) {
       console.error("Erro:", error.response?.data || error.message);
       alert("❌ Erro ao salvar produto.");
@@ -117,19 +126,20 @@ export default function AdminPanel() {
           <Dropdown label="Categoria" name="categoryId" value={form.categoryId} onChange={handleChange} options={categories} />
           <Dropdown label="Subcategoria" value={subcategoryId} onChange={(e) => setSubcategoryId(e.target.value)} options={filteredSubcategories} />
 
-          <div style={{ gridColumn: "span 2", textAlign: "left" }}>
-            <label style={{ ...labelStyle, marginBottom: "0.5rem" }}>Exibir nas unidades:</label>
+          <div style={{ gridColumn: "span 2", marginTop: "1rem" }}>
+            <label style={{ ...labelStyle, marginBottom: "0.5rem" }}>Estoque por loja:</label>
             <div style={{ display: "flex", gap: "1.5rem" }}>
-              {["efapi", "palmital", "passo"].map((store) => (
-                <label key={store} style={{ fontSize: "1rem", color: "#374151" }}>
+              {Object.keys(estoques).map((store) => (
+                <div key={store} style={{ display: "flex", flexDirection: "column" }}>
+                  <label style={{ fontSize: "1rem", color: "#374151" }}>{store.charAt(0).toUpperCase() + store.slice(1)}</label>
                   <input
-                    type="checkbox"
-                    checked={visibleStores.includes(store)}
-                    onChange={() => handleStoreToggle(store)}
-                    style={{ marginRight: "0.5rem" }}
+                    type="number"
+                    min="0"
+                    value={estoques[store]}
+                    onChange={(e) => handleEstoqueChange(store, e.target.value)}
+                    style={inputStyle}
                   />
-                  {store.charAt(0).toUpperCase() + store.slice(1)}
-                </label>
+                </div>
               ))}
             </div>
           </div>
@@ -137,9 +147,10 @@ export default function AdminPanel() {
           <div style={buttonGroupStyle}>
             <button type="submit" style={btnPrimary}>Cadastrar Produto</button>
             <button type="button" onClick={() => navigate("/produtos")} style={btnOutline}>📦 Ver Produtos</button>
+            <button type="button" onClick={() => navigate("/estoque")} style={btnOutline}>🏪 Estoque por Loja</button>
             <button type="button" onClick={() => navigate("/pedidos")} style={btnOutline}>✅ Ver Pedidos</button>
             <button type="button" onClick={() => navigate("/configuracoes")} style={btnOutline}>⚙️ Configurações de Entrega</button>
-            <button type="button" onClick={() => navigate("/estoque")} style={btnOutline}>🏪 Estoque por Loja</button>
+            <button type="button" onClick={() => navigate("/categorias")} style={btnOutline}>⚙️ Categorias </button>
           </div>
         </form>
 
@@ -171,10 +182,6 @@ function Dropdown({ label, name, value, onChange, options }) {
     </div>
   );
 }
-
-const auth = () => ({
-  headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-});
 
 const containerStyle = {
   minHeight: "100vh", background: "#f0fdf4", display: "flex", justifyContent: "center", alignItems: "center", padding: "2rem", animation: "fadeIn 0.8s ease-in-out"

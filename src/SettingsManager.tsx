@@ -45,31 +45,12 @@ export default function SettingsManager() {
     
     <div className="flex min-h-screen flex-col items-center justify-center bg-green-50 px-4">
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"><div style={{ display: "flex", justifyContent: "center", marginBottom: "1.5rem" }}>
-  <button
-    onClick={() => navigate("/cadastro")}
-    style={{
-      backgroundColor: "#f0fdf4",
-      color: "#166534",
-      padding: "0.6rem 1.5rem",
-      borderRadius: "0.75rem",
-      border: "2px solid #22c55e",
-      cursor: "pointer",
-      fontWeight: 600,
-      fontSize: "1rem",
-      transition: "all 0.3s ease",
-      boxShadow: "0 4px 8px rgba(34, 197, 94, 0.2)",
-    }}
-    onMouseEnter={(e) => {
-      e.currentTarget.style.backgroundColor = "#dcfce7";
-      e.currentTarget.style.transform = "scale(1.03)";
-    }}
-    onMouseLeave={(e) => {
-      e.currentTarget.style.backgroundColor = "#f0fdf4";
-      e.currentTarget.style.transform = "scale(1)";
-    }}
-  >
-    ⬅️ Voltar para Cadastro
-  </button>
+      <button
+              onClick={() => window.history.back()}
+              className="rounded-md border border-gray-300 bg-white px-4 py-1 text-sm text-gray-600 hover:bg-gray-100"
+            >
+              ← Voltar
+            </button>
 </div>
 
         <h1 className="mb-6 text-center text-2xl font-bold text-green-700">
