@@ -126,21 +126,21 @@ export default function AdminPanel() {
           <Dropdown label="Categoria" name="categoryId" value={form.categoryId} onChange={handleChange} options={categories} />
           <Dropdown label="Subcategoria" value={subcategoryId} onChange={(e) => setSubcategoryId(e.target.value)} options={filteredSubcategories} />
 
-          <div style={{ gridColumn: "span 2", marginTop: "1rem" }}>
-            <label style={{ ...labelStyle, marginBottom: "0.5rem" }}>Estoque por loja:</label>
-            <div style={{ display: "flex", gap: "1.5rem" }}>
-              {Object.keys(estoques).map((store) => (
-                <div key={store} style={{ display: "flex", flexDirection: "column" }}>
-                  <label style={{ fontSize: "1rem", color: "#374151" }}>{store.charAt(0).toUpperCase() + store.slice(1)}</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={estoques[store]}
-                    onChange={(e) => handleEstoqueChange(store, e.target.value)}
-                    style={inputStyle}
-                  />
-                </div>
-              ))}
+          <div className="w-full px-6 py-4">
+      <label className="block mb-2 text-lg font-semibold text-gray-700">Estoque por loja:</label>
+      <div className="grid grid-cols-3 gap-4">
+        {Object.keys(estoques).map((store) => (
+          <div key={store} className="flex flex-col">
+            <label className="mb-1 text-gray-600">{store.charAt(0).toUpperCase() + store.slice(1)}</label>
+            <input
+              type="number"
+              min="0"
+              value={estoques[store]}
+              onChange={(e) => handleEstoqueChange(store, e.target.value)}
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            />
+          </div>
+        ))}
             </div>
           </div>
 
