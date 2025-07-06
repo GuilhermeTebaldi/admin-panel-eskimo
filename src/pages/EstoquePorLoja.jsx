@@ -122,6 +122,40 @@ export default function EstoquePorLoja() {
         <button onClick={salvarTodos} style={btnPrimary}>💾 Salvar Todos</button>
       </div>
 
+  {/* 🔴 Produtos com estoque 0 */}
+  <div style={{ marginBottom: "2rem" }}>
+      <h2 style={{ ...titleStyle, fontSize: "1.5rem", color: "#b91c1c" }}>❌ Produtos com estoque 0</h2>
+      <div style={{ overflowX: "auto", borderRadius: "0.5rem" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead style={{ background: "#fee2e2", color: "#b91c1c" }}>
+            <tr>
+              <th style={thStyle}>Produto</th>
+              {lojas.map((loja) => <th key={loja} style={thStyle}>{loja.charAt(0).toUpperCase() + loja.slice(1)}</th>)}
+              <th style={thStyle}>Ação</th>
+            </tr>
+          </thead>
+          <tbody>
+            {produtosFiltrados.filter((produto) =>
+              lojas.some((loja) => (estoques[`${produto.id}-${loja}`] ?? 0) === 0)
+            ).map((produto) => (
+              <tr key={produto.id} style={{ borderTop: "1px solid #fca5a5" }}>
+                <td style={tdStyle}>{produto.name}</td>
+                {lojas.map((loja) => (
+                  <td key={loja} style={tdStyle}>
+                    <input type="number" min="0" value={estoques[`${produto.id}-${loja}`] ?? ""} onChange={(e) => handleChange(produto.id, loja, e.target.value)} style={inputStyle} />
+                  </td>
+                ))}
+                <td style={tdStyle}>
+                  <button onClick={() => salvarEstoque(produto.id)} style={btnPrimary}>💾 Salvar</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {/* 🟢 Lista normal de produtos */}
       <div style={{ overflowX: "auto", borderRadius: "0.5rem" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead style={{ background: "#d1fae5", color: "#065f46" }}>
