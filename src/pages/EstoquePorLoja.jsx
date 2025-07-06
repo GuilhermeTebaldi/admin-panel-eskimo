@@ -48,25 +48,29 @@ export default function EstoquePorLoja() {
     setEstoques((prev) => ({ ...prev, [key]: value }));
   };
 
-  const salvarEstoque = async (productId) => {
+  const salvarEstoque = async (productId, silent = false) => {
     try {
       const payload = {};
       lojas.forEach((loja) => {
         payload[loja] = parseInt(estoques[`${productId}-${loja}`]) || 0;
       });
-
+  
       await api.post(`/stock/${productId}`, payload);
-      alert("✅ Estoque salvo!");
+      if (!silent) {
+        alert("✅ Estoque salvo!");
+      }
     } catch (err) {
       console.error("Erro ao salvar estoque:", err);
-      alert("❌ Erro ao salvar estoque.");
+      if (!silent) {
+        alert("❌ Erro ao salvar estoque.");
+      }
     }
   };
 
   const salvarTodos = async () => {
     try {
       for (const produto of produtosFiltrados) {
-        await salvarEstoque(produto.id);
+        await salvarEstoque(produto.id, true);
       }
       alert("✅ Estoques salvos!");
     } catch (err) {
@@ -74,6 +78,7 @@ export default function EstoquePorLoja() {
       alert("❌ Erro ao salvar estoques.");
     }
   };
+  
 
   const aplicarEstoquePadrao = (loja) => {
     const valor = parseInt(estoquePadrao);
