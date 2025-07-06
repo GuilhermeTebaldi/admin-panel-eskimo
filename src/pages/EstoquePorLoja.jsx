@@ -68,19 +68,18 @@ export default function EstoquePorLoja() {
   };
 
   const salvarTodos = async () => {
-    setLoading(true); // 🔥 inicia loading
+    setLoading(true);
     try {
-      for (const produto of produtosFiltrados) {
-        await salvarEstoque(produto.id, true);
-      }
+      await Promise.all(produtosFiltrados.map((produto) => salvarEstoque(produto.id, true)));
       alert("✅ Estoques salvos!");
     } catch (err) {
       console.error("Erro ao salvar todos os estoques:", err);
       alert("❌ Erro ao salvar estoques.");
     } finally {
-      setLoading(false); // 🔥 finaliza loading
+      setLoading(false);
     }
   };
+  
 
   const aplicarEstoquePadrao = (loja) => {
     const valor = parseInt(estoquePadrao);
