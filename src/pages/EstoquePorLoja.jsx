@@ -129,10 +129,45 @@ export default function EstoquePorLoja() {
       </div>
 
       {loading && (
-        <div style={{ color: "#065f46", fontWeight: "bold", marginBottom: "1rem" }}>
-          ⏳ Salvando estoques, por favor aguarde...
-        </div>
-      )}
+  <div style={{
+    position: "fixed",
+    top: 0, left: 0,
+    width: "100%", height: "100%",
+    backgroundColor: "rgba(0,0,0,0.5)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 9999
+  }}>
+    <div style={{
+      background: "white",
+      padding: "2rem 3rem",
+      borderRadius: "0.75rem",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      boxShadow: "0 4px 10px rgba(0,0,0,0.2)"
+    }}>
+      <div style={{
+        border: "4px solid #f3f3f3",
+        borderTop: "4px solid #059669",
+        borderRadius: "50%",
+        width: "40px",
+        height: "40px",
+        animation: "spin 1s linear infinite",
+        marginBottom: "1rem"
+      }}></div>
+      <p style={{ fontWeight: "bold", color: "#065f46" }}>⏳ Salvando estoques, por favor aguarde...</p>
+    </div>
+    <style>{`
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    `}</style>
+  </div>
+)}
+
 
       {/* 🔴 Produtos com estoque 0 */}
       <div style={{ marginBottom: "2rem" }}>
