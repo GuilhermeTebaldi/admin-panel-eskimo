@@ -18,7 +18,7 @@ export default function AdminPanel() {
   const [subcategories, setSubcategories] = useState([]);
   const [filteredSubcategories, setFilteredSubcategories] = useState([]);
   const [subcategoryId, setSubcategoryId] = useState("");
-  const [estoques, setEstoques] = useState({ efapi: 0, palmital: 0, passo: 0 });
+  const [estoques, setEstoques] = useState({ efapi: 1, palmital: 1, passo: 1 });
   
   useEffect(() => {
     const checkSync = async () => {
