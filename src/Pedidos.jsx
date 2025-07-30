@@ -182,9 +182,14 @@ export default function Pedidos() {
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {pedidosFiltrados.map((pedido) => (
               <div
-                key={pedido.id}
-                className="rounded-xl border border-gray-100 bg-white p-6 shadow-md hover:shadow-lg transition"
-              >
+              key={pedido.id}
+              className={`rounded-xl border p-6 shadow-md hover:shadow-lg transition ${
+                pedido.deliveryType === "entregar"
+                  ? "bg-blue-50 border-blue-200"
+                  : "bg-white border-gray-100"
+              }`}
+            >
+            
                 <div className="mb-3 space-y-1 text-sm text-gray-700">
                 <div><strong>Número do Pedido:</strong> #{pedido.id}</div>
                   <div><strong>Cliente:</strong> {pedido.customerName}</div>
