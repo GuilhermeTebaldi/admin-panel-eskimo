@@ -84,7 +84,7 @@ export default function Pedidos() {
       let numero = numeroWhatsapp.trim();
       if (!numero.startsWith("55")) numero = "55" + numero;
       const msg = encodeURIComponent(
-        `Relatórios:\nEfapi: ${API_URL}/reports/efapi\nPalmital: ${API_URL}/reports/palmital\nPasso: ${API_URL}/reports/passodosfortes}`
+        `Relatórios:\nEfapi: ${API_URL}/reports/efapi\nPalmital: ${API_URL}/reports/palmital\nPasso: ${API_URL}/reports/passodosfortes`
       );
       window.open(`https://wa.me/${numero}?text=${msg}`, "_blank");
     } finally {
@@ -98,8 +98,10 @@ export default function Pedidos() {
     return statusOk && storeOk;
   });
 
+  // ✅ Agrupar Hoje, Ontem e outras datas
   const hoje = new Date().toDateString();
   const ontem = new Date(Date.now() - 86400000).toDateString();
+
   const grupos = { Hoje: [], Ontem: [], Antigos: {} };
 
   pedidosFiltrados.forEach((pedido) => {
@@ -131,63 +133,6 @@ export default function Pedidos() {
     setVistos((prev) => new Set(prev).add(id));
   };
 
-  const CardPedido = ({ pedido }) => {
-    const dataPedido = getDataPedido(pedido);
-    const isNovo = !vistos.has(pedido.id);
-
-    return (
-      <div
-        onClick={() => marcarComoVisto(pedido.id)}
-        className={`rounded-xl border p-6 shadow-md hover:shadow-lg transition cursor-pointer ${
-          isNovo ? "novo-pedido" : ""
-        }`}
-      >
-        <div className="mb-2 text-xs text-gray-500">
-          {dataPedido?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-        </div>
-        <div className="mb-3 space-y-1 text-sm text-gray-700">
-          <div><strong>Pedido:</strong> #{pedido.id}</div>
-          <div><strong>Cliente:</strong> {pedido.customerName}</div>
-          <div><strong>Unidade:</strong> {pedido.store}</div>
-          <div><strong>Status:</strong> {pedido.status.toUpperCase()}</div>
-        </div>
-        <div className="mt-3 flex gap-2">
-          {pedido.status === "pendente" && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setPedidoSelecionado(pedido);
-              }}
-              className="rounded bg-green-600 px-3 py-1 text-xs text-white hover:bg-green-700"
-            >
-              ✅ Confirmar
-            </button>
-          )}
-          {pedido.status === "pago" && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                marcarComoEntregue(pedido.id);
-              }}
-              className="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700"
-            >
-              📬 Entregue
-            </button>
-          )}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              excluirPedido(pedido.id);
-            }}
-            className="rounded bg-red-600 px-3 py-1 text-xs text-white hover:bg-red-700"
-          >
-            🗑 Excluir
-          </button>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-white to-gray-50 py-10 px-4 text-gray-800">
       <style>
@@ -196,7 +141,6 @@ export default function Pedidos() {
           .novo-pedido { animation: blink 1s infinite; }
         `}
       </style>
-
       <div className="mx-auto max-w-6xl">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-3xl font-extrabold text-gray-900">📦 Pedidos Recebidos</h1>
@@ -254,9 +198,29 @@ export default function Pedidos() {
               <>
                 <h2 className="mt-6 mb-2 text-lg font-bold text-green-700">📅 Hoje</h2>
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {grupos.Hoje.map((pedido) => (
-                    <CardPedido key={pedido.id} pedido={pedido} />
-                  ))}
+                  {grupos.Hoje.map((pedido) => {
+                    const dataPedido = getDataPedido(pedido);
+                    const isNovo = !vistos.has(pedido.id);
+                    return (
+                      <div
+                        key={pedido.id}
+                        onClick={() => marcarComoVisto(pedido.id)}
+                        className={`rounded-xl border p-6 shadow-md hover:shadow-lg transition cursor-pointer ${
+                          isNovo ? "novo-pedido" : ""
+                        }`}
+                      >
+                        <div className="mb-2 text-xs text-gray-500">
+                          {dataPedido?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                        </div>
+                        <div className="mb-3 space-y-1 text-sm text-gray-700">
+                          <div><strong>Pedido:</strong> #{pedido.id}</div>
+                          <div><strong>Cliente:</strong> {pedido.customerName}</div>
+                          <div><strong>Unidade:</strong> {pedido.store}</div>
+                          <div><strong>Status:</strong> {pedido.status.toUpperCase()}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </>
             )}
@@ -266,7 +230,12 @@ export default function Pedidos() {
                 <h2 className="mt-6 mb-2 text-lg font-bold text-yellow-700">📅 Ontem</h2>
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {grupos.Ontem.map((pedido) => (
-                    <CardPedido key={pedido.id} pedido={pedido} />
+                    <div key={pedido.id} className="rounded-xl border p-6 shadow">
+                      <div className="mb-2 text-xs text-gray-500">
+                        {getDataPedido(pedido)?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                      </div>
+                      <div className="text-sm"><strong>Pedido:</strong> #{pedido.id}</div>
+                    </div>
                   ))}
                 </div>
               </>
@@ -277,7 +246,12 @@ export default function Pedidos() {
                 <h2 className="mt-6 mb-2 text-lg font-bold text-gray-700">📅 {data}</h2>
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {lista.map((pedido) => (
-                    <CardPedido key={pedido.id} pedido={pedido} />
+                    <div key={pedido.id} className="rounded-xl border p-6 shadow">
+                      <div className="mb-2 text-xs text-gray-500">
+                        {getDataPedido(pedido)?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                      </div>
+                      <div className="text-sm"><strong>Pedido:</strong> #{pedido.id}</div>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -285,31 +259,6 @@ export default function Pedidos() {
           </>
         )}
       </div>
-
-      {pedidoSelecionado && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl">
-            <h2 className="text-xl font-bold text-gray-800">Confirmar Pagamento</h2>
-            <p className="mt-2 text-sm text-gray-600">
-              Deseja confirmar que o pagamento do pedido de <strong>{pedidoSelecionado.customerName}</strong> foi realizado?
-            </p>
-            <div className="mt-6 flex justify-center gap-4">
-              <button
-                onClick={() => setPedidoSelecionado(null)}
-                className="rounded bg-gray-100 px-4 py-2 text-sm text-gray-800 hover:bg-gray-200"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={confirmarPedido}
-                className="rounded bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
-              >
-                Confirmar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
