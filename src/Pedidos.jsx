@@ -15,7 +15,7 @@ export default function Pedidos() {
   const [gerandoRelatorio, setGerandoRelatorio] = useState(false);
 
   const lojasFixas = ["Efapi", "Palmital", "Passo dos Fortes"];
-  const lastIds = useRef(new Set()); // salva últimos pedidos para detectar novos
+  const lastIds = useRef(new Set());
 
   const getDataPedido = (pedido) => {
     const rawDate = pedido.createdAt || pedido.created_at || pedido.CreatedAt || pedido.date;
@@ -39,7 +39,6 @@ export default function Pedidos() {
       .finally(() => setLoading(false));
   };
 
-  // ✅ Atualiza só quando há novos pedidos
   useEffect(() => {
     fetchPedidos();
     const interval = setInterval(fetchPedidos, 10000);
@@ -63,7 +62,7 @@ export default function Pedidos() {
       toast.success("Pagamento confirmado!");
       setPedidoSelecionado(null);
       fetchPedidos();
-    } catch  {
+    } catch {
       toast.error("Erro ao confirmar pagamento.");
     }
   };
@@ -74,7 +73,7 @@ export default function Pedidos() {
       await axios.delete(`${API_URL}/orders/${id}`);
       toast.info("Pedido excluído com sucesso.");
       fetchPedidos();
-    } catch  {
+    } catch {
       toast.error("Erro ao excluir pedido.");
     }
   };
@@ -94,13 +93,13 @@ export default function Pedidos() {
     }
   };
 
+  // ✅ Filtro aplicado aos pedidos
   const pedidosFiltrados = pedidos.filter((p) => {
     const statusOk = filtroStatus === "todos" || p.status === filtroStatus;
-    const storeOk = filtroStore === "todos" || p.store === filtroStore;
+    const storeOk = filtroStore === "todos" || p.store?.toLowerCase() === filtroStore.toLowerCase();
     return statusOk && storeOk;
   });
 
-  // ✅ Agrupar pedidos por data
   const pedidosAgrupados = pedidosFiltrados.reduce((acc, pedido) => {
     const dataPedido = getDataPedido(pedido);
     const data = dataPedido ? dataPedido.toLocaleDateString() : "Data desconhecida";
@@ -115,6 +114,7 @@ export default function Pedidos() {
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-3xl font-extrabold text-gray-900">📦 Pedidos Recebidos</h1>
           <div className="flex flex-wrap gap-2">
+            {/* ✅ Filtro de unidades */}
             <select
               className="rounded-md border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700"
               value={filtroStore}
@@ -125,6 +125,8 @@ export default function Pedidos() {
                 <option key={store} value={store}>{store}</option>
               ))}
             </select>
+
+            {/* ✅ Filtro de status */}
             <select
               className="rounded-md border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700"
               value={filtroStatus}
