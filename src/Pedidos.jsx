@@ -87,37 +87,53 @@ export default function Pedidos() {
       toast.error("Erro ao excluir pedido.");
     }
   };
+// ✅ Gerar PDFs reais e abrir no navegador + WhatsApp
+const gerarRelatoriosPDF = async () => {
+  setGerandoRelatorio(true);
+  toast.info("Gerando PDFs das lojas...");
 
-  const gerarRelatoriosPDF = async () => {
-    setGerandoRelatorio(true);
-    toast.info("Gerando PDFs das lojas...");
-    try {
-      let numero = numeroWhatsapp.trim();
-      if (!numero.startsWith("55")) numero = "55" + numero;
-      const mensagem = encodeURIComponent(
-        `Segue os relatórios:\nEfapi: ${API_URL}/reports/efapi\nPalmital: ${API_URL}/reports/palmital\nPasso: ${API_URL}/reports/passodosfortes`
-      );
-      window.open(`https://wa.me/${numero}?text=${mensagem}`, "_blank");
-    } finally {
-      setGerandoRelatorio(false);
+  try {
+    const lojas = ["efapi", "palmital", "passodosfortes"];
+
+    // 🔥 Baixa os PDFs de cada loja
+    for (let loja of lojas) {
+      const link = document.createElement("a");
+      link.href = `${API_URL}/reports/${loja}`;
+      link.download = `relatorio-${loja}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
-  };
 
-  // ✅ Filtro aplicado aos pedidos com mapeamento
-  const pedidosFiltrados = pedidos.filter((p) => {
-    const statusOk = filtroStatus === "todos" || p.status === filtroStatus;
-    const storeOk =
-      filtroStore === "todos" || mapStore(p.store) === mapStore(filtroStore);
-    return statusOk && storeOk;
-  });
+    // 🔥 Abre WhatsApp com os links prontos
+    let numero = numeroWhatsapp.trim();
+    if (!numero.startsWith("55")) numero = "55" + numero;
 
-  const pedidosAgrupados = pedidosFiltrados.reduce((acc, pedido) => {
-    const dataPedido = getDataPedido(pedido);
-    const data = dataPedido ? dataPedido.toLocaleDateString() : "Data desconhecida";
-    if (!acc[data]) acc[data] = [];
-    acc[data].push(pedido);
-    return acc;
-  }, {});
+    const mensagem = encodeURIComponent(
+      `Segue os relatórios:\n📄 Efapi: ${API_URL}/reports/efapi\n📄 Palmital: ${API_URL}/reports/palmital\n📄 Passo: ${API_URL}/reports/passodosfortes`
+    );
+
+    window.open(`https://wa.me/${numero}?text=${mensagem}`, "_blank");
+  } finally {
+    setGerandoRelatorio(false);
+  }
+};
+
+const pedidosFiltrados = pedidos.filter((p) => {
+  const statusOk = filtroStatus === "todos" || p.status === filtroStatus;
+  const storeOk =
+    filtroStore === "todos" || mapStore(p.store) === mapStore(filtroStore);
+  return statusOk && storeOk;
+});
+
+const pedidosAgrupados = pedidosFiltrados.reduce((acc, pedido) => {
+  const dataPedido = getDataPedido(pedido);
+  const data = dataPedido ? dataPedido.toLocaleDateString() : "Data desconhecida";
+  if (!acc[data]) acc[data] = [];
+  acc[data].push(pedido);
+  return acc;
+}, {});
+
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-white to-gray-50 py-10 px-4 text-gray-800">
