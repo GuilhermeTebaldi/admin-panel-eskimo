@@ -21,9 +21,9 @@ export default function Pedidos() {
   const mapStore = (store) => {
     if (!store) return "";
     const lower = store.toLowerCase();
-    if (lower.includes("passo")) return "passodosfortes";
-    if (lower.includes("efapi")) return "efapi";
-    if (lower.includes("palmital")) return "palmital";
+    if (lower.includes("passo")) return "passo";
+    if (lower.includes("efapi")) return "Efapi";
+    if (lower.includes("palmital")) return "Palmital";
     return store.toLowerCase();
   };
 
