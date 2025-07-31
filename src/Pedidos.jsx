@@ -22,9 +22,9 @@ export default function Pedidos() {
     if (!store) return "";
     const lower = store.toLowerCase();
     if (lower.includes("passo")) return "passo";
-    if (lower.includes("efapi")) return "Efapi";
-    if (lower.includes("palmital")) return "Palmital";
-    return store.toLowerCase();
+    if (lower.includes("efapi")) return "efapi";
+    if (lower.includes("palmital")) return "palmital";
+    return lower;
   };
 
   const getDataPedido = (pedido) => {
@@ -88,7 +88,7 @@ export default function Pedidos() {
     }
   };
 
-  // ✅ Gerar PDFs apenas da loja selecionada ou todos
+  // ✅ Gerar PDFs reais com nomes corretos
   const gerarRelatoriosPDF = async () => {
     setGerandoRelatorio(true);
     toast.info("Gerando PDF...");
@@ -97,7 +97,7 @@ export default function Pedidos() {
       let lojasParaGerar = [];
 
       if (filtroStore === "todos") {
-        lojasParaGerar = ["efapi", "palmital", "passodosfortes"];
+        lojasParaGerar = ["efapi", "palmital", "passo"];
       } else {
         lojasParaGerar = [mapStore(filtroStore)];
       }
