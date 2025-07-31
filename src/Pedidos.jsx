@@ -13,10 +13,9 @@ export default function Pedidos() {
   const [filtroStore, setFiltroStore] = useState("todos");
   const [numeroWhatsapp, setNumeroWhatsapp] = useState("");
   const [gerandoRelatorio, setGerandoRelatorio] = useState(false);
-  const [vistos, setVistos] = useState(new Set());
 
   const lojasFixas = ["Efapi", "Palmital", "Passo dos Fortes"];
-  const lastIds = useRef(new Set());
+  const lastIds = useRef(new Set()); // salva últimos pedidos para detectar novos
 
   const getDataPedido = (pedido) => {
     const rawDate = pedido.createdAt || pedido.created_at || pedido.CreatedAt || pedido.date;
@@ -29,15 +28,18 @@ export default function Pedidos() {
       .then((res) => {
         const novos = res.data.filter((p) => !lastIds.current.has(p.id));
         if (novos.length > 0 && lastIds.current.size > 0) {
-          toast.info(`🆕 ${novos.length} novo(s) pedido(s)!`);
+          toast.info(`🆕 ${novos.length} novo(s) pedido(s) recebido(s)!`);
         }
         res.data.forEach((p) => lastIds.current.add(p.id));
         setPedidos(res.data);
       })
-      .catch(() => toast.error("Erro ao buscar pedidos."))
+      .catch(() => {
+        toast.error("Erro ao buscar pedidos.");
+      })
       .finally(() => setLoading(false));
   };
 
+  // ✅ Atualiza só quando há novos pedidos
   useEffect(() => {
     fetchPedidos();
     const interval = setInterval(fetchPedidos, 10000);
@@ -61,7 +63,7 @@ export default function Pedidos() {
       toast.success("Pagamento confirmado!");
       setPedidoSelecionado(null);
       fetchPedidos();
-    } catch {
+    } catch  {
       toast.error("Erro ao confirmar pagamento.");
     }
   };
@@ -70,23 +72,23 @@ export default function Pedidos() {
     if (!window.confirm("Tem certeza que deseja excluir este pedido?")) return;
     try {
       await axios.delete(`${API_URL}/orders/${id}`);
-      toast.info("Pedido excluído.");
+      toast.info("Pedido excluído com sucesso.");
       fetchPedidos();
-    } catch {
+    } catch  {
       toast.error("Erro ao excluir pedido.");
     }
   };
 
   const gerarRelatoriosPDF = async () => {
     setGerandoRelatorio(true);
-    toast.info("Gerando PDFs...");
+    toast.info("Gerando PDFs das lojas...");
     try {
       let numero = numeroWhatsapp.trim();
       if (!numero.startsWith("55")) numero = "55" + numero;
-      const msg = encodeURIComponent(
-        `Relatórios:\nEfapi: ${API_URL}/reports/efapi\nPalmital: ${API_URL}/reports/palmital\nPasso: ${API_URL}/reports/passodosfortes`
+      const mensagem = encodeURIComponent(
+        `Segue os relatórios:\nEfapi: ${API_URL}/reports/efapi\nPalmital: ${API_URL}/reports/palmital\nPasso: ${API_URL}/reports/passodosfortes`
       );
-      window.open(`https://wa.me/${numero}?text=${msg}`, "_blank");
+      window.open(`https://wa.me/${numero}?text=${mensagem}`, "_blank");
     } finally {
       setGerandoRelatorio(false);
     }
@@ -98,55 +100,23 @@ export default function Pedidos() {
     return statusOk && storeOk;
   });
 
-  // ✅ Agrupar Hoje, Ontem e outras datas
-  const hoje = new Date().toDateString();
-  const ontem = new Date(Date.now() - 86400000).toDateString();
-
-  const grupos = { Hoje: [], Ontem: [], Antigos: {} };
-
-  pedidosFiltrados.forEach((pedido) => {
+  // ✅ Agrupar pedidos por data
+  const pedidosAgrupados = pedidosFiltrados.reduce((acc, pedido) => {
     const dataPedido = getDataPedido(pedido);
-    if (!dataPedido) {
-      if (!grupos.Antigos["Data desconhecida"]) grupos.Antigos["Data desconhecida"] = [];
-      grupos.Antigos["Data desconhecida"].push(pedido);
-      return;
-    }
-
-    const dateString = dataPedido.toDateString();
-
-    if (dateString === hoje) {
-      grupos.Hoje.push(pedido);
-    } else if (dateString === ontem) {
-      grupos.Ontem.push(pedido);
-    } else {
-      const dataLabel = dataPedido.toLocaleDateString("pt-BR", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      });
-      if (!grupos.Antigos[dataLabel]) grupos.Antigos[dataLabel] = [];
-      grupos.Antigos[dataLabel].push(pedido);
-    }
-  });
-
-  const marcarComoVisto = (id) => {
-    setVistos((prev) => new Set(prev).add(id));
-  };
+    const data = dataPedido ? dataPedido.toLocaleDateString() : "Data desconhecida";
+    if (!acc[data]) acc[data] = [];
+    acc[data].push(pedido);
+    return acc;
+  }, {});
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-white to-gray-50 py-10 px-4 text-gray-800">
-      <style>
-        {`
-          @keyframes blink { 50% { background-color: #fef9c3; } }
-          .novo-pedido { animation: blink 1s infinite; }
-        `}
-      </style>
       <div className="mx-auto max-w-6xl">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-3xl font-extrabold text-gray-900">📦 Pedidos Recebidos</h1>
           <div className="flex flex-wrap gap-2">
             <select
-              className="rounded-md border border-gray-300 bg-white px-3 py-1 text-sm"
+              className="rounded-md border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700"
               value={filtroStore}
               onChange={(e) => setFiltroStore(e.target.value)}
             >
@@ -156,7 +126,7 @@ export default function Pedidos() {
               ))}
             </select>
             <select
-              className="rounded-md border border-gray-300 bg-white px-3 py-1 text-sm"
+              className="rounded-md border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700"
               value={filtroStatus}
               onChange={(e) => setFiltroStatus(e.target.value)}
             >
@@ -190,75 +160,123 @@ export default function Pedidos() {
 
         {loading ? (
           <div className="text-center text-lg text-gray-500">Carregando pedidos...</div>
-        ) : pedidosFiltrados.length === 0 ? (
+        ) : Object.keys(pedidosAgrupados).length === 0 ? (
           <div className="text-center text-lg text-gray-500">Nenhum pedido encontrado.</div>
         ) : (
-          <>
-            {grupos.Hoje.length > 0 && (
-              <>
-                <h2 className="mt-6 mb-2 text-lg font-bold text-green-700">📅 Hoje</h2>
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {grupos.Hoje.map((pedido) => {
-                    const dataPedido = getDataPedido(pedido);
-                    const isNovo = !vistos.has(pedido.id);
-                    return (
-                      <div
-                        key={pedido.id}
-                        onClick={() => marcarComoVisto(pedido.id)}
-                        className={`rounded-xl border p-6 shadow-md hover:shadow-lg transition cursor-pointer ${
-                          isNovo ? "novo-pedido" : ""
-                        }`}
-                      >
-                        <div className="mb-2 text-xs text-gray-500">
-                          {dataPedido?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+          Object.entries(pedidosAgrupados).map(([data, lista]) => (
+            <div key={data}>
+              <h2 className="mt-6 mb-2 text-lg font-bold text-gray-700">📅 {data}</h2>
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {lista.map((pedido) => {
+                  const dataPedido = getDataPedido(pedido);
+                  const isHoje = dataPedido && dataPedido.toDateString() === new Date().toDateString();
+                  return (
+                    <div
+                      key={pedido.id}
+                      className={`rounded-xl border p-6 shadow-md hover:shadow-lg transition ${
+                        pedido.deliveryType === "entregar"
+                          ? "bg-blue-50 border-blue-200"
+                          : "bg-white border-gray-100"
+                      } ${isHoje ? "ring-2 ring-green-400" : ""}`}
+                    >
+                      <div className="mb-3 space-y-1 text-sm text-gray-700">
+                        <div><strong>Número do Pedido:</strong> #{pedido.id}</div>
+                        <div><strong>Cliente:</strong> {pedido.customerName}</div>
+                        <div><strong>Telefone:</strong> {pedido.phoneNumber || "Não informado"}</div>
+                        <div><strong>Unidade:</strong> {pedido.store}</div>
+                        <div><strong>Entrega:</strong> {pedido.deliveryType}</div>
+                        {pedido.address && (
+                          <div><strong>Endereço:</strong> {pedido.address}, {pedido.street}, nº {pedido.number} {pedido.complement && `, ${pedido.complement}`}</div>
+                        )}
+                        <div><strong>Entrega (frete):</strong> R$ {pedido.deliveryFee?.toFixed(2) ?? "0,00"}</div>
+                        <div><strong>Total:</strong> R$ {pedido.total.toFixed(2)}</div>
+                        <div>
+                          <strong>Status:</strong>{" "}
+                          <span className={`font-semibold ${
+                            pedido.status === "pago"
+                              ? "text-green-600"
+                              : pedido.status === "entregue"
+                              ? "text-blue-600"
+                              : "text-yellow-600"
+                          }`}>
+                            {pedido.status.toUpperCase() || "PENDENTE"}
+                          </span>
                         </div>
-                        <div className="mb-3 space-y-1 text-sm text-gray-700">
-                          <div><strong>Pedido:</strong> #{pedido.id}</div>
-                          <div><strong>Cliente:</strong> {pedido.customerName}</div>
-                          <div><strong>Unidade:</strong> {pedido.store}</div>
-                          <div><strong>Status:</strong> {pedido.status.toUpperCase()}</div>
-                        </div>
                       </div>
-                    );
-                  })}
-                </div>
-              </>
-            )}
 
-            {grupos.Ontem.length > 0 && (
-              <>
-                <h2 className="mt-6 mb-2 text-lg font-bold text-yellow-700">📅 Ontem</h2>
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {grupos.Ontem.map((pedido) => (
-                    <div key={pedido.id} className="rounded-xl border p-6 shadow">
-                      <div className="mb-2 text-xs text-gray-500">
-                        {getDataPedido(pedido)?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                      </div>
-                      <div className="text-sm"><strong>Pedido:</strong> #{pedido.id}</div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
+                      <ul className="mt-3 divide-y divide-gray-100 text-sm">
+                        {pedido.items.map((item, index) => (
+                          <li key={index} className="flex items-center justify-between gap-4 py-2">
+                            <div className="flex items-center gap-2">
+                              <img
+                                src={item.imageUrl}
+                                alt={item.name}
+                                className="h-10 w-10 rounded-md object-cover border border-gray-200"
+                              />
+                              <span>{item.name} (x{item.quantity})</span>
+                            </div>
+                            <span className="font-medium">R$ {(item.price * item.quantity).toFixed(2)}</span>
+                          </li>
+                        ))}
+                      </ul>
 
-            {Object.entries(grupos.Antigos).map(([data, lista]) => (
-              <div key={data}>
-                <h2 className="mt-6 mb-2 text-lg font-bold text-gray-700">📅 {data}</h2>
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {lista.map((pedido) => (
-                    <div key={pedido.id} className="rounded-xl border p-6 shadow">
-                      <div className="mb-2 text-xs text-gray-500">
-                        {getDataPedido(pedido)?.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                      <div className="mt-4 flex gap-2 flex-wrap">
+                        {pedido.status === "pendente" && (
+                          <button
+                            onClick={() => setPedidoSelecionado(pedido)}
+                            className="rounded bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
+                          >
+                            ✅ Confirmar Pagamento
+                          </button>
+                        )}
+                        {pedido.status === "pago" && (
+                          <button
+                            onClick={() => marcarComoEntregue(pedido.id)}
+                            className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                          >
+                            📬 Marcar como Entregue
+                          </button>
+                        )}
+                        <button
+                          onClick={() => excluirPedido(pedido.id)}
+                          className="rounded bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+                        >
+                          🗑 Excluir Pedido
+                        </button>
                       </div>
-                      <div className="text-sm"><strong>Pedido:</strong> #{pedido.id}</div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
-            ))}
-          </>
+            </div>
+          ))
         )}
       </div>
+
+      {pedidoSelecionado && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl">
+            <h2 className="text-xl font-bold text-gray-800">Confirmar Pagamento</h2>
+            <p className="mt-2 text-sm text-gray-600">
+              Deseja confirmar que o pagamento do pedido de <strong>{pedidoSelecionado.customerName}</strong> foi realizado?
+            </p>
+            <div className="mt-6 flex justify-center gap-4">
+              <button
+                onClick={() => setPedidoSelecionado(null)}
+                className="rounded bg-gray-100 px-4 py-2 text-sm text-gray-800 hover:bg-gray-200"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmarPedido}
+                className="rounded bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
