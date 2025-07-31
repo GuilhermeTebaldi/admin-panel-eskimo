@@ -17,6 +17,16 @@ export default function Pedidos() {
   const lojasFixas = ["Efapi", "Palmital", "Passo dos Fortes"];
   const lastIds = useRef(new Set());
 
+  // 🔥 Mapeamento entre o select e o valor real do backend
+  const mapStore = (store) => {
+    if (!store) return "";
+    const lower = store.toLowerCase();
+    if (lower.includes("passo")) return "passo";
+    if (lower.includes("efapi")) return "efapi";
+    if (lower.includes("palmital")) return "palmital";
+    return store.toLowerCase();
+  };
+
   const getDataPedido = (pedido) => {
     const rawDate = pedido.createdAt || pedido.created_at || pedido.CreatedAt || pedido.date;
     return rawDate ? new Date(rawDate) : null;
@@ -93,10 +103,11 @@ export default function Pedidos() {
     }
   };
 
-  // ✅ Filtro aplicado aos pedidos
+  // ✅ Filtro aplicado aos pedidos com mapeamento
   const pedidosFiltrados = pedidos.filter((p) => {
     const statusOk = filtroStatus === "todos" || p.status === filtroStatus;
-    const storeOk = filtroStore === "todos" || p.store?.toLowerCase() === filtroStore.toLowerCase();
+    const storeOk =
+      filtroStore === "todos" || mapStore(p.store) === mapStore(filtroStore);
     return statusOk && storeOk;
   });
 
