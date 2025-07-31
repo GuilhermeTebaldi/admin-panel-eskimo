@@ -17,11 +17,11 @@ export default function Pedidos() {
   const lojasFixas = ["Efapi", "Palmital", "Passo dos Fortes"];
   const lastIds = useRef(new Set());
 
-  // 🔥 Mapeamento entre o select e o valor real do backend
+  // 🔥 Mapeamento entre nome exibido e valor real no backend
   const mapStore = (store) => {
     if (!store) return "";
     const lower = store.toLowerCase();
-    if (lower.includes("passo")) return "passo";
+    if (lower.includes("passo")) return "passodosfortes";
     if (lower.includes("efapi")) return "efapi";
     if (lower.includes("palmital")) return "palmital";
     return store.toLowerCase();
@@ -87,53 +87,60 @@ export default function Pedidos() {
       toast.error("Erro ao excluir pedido.");
     }
   };
-// ✅ Gerar PDFs reais e abrir no navegador + WhatsApp
-const gerarRelatoriosPDF = async () => {
-  setGerandoRelatorio(true);
-  toast.info("Gerando PDFs das lojas...");
 
-  try {
-    const lojas = ["efapi", "palmital", "passodosfortes"];
+  // ✅ Gerar PDFs apenas da loja selecionada ou todos
+  const gerarRelatoriosPDF = async () => {
+    setGerandoRelatorio(true);
+    toast.info("Gerando PDF...");
 
-    // 🔥 Baixa os PDFs de cada loja
-    for (let loja of lojas) {
-      const link = document.createElement("a");
-      link.href = `${API_URL}/reports/${loja}`;
-      link.download = `relatorio-${loja}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+    try {
+      let lojasParaGerar = [];
+
+      if (filtroStore === "todos") {
+        lojasParaGerar = ["efapi", "palmital", "passodosfortes"];
+      } else {
+        lojasParaGerar = [mapStore(filtroStore)];
+      }
+
+      // 🔥 Baixa PDF(s)
+      for (let loja of lojasParaGerar) {
+        const link = document.createElement("a");
+        link.href = `${API_URL}/reports/${loja}`;
+        link.download = `relatorio-${loja}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      // 🔥 WhatsApp com link(s)
+      let numero = numeroWhatsapp.trim();
+      if (!numero.startsWith("55")) numero = "55" + numero;
+
+      const linksMsg = lojasParaGerar
+        .map((loja) => `📄 ${loja.charAt(0).toUpperCase() + loja.slice(1)}: ${API_URL}/reports/${loja}`)
+        .join("\n");
+
+      const mensagem = encodeURIComponent(`Segue o(s) relatório(s):\n${linksMsg}`);
+      window.open(`https://wa.me/${numero}?text=${mensagem}`, "_blank");
+    } finally {
+      setGerandoRelatorio(false);
     }
+  };
 
-    // 🔥 Abre WhatsApp com os links prontos
-    let numero = numeroWhatsapp.trim();
-    if (!numero.startsWith("55")) numero = "55" + numero;
+  const pedidosFiltrados = pedidos.filter((p) => {
+    const statusOk = filtroStatus === "todos" || p.status === filtroStatus;
+    const storeOk =
+      filtroStore === "todos" || mapStore(p.store) === mapStore(filtroStore);
+    return statusOk && storeOk;
+  });
 
-    const mensagem = encodeURIComponent(
-      `Segue os relatórios:\n📄 Efapi: ${API_URL}/reports/efapi\n📄 Palmital: ${API_URL}/reports/palmital\n📄 Passo: ${API_URL}/reports/passodosfortes`
-    );
-
-    window.open(`https://wa.me/${numero}?text=${mensagem}`, "_blank");
-  } finally {
-    setGerandoRelatorio(false);
-  }
-};
-
-const pedidosFiltrados = pedidos.filter((p) => {
-  const statusOk = filtroStatus === "todos" || p.status === filtroStatus;
-  const storeOk =
-    filtroStore === "todos" || mapStore(p.store) === mapStore(filtroStore);
-  return statusOk && storeOk;
-});
-
-const pedidosAgrupados = pedidosFiltrados.reduce((acc, pedido) => {
-  const dataPedido = getDataPedido(pedido);
-  const data = dataPedido ? dataPedido.toLocaleDateString() : "Data desconhecida";
-  if (!acc[data]) acc[data] = [];
-  acc[data].push(pedido);
-  return acc;
-}, {});
-
+  const pedidosAgrupados = pedidosFiltrados.reduce((acc, pedido) => {
+    const dataPedido = getDataPedido(pedido);
+    const data = dataPedido ? dataPedido.toLocaleDateString() : "Data desconhecida";
+    if (!acc[data]) acc[data] = [];
+    acc[data].push(pedido);
+    return acc;
+  }, {});
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-white to-gray-50 py-10 px-4 text-gray-800">
@@ -141,7 +148,6 @@ const pedidosAgrupados = pedidosFiltrados.reduce((acc, pedido) => {
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-3xl font-extrabold text-gray-900">📦 Pedidos Recebidos</h1>
           <div className="flex flex-wrap gap-2">
-            {/* ✅ Filtro de unidades */}
             <select
               className="rounded-md border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700"
               value={filtroStore}
@@ -153,7 +159,6 @@ const pedidosAgrupados = pedidosFiltrados.reduce((acc, pedido) => {
               ))}
             </select>
 
-            {/* ✅ Filtro de status */}
             <select
               className="rounded-md border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700"
               value={filtroStatus}
