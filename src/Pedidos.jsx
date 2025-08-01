@@ -209,7 +209,9 @@ export default function Pedidos() {
                   {lista.map((pedido) => {
                     const dataPedido = getDataPedido(pedido);
                     const isHoje = dataPedido && formatDate(dataPedido) === formatDate(new Date());
-                    const horario = dataPedido ? dataPedido.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Sem horário";
+                    const horario = dataPedido 
+  ? new Date(dataPedido.getTime() - 3 * 60 * 60 * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+  : "Sem horário";
                     return (
                       <div
                         key={pedido.id}
