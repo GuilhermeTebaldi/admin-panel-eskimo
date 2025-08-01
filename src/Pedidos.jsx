@@ -17,7 +17,6 @@ export default function Pedidos() {
   const lojasFixas = ["Efapi", "Palmital", "Passo dos Fortes"];
   const lastIds = useRef(new Set());
 
-  // 🔥 Mapeamento entre nome exibido e valor real no backend
   const mapStore = (store) => {
     if (!store) return "";
     const lower = store.toLowerCase();
@@ -88,7 +87,6 @@ export default function Pedidos() {
     }
   };
 
-  // ✅ Gerar PDFs reais com nomes corretos
   const gerarRelatoriosPDF = async () => {
     setGerandoRelatorio(true);
     toast.info("Gerando PDF...");
@@ -102,7 +100,6 @@ export default function Pedidos() {
         lojasParaGerar = [mapStore(filtroStore)];
       }
 
-      // 🔥 Baixa PDF(s)
       for (let loja of lojasParaGerar) {
         const link = document.createElement("a");
         link.href = `${API_URL}/reports/${loja}`;
@@ -112,7 +109,6 @@ export default function Pedidos() {
         document.body.removeChild(link);
       }
 
-      // 🔥 WhatsApp com link(s)
       let numero = numeroWhatsapp.trim();
       if (!numero.startsWith("55")) numero = "55" + numero;
 
@@ -129,18 +125,15 @@ export default function Pedidos() {
 
   const pedidosFiltrados = pedidos.filter((p) => {
     const statusOk = filtroStatus === "todos" || p.status === filtroStatus;
-    const storeOk =
-      filtroStore === "todos" || mapStore(p.store) === mapStore(filtroStore);
+    const storeOk = filtroStore === "todos" || mapStore(p.store) === mapStore(filtroStore);
     return statusOk && storeOk;
   });
 
-  // ✅ Função para padronizar datas (YYYY-MM-DD)
   const formatDate = (date) => {
     const d = new Date(date);
     return d.toISOString().split("T")[0];
   };
 
-  // ✅ Agrupar pedidos por data padronizada
   const pedidosAgrupados = pedidosFiltrados.reduce((acc, pedido) => {
     const dataPedido = getDataPedido(pedido);
     const data = dataPedido ? formatDate(dataPedido) : "Data desconhecida";
@@ -149,7 +142,6 @@ export default function Pedidos() {
     return acc;
   }, {});
 
-  // ✅ Ordenar datas do mais recente para o mais antigo
   const datasOrdenadas = Object.keys(pedidosAgrupados).sort((a, b) => new Date(b) - new Date(a));
 
   return (
@@ -217,6 +209,7 @@ export default function Pedidos() {
                   {lista.map((pedido) => {
                     const dataPedido = getDataPedido(pedido);
                     const isHoje = dataPedido && formatDate(dataPedido) === formatDate(new Date());
+                    const horario = dataPedido ? dataPedido.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Sem horário";
                     return (
                       <div
                         key={pedido.id}
@@ -228,6 +221,7 @@ export default function Pedidos() {
                       >
                         <div className="mb-3 space-y-1 text-sm text-gray-700">
                           <div><strong>Número do Pedido:</strong> #{pedido.id}</div>
+                          <div><strong>Horário:</strong> {horario}</div>
                           <div><strong>Cliente:</strong> {pedido.customerName}</div>
                           <div><strong>Telefone:</strong> {pedido.phoneNumber || "Não informado"}</div>
                           <div><strong>Unidade:</strong> {pedido.store}</div>
