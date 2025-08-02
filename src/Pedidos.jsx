@@ -183,13 +183,19 @@ export default function Pedidos() {
               <option value="pago">Pagos</option>
               <option value="entregue">Entregues</option>
             </select>
-
+            <button
+        onClick={() => window.history.back()}
+        className="rounded-md border border-gray-300 bg-white px-4 py-1 text-sm text-gray-600 hover:bg-gray-100"
+      >
+        ← Voltar
+      </button>
             <button
               onClick={() => setMostrarModalExcluirTodos(true)}
               className="rounded bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700"
             >
               🗑 Limpar Histórico
             </button>
+
           </div>
         </div>
 
