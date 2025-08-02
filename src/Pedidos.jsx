@@ -13,6 +13,7 @@ export default function Pedidos() {
   const [filtroStore, setFiltroStore] = useState("todos");
   const [numeroWhatsapp, setNumeroWhatsapp] = useState("");
   const [gerandoRelatorio, setGerandoRelatorio] = useState(false);
+  const [mostrarModalExcluirTodos, setMostrarModalExcluirTodos] = useState(false);
 
   const lojasFixas = ["Efapi", "Palmital", "Passo dos Fortes"];
   const lastIds = useRef(new Set());
@@ -84,6 +85,17 @@ export default function Pedidos() {
       fetchPedidos();
     } catch {
       toast.error("Erro ao excluir pedido.");
+    }
+  };
+
+  const excluirTodosPedidos = async () => {
+    try {
+      await axios.delete(`${API_URL}/orders/clear`);
+      toast.success("Todos os pedidos foram excluídos.");
+      setMostrarModalExcluirTodos(false);
+      fetchPedidos();
+    } catch {
+      toast.error("Erro ao excluir todos os pedidos.");
     }
   };
 
@@ -171,9 +183,17 @@ export default function Pedidos() {
               <option value="pago">Pagos</option>
               <option value="entregue">Entregues</option>
             </select>
+
+            <button
+              onClick={() => setMostrarModalExcluirTodos(true)}
+              className="rounded bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700"
+            >
+              🗑 Limpar Histórico
+            </button>
           </div>
         </div>
 
+        {/* Prestação de Contas */}
         <div className="mb-8 rounded-lg border bg-white p-4 shadow-sm">
           <h2 className="mb-2 text-lg font-bold text-blue-800">📤 Prestação de Contas</h2>
           <div className="flex flex-col gap-2 sm:flex-row">
@@ -210,8 +230,8 @@ export default function Pedidos() {
                     const dataPedido = getDataPedido(pedido);
                     const isHoje = dataPedido && formatDate(dataPedido) === formatDate(new Date());
                     const horario = dataPedido 
-  ? new Date(dataPedido.getTime() - 3 * 60 * 60 * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
-  : "Sem horário";
+                      ? new Date(dataPedido.getTime() - 3 * 60 * 60 * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+                      : "Sem horário";
                     return (
                       <div
                         key={pedido.id}
@@ -297,6 +317,7 @@ export default function Pedidos() {
         )}
       </div>
 
+      {/* Modal Confirmar Pagamento */}
       {pedidoSelecionado && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl">
@@ -316,6 +337,32 @@ export default function Pedidos() {
                 className="rounded bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
               >
                 Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Excluir Todos */}
+      {mostrarModalExcluirTodos && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl">
+            <h2 className="text-xl font-bold text-gray-800">⚠️ Limpar Histórico</h2>
+            <p className="mt-2 text-sm text-gray-600">
+              Tem certeza que deseja excluir <strong>todos os pedidos</strong>? Essa ação não poderá ser desfeita.
+            </p>
+            <div className="mt-6 flex justify-center gap-4">
+              <button
+                onClick={() => setMostrarModalExcluirTodos(false)}
+                className="rounded bg-gray-100 px-4 py-2 text-sm text-gray-800 hover:bg-gray-200"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={excluirTodosPedidos}
+                className="rounded bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+              >
+                Excluir Tudo
               </button>
             </div>
           </div>
