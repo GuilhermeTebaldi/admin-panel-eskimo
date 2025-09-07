@@ -12,7 +12,7 @@ export default function SplashScreen() {
       animation: "fadeIn 0.8s ease-in-out"
     }}>
       <h1 style={{ fontSize: "2.5rem", color: "#065f46", fontWeight: "bold" }}>
-Volpesites
+ESKIMÓ
       </h1>
       <p style={{ fontSize: "1.2rem", color: "#065f46", marginTop: "1rem" }}>
         Carregando...

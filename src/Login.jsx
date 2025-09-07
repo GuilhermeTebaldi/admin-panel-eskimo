@@ -84,9 +84,31 @@ export default function LoginPage() {
               Entrar
             </button>
 
-            <h2 style={{ fontSize: "1.2rem", color: "#065f46", fontWeight: "bold", marginTop: "2rem" }}>
-              Volpesites 🦊
-            </h2>
+            <h2
+  style={{
+    fontSize: "1.2rem",
+    color: "#065f46",
+    fontWeight: "bold",
+    marginTop: "2rem",
+  }}
+>
+  EISTALT{" "}
+  <a
+    href="https://eistalt.vercel.app/"
+    target="_blank"
+    rel="noopener noreferrer"
+    style={{
+      color: "#059669", // verde elegante
+      textDecoration: "none",
+      fontWeight: "600",
+    }}
+    onMouseOver={(e) => (e.currentTarget.style.textDecoration = "underline")}
+    onMouseOut={(e) => (e.currentTarget.style.textDecoration = "none")}
+  >
+    https://eistalt.vercel.app/
+  </a>
+</h2>
+
           </form>
         )}
       </div>
