@@ -1,21 +1,48 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 
-// API base
+// Base da API (usa VITE_API_URL, cai pra localhost se não tiver)
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080/api";
-// JWT header
-const auth = { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } };
 
-// Lojas padrão do sistema (mesmos nomes usados nos pedidos)
-const LOJAS = ["efapi", "palmital", "passo"];
+// Cabeçalho com JWT, se existir
+const auth = {
+  headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+};
+
+// Mapeamento oficial (o site usa estes SLUGS na Loja)
+const STORES = [
+  { label: "Efapi", slug: "efapi" },
+  { label: "Palmital", slug: "palmital" },
+  { label: "Passo dos Fortes", slug: "passo" }, // slug "passo" no site
+];
+
+// Normaliza string para comparar (sem acento, lower, trim)
+const normalize = (s) =>
+  (s ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+
+// Converte qualquer nome livre para um slug conhecido
+const toSlug = (s) => {
+  const n = normalize(s);
+  if (n.includes("efapi")) return "efapi";
+  if (n.includes("palmital")) return "palmital";
+  // várias formas comuns para "Passo dos Fortes"
+  if (["passo", "passo dos fortes", "passo-dos-fortes"].includes(n)) return "passo";
+  return n; // fallback (mas no nosso fluxo vamos sempre salvar slug válido)
+};
 
 export default function PaymentSettings() {
-  const [configs, setConfigs] = useState([]);
+  const [configs, setConfigs] = useState([]); // lista crua que vem da API
   const [loading, setLoading] = useState(true);
 
-  // seleção e form
-  const [store, setStore] = useState(LOJAS[0]);
+  // Loja selecionada (sempre por slug)
+  const [storeSlug, setStoreSlug] = useState(STORES[0].slug);
+
+  // Formulário
   const [cnpj, setCnpj] = useState("");
   const [provider, setProvider] = useState("mercadopago");
   const [isActive, setIsActive] = useState(true);
@@ -32,16 +59,33 @@ export default function PaymentSettings() {
   const [bankCertPath, setBankCertPath] = useState("");
   const [bankCertPassword, setBankCertPassword] = useState("");
 
+  // Índice das configs por slug (aceita qualquer "store" que já esteja salvo)
+  const configsBySlug = useMemo(() => {
+    const map = new Map();
+    for (const c of configs) {
+      const slug = toSlug(c.store);
+      if (!map.has(slug)) map.set(slug, c);
+    }
+    return map;
+  }, [configs]);
+
+  // Carrega todas as configs
   const loadAll = async () => {
     try {
-      const { data } = await axios.get(`${API_URL}/paymentconfigs`, auth).catch(async (e) => {
+      const tryGet = async (withAuth) =>
+        axios.get(`${API_URL}/paymentconfigs`, withAuth ? auth : undefined);
+
+      let data;
+      try {
+        ({ data } = await tryGet(true));
+      } catch (e) {
         // se a rota não exigir auth, tenta sem header
         if (e?.response?.status === 401) throw e;
-        const resp = await axios.get(`${API_URL}/paymentconfigs`);
-        return resp;
-      });
-      setConfigs(data || []);
-    } catch {
+        ({ data } = await tryGet(false));
+      }
+      setConfigs(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error(e);
       toast.error("Não foi possível carregar as configurações de pagamento.");
     } finally {
       setLoading(false);
@@ -50,11 +94,12 @@ export default function PaymentSettings() {
 
   useEffect(() => {
     loadAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const fillFormFromStore = (storeName) => {
-    const cfg = configs.find((c) => c.store === storeName);
-    setStore(storeName);
+  // Preenche o formulário com base no slug selecionado
+  const fillFormFromSlug = (slug) => {
+    const cfg = configsBySlug.get(slug);
     setCnpj(cfg?.cnpj || "");
     setProvider(cfg?.provider || "mercadopago");
     setIsActive(cfg?.isActive ?? true);
@@ -68,19 +113,24 @@ export default function PaymentSettings() {
     setBankCertPassword(cfg?.bankCertPassword || "");
   };
 
-  // Preenche form quando trocar seleção
+  // Quando configs carregarem, sincroniza o form da loja atual
   useEffect(() => {
-    if (configs.length) fillFormFromStore(store);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [configs]); // ao carregar configs, sincroniza form da loja padrão
-  useEffect(() => {
-    fillFormFromStore(store);
+    fillFormFromSlug(storeSlug);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [store]); // ao trocar loja no select
+  }, [configsBySlug]);
 
+  // Quando trocar a loja no select
+  useEffect(() => {
+    fillFormFromSlug(storeSlug);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storeSlug]);
+
+  // Salva (sempre por slug) — PUT /paymentconfigs/{slug}
   const handleSave = async () => {
     try {
       const body = {
+        // Força salvar a store em slug para casar com a Loja (efapi/palmital/passo)
+        store: storeSlug,
         cnpj,
         provider,
         isActive,
@@ -94,14 +144,23 @@ export default function PaymentSettings() {
         bankCertPassword,
       };
 
-      await axios
-        .put(`${API_URL}/paymentconfigs/${encodeURIComponent(store)}`, body, auth)
-        .catch(async (e) => {
-          if (e?.response?.status === 401) throw e;
-          return axios.put(`${API_URL}/paymentconfigs/${encodeURIComponent(store)}`, body);
-        });
+      const tryPut = async (withAuth) =>
+        axios.put(
+          `${API_URL}/paymentconfigs/${encodeURIComponent(storeSlug)}`,
+          body,
+          withAuth ? auth : undefined
+        );
 
-      toast.success(`Configuração da loja "${store}" salva!`);
+      try {
+        await tryPut(true);
+      } catch (e) {
+        if (e?.response?.status === 401) throw e;
+        // pode ser rota pública no seu backend
+        await tryPut(false);
+      }
+
+      const label = STORES.find((s) => s.slug === storeSlug)?.label ?? storeSlug;
+      toast.success(`Configuração da loja "${label}" salva!`);
       loadAll();
     } catch (e) {
       console.error(e);
@@ -109,16 +168,26 @@ export default function PaymentSettings() {
     }
   };
 
+  // Excluir (sempre por slug) — DELETE /paymentconfigs/{slug}
   const handleDelete = async () => {
-    if (!window.confirm(`Remover configuração da loja "${store}"?`)) return;
+    const label = STORES.find((s) => s.slug === storeSlug)?.label ?? storeSlug;
+    if (!window.confirm(`Remover configuração da loja "${label}"?`)) return;
+
     try {
-      await axios
-        .delete(`${API_URL}/paymentconfigs/${encodeURIComponent(store)}`, auth)
-        .catch(async (e) => {
-          if (e?.response?.status === 401) throw e;
-          return axios.delete(`${API_URL}/paymentconfigs/${encodeURIComponent(store)}`);
-        });
-      toast.info(`Configuração da loja "${store}" removida.`);
+      const tryDelete = async (withAuth) =>
+        axios.delete(
+          `${API_URL}/paymentconfigs/${encodeURIComponent(storeSlug)}`,
+          withAuth ? auth : undefined
+        );
+
+      try {
+        await tryDelete(true);
+      } catch (e) {
+        if (e?.response?.status === 401) throw e;
+        await tryDelete(false);
+      }
+
+      toast.info(`Configuração da loja "${label}" removida.`);
       loadAll();
     } catch (e) {
       console.error(e);
@@ -131,13 +200,16 @@ export default function PaymentSettings() {
       <div className="mx-auto max-w-5xl">
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-2xl font-extrabold text-gray-900">⚙️ Pagamentos por Loja (CNPJ)</h1>
-          <button onClick={() => window.history.back()} className="rounded-md border border-gray-300 bg-white px-4 py-1 text-sm text-gray-600 hover:bg-gray-100">
+          <button
+            onClick={() => window.history.back()}
+            className="rounded-md border border-gray-300 bg-white px-4 py-1 text-sm text-gray-600 hover:bg-gray-100"
+          >
             ← Voltar
           </button>
         </div>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          {/* Coluna esquerda: lista/overview */}
+          {/* Coluna esquerda */}
           <div className="rounded-xl border bg-white p-4 shadow">
             <h2 className="mb-3 text-lg font-bold text-gray-800">Lojas configuradas</h2>
 
@@ -145,12 +217,12 @@ export default function PaymentSettings() {
               <p className="text-sm text-gray-500">Carregando…</p>
             ) : (
               <ul className="divide-y divide-gray-100">
-                {LOJAS.map((nome) => {
-                  const cfg = configs.find((c) => c.store === nome);
+                {STORES.map(({ label, slug }) => {
+                  const cfg = configsBySlug.get(slug);
                   return (
-                    <li key={nome} className="flex items-center justify-between py-3">
+                    <li key={slug} className="flex items-center justify-between py-3">
                       <div>
-                        <div className="font-semibold">{nome}</div>
+                        <div className="font-semibold">{label}</div>
                         <div className="text-xs text-gray-600">
                           {cfg ? (
                             <>
@@ -164,12 +236,14 @@ export default function PaymentSettings() {
                         </div>
                       </div>
                       <button
-                        onClick={() => setStore(nome)}
+                        onClick={() => setStoreSlug(slug)}
                         className={`rounded px-3 py-1 text-sm font-semibold ${
-                          store === nome ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                          storeSlug === slug
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-100 text-gray-800 hover:bg-gray-200"
                         }`}
                       >
-                        {store === nome ? "Selecionado" : "Selecionar"}
+                        {storeSlug === slug ? "Selecionado" : "Selecionar"}
                       </button>
                     </li>
                   );
@@ -178,20 +252,20 @@ export default function PaymentSettings() {
             )}
           </div>
 
-          {/* Coluna direita: formulário */}
+          {/* Coluna direita */}
           <div className="rounded-xl border bg-white p-4 shadow">
             <h2 className="mb-3 text-lg font-bold text-gray-800">Editar configuração</h2>
 
             <div className="mb-3">
               <label className="block text-sm font-medium text-gray-700">Loja</label>
               <select
-                value={store}
-                onChange={(e) => setStore(e.target.value)}
+                value={storeSlug}
+                onChange={(e) => setStoreSlug(e.target.value)}
                 className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm"
               >
-                {LOJAS.map((l) => (
-                  <option key={l} value={l}>
-                    {l}
+                {STORES.map(({ label, slug }) => (
+                  <option key={slug} value={slug}>
+                    {label}
                   </option>
                 ))}
               </select>
@@ -235,7 +309,9 @@ export default function PaymentSettings() {
 
             {/* Mercado Pago */}
             <div className="mb-2 rounded-lg border border-blue-200 bg-blue-50 p-3">
-              <div className="mb-2 text-sm font-semibold text-blue-800">Credenciais Mercado Pago</div>
+              <div className="mb-2 text-sm font-semibold text-blue-800">
+                Credenciais Mercado Pago
+              </div>
               <label className="block text-xs text-gray-700">Public Key</label>
               <input
                 type="text"
@@ -256,7 +332,9 @@ export default function PaymentSettings() {
 
             {/* PIX Banco (futuro) */}
             <details className="mb-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
-              <summary className="cursor-pointer text-sm font-semibold text-gray-800">PIX (Banco) — avançado</summary>
+              <summary className="cursor-pointer text-sm font-semibold text-gray-800">
+                PIX (Banco) — avançado
+              </summary>
               <div className="mt-2 grid grid-cols-1 gap-3">
                 <div>
                   <label className="block text-xs text-gray-700">Chave PIX</label>
@@ -337,7 +415,11 @@ export default function PaymentSettings() {
             </div>
 
             <p className="mt-3 text-xs text-gray-500">
-              Dica: use exatamente os nomes de loja que aparecem nos pedidos (“Efapi”, “Palmital”, “Passo dos Fortes”).
+              Importante: salvamos internamente os nomes das lojas como slugs{" "}
+              <code>efapi</code>, <code>palmital</code>, <code>passo</code>. A Loja
+              consome <code>/paymentconfigs/&lt;slug&gt;</code>, então isso garante que o
+              botão do Mercado Pago apareça quando <code>provider</code> for{" "}
+              <code>mercadopago</code> e <code>isActive</code> estiver marcado.
             </p>
           </div>
         </div>
