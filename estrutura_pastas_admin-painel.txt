@@ -1,0 +1,63 @@
+.
+├── .DS_Store
+├── .env
+├── .gitignore
+├── .vscode
+│   └── settings.json
+├── components.json
+├── dist
+│   ├── assets
+│   │   ├── index-Bx21oCKK.css
+│   │   └── index-DOufiYnx.js
+│   ├── index.html
+│   └── vite.svg
+├── eslint.config.js
+├── estrutura_pastas.txt
+├── index.html
+├── jsconfig.json
+├── Models
+├── package-lock.json
+├── package.json
+├── postcss.config.cjs
+├── postcss.config.js
+├── public
+│   └── vite.svg
+├── railway.json
+├── README.md
+├── src
+│   ├── App.jsx
+│   ├── assets
+│   │   └── react.svg
+│   ├── CategoryList.jsx
+│   ├── components
+│   │   └── ui
+│   │       ├── button.jsx
+│   │       ├── card.jsx
+│   │       ├── dialog.jsx
+│   │       ├── input.jsx
+│   │       ├── label.jsx
+│   │       └── ProductList.jsx
+│   ├── HomePublic.jsx
+│   ├── index.css
+│   ├── lib
+│   │   └── utils.js
+│   ├── Login.jsx
+│   ├── main.jsx
+│   ├── pages
+│   │   ├── CategoryManager.jsx
+│   │   └── EstoquePorLoja.jsx
+│   ├── Pedidos.jsx
+│   ├── PrivateRoute.jsx
+│   ├── ProductList.jsx
+│   ├── services
+│   │   └── api.js
+│   ├── SettingsManager.tsx
+│   ├── SplashScreen.jsx
+│   └── TesteTailwind.jsx
+├── tailwind.config.js
+├── trigger.txt
+├── tsconfig.json
+├── vercel.json
+└── vite.config.js
+
+13 directories, 48 files
