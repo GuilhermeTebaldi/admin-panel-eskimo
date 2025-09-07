@@ -8,7 +8,7 @@ const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080/api";
 const auth = { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } };
 
 // Lojas padrão do sistema (mesmos nomes usados nos pedidos)
-const LOJAS = ["Efapi", "Palmital", "Passo dos Fortes"];
+const LOJAS = ["efapi", "palmital", "passo"];
 
 export default function PaymentSettings() {
   const [configs, setConfigs] = useState([]);
@@ -71,6 +71,7 @@ export default function PaymentSettings() {
   // Preenche form quando trocar seleção
   useEffect(() => {
     if (configs.length) fillFormFromStore(store);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [configs]); // ao carregar configs, sincroniza form da loja padrão
   useEffect(() => {
     fillFormFromStore(store);
