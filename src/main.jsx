@@ -14,6 +14,8 @@ import PrivateRoute from "./PrivateRoute.jsx";
 import HomePublic from "./HomePublic";
 import CategoryManager from "./pages/CategoryManager";
 import EstoquePorLoja from "./pages/EstoquePorLoja";
+import PaymentSettings from "./PaymentSettings.jsx";
+
 
 // 🦊 Splash screen para carregamento inicial
 function SplashScreen() {
@@ -59,7 +61,7 @@ function MainApp() {
         <Route path="/configuracoes" element={<PrivateRoute><SettingsManager /></PrivateRoute>} />
         <Route path="/pedidos" element={<PrivateRoute><Pedidos /></PrivateRoute>} />
         <Route path="/estoque" element={<PrivateRoute><EstoquePorLoja /></PrivateRoute>} />
-       
+        <Route path="/pagamentos" element={<PaymentSettings />} />
 
       </Routes>
 

@@ -151,6 +151,8 @@ export default function AdminPanel() {
             <button type="button" onClick={() => navigate("/pedidos")} style={btnOutline}>✅ Ver Pedidos</button>
             <button type="button" onClick={() => navigate("/configuracoes")} style={btnOutline}>⚙️ Configurações de Entrega</button>
             <button type="button" onClick={() => navigate("/categorias")} style={btnOutline}>⚙️ Categorias </button>
+            <button type="button" onClick={() => navigate("/pagamentos")} style={btnOutline}>💳 Pagamentos por Loja</button>
+
           </div>
         </form>
 
