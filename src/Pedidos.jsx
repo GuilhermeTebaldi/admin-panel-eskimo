@@ -18,11 +18,10 @@ export default function Pedidos() {
   const [pedidoSelecionado, setPedidoSelecionado] = useState(null);
   const [filtroStatus, setFiltroStatus] = useState("todos");
   const [filtroStore, setFiltroStore] = useState("todos");
-  const [numeroWhatsapp, setNumeroWhatsapp] = useState("");
   const [gerandoRelatorio, setGerandoRelatorio] = useState(false);
   const [mostrarModalExcluirTodos, setMostrarModalExcluirTodos] = useState(false);
 
-  // 🔎 Novos filtros de data para relatório
+  // 🔎 Filtros de data para relatório
   const [fromDate, setFromDate] = useState(""); // "YYYY-MM-DD"
   const [toDate, setToDate] = useState("");     // "YYYY-MM-DD"
 
@@ -126,7 +125,7 @@ export default function Pedidos() {
     }
   };
 
-  // ✅ Monta query string a partir de from/to (YYYY-MM-DD)
+  // ✅ Query string a partir de from/to (YYYY-MM-DD)
   const buildReportQuery = () => {
     const params = new URLSearchParams();
     if (fromDate) params.append("from", fromDate);
@@ -135,7 +134,7 @@ export default function Pedidos() {
     return qs ? `?${qs}` : "";
   };
 
-  // ✅ Gera PDFs via endpoint protegido (usa axios com responseType 'blob' e Authorization)
+  // ✅ Baixa PDF por loja (com JWT, via blob)
   const baixarPDFPorLoja = async (lojaSlug) => {
     const qs = buildReportQuery();
     const fileSuffix =
@@ -163,6 +162,7 @@ export default function Pedidos() {
     URL.revokeObjectURL(url);
   };
 
+  // 🧾 Gera e BAIXA os PDFs (sem WhatsApp)
   const gerarRelatoriosPDF = async () => {
     setGerandoRelatorio(true);
     toast.info("Gerando PDF...");
@@ -181,24 +181,15 @@ export default function Pedidos() {
         await baixarPDFPorLoja(loja);
       }
 
-      // Mensagem do WhatsApp: apenas confirmação de geração
-      let numero = numeroWhatsapp.trim();
-      if (!numero.startsWith("55")) numero = "55" + numero;
-
       const periodo =
         fromDate || toDate
           ? ` (${fromDate || "início"} → ${toDate || "hoje"})`
           : "";
 
-      const linksMsg = lojasParaGerar
-        .map((loja) => `📄 ${loja.charAt(0).toUpperCase() + loja.slice(1)}: relatório gerado${periodo}`)
-        .join("\n");
-
-      const mensagem = encodeURIComponent(`Segue o(s) relatório(s):\n${linksMsg}`);
-      window.open(`https://wa.me/${numero}?text=${mensagem}`, "_blank");
+      toast.success(`Relatório(s) baixado(s) com sucesso${periodo}!`);
     } catch (e) {
       console.error(e);
-      toast.error("Falha ao gerar/enviar relatórios.");
+      toast.error("Falha ao gerar/baixar relatórios.");
     } finally {
       setGerandoRelatorio(false);
     }
@@ -287,23 +278,16 @@ export default function Pedidos() {
           </div>
         </div>
 
-        {/* Prestação de Contas */}
+        {/* Relatórios */}
         <div className="mb-8 rounded-lg border bg-white p-4 shadow-sm">
-          <h2 className="mb-2 text-lg font-bold text-blue-800">📤 Prestação de Contas</h2>
+          <h2 className="mb-2 text-lg font-bold text-blue-800">📄 Relatórios (download)</h2>
           <div className="flex flex-col gap-2 sm:flex-row">
-            <input
-              type="tel"
-              placeholder="WhatsApp (ex: 554999999999)"
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
-              value={numeroWhatsapp}
-              onChange={(e) => setNumeroWhatsapp(e.target.value)}
-            />
             <button
               onClick={gerarRelatoriosPDF}
               disabled={gerandoRelatorio}
               className="rounded bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700"
             >
-              {gerandoRelatorio ? "Gerando..." : "📄 Gerar & Enviar PDFs"}
+              {gerandoRelatorio ? "Gerando..." : "⬇️ Baixar PDF(s) por loja"}
             </button>
           </div>
           <p className="mt-2 text-xs text-gray-500">
@@ -333,7 +317,7 @@ export default function Pedidos() {
                     const dataPedido = getDataPedido(pedido);
                     const isHoje = dataPedido && formatDate(dataPedido) === formatDate(new Date());
 
-                    // ✅ Horário com fuso "America/Sao_Paulo", sem gambi de -3h
+                    // ✅ Horário com fuso "America/Sao_Paulo"
                     const horario = dataPedido
                       ? new Date(dataPedido).toLocaleTimeString("pt-BR", {
                           hour: "2-digit",
@@ -396,9 +380,7 @@ export default function Pedidos() {
                                 />
                                 <span>{item.name} (x{item.quantity})</span>
                               </div>
-                              <span className="font-medium">
-                                R$ {(item.price * item.quantity).toFixed(2)}
-                              </span>
+                              <span className="font-medium">R$ {(item.price * item.quantity).toFixed(2)}</span>
                             </li>
                           ))}
                         </ul>
