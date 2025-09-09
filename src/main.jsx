@@ -18,6 +18,7 @@ import PaymentSettings from "./PaymentSettings.jsx";
 
 
 // 🦊 Splash screen para carregamento inicial
+// eslint-disable-next-line react-refresh/only-export-components
 function SplashScreen() {
   return (
     <div style={{
@@ -40,6 +41,7 @@ function SplashScreen() {
 }
 
 // 🌐 App principal com rotas
+// eslint-disable-next-line react-refresh/only-export-components
 function MainApp() {
   const [loading, setLoading] = useState(true);
 

@@ -32,8 +32,9 @@ export default function ProductList() {
       }
     };
     fetchData();
-  }, [searchTerm]);
+  }, [fetchProducts, searchTerm]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const fetchProducts = async () => {
     const res = await api.get("/products/list", {
       params: { name: searchTerm, page: 1, pageSize },
