@@ -50,6 +50,11 @@ export default function PaymentSettings() {
   // Mercado Pago
   const [mpPublicKey, setMpPublicKey] = useState("");
   const [mpAccessToken, setMpAccessToken] = useState("");
+    // WhatsApp Cloud API
+    const [whatsappStoreNumber, setWhatsappStoreNumber] = useState("");
+    const [whatsappPhoneNumberId, setWhatsappPhoneNumberId] = useState("");
+    const [whatsappAccessToken, setWhatsappAccessToken] = useState("");
+  
 
   // PIX Banco (futuro)
   const [pixKey, setPixKey] = useState("");
@@ -94,7 +99,7 @@ export default function PaymentSettings() {
 
   useEffect(() => {
     loadAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   // Preenche o formulário com base no slug selecionado
@@ -105,6 +110,10 @@ export default function PaymentSettings() {
     setIsActive(cfg?.isActive ?? true);
     setMpPublicKey(cfg?.mpPublicKey || "");
     setMpAccessToken(cfg?.mpAccessToken || "");
+    setWhatsappStoreNumber(cfg?.whatsappStoreNumber || "");
+    setWhatsappPhoneNumberId(cfg?.whatsappPhoneNumberId || "");
+    setWhatsappAccessToken(cfg?.whatsappAccessToken || "");
+
     setPixKey(cfg?.pixKey || "");
     setBankName(cfg?.bankName || "");
     setBankClientId(cfg?.bankClientId || "");
@@ -136,6 +145,9 @@ export default function PaymentSettings() {
         isActive,
         mpPublicKey,
         mpAccessToken,
+        whatsappStoreNumber,
+        whatsappPhoneNumberId,
+        whatsappAccessToken,
         pixKey,
         bankName,
         bankClientId,
@@ -329,6 +341,42 @@ export default function PaymentSettings() {
                 className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm"
               />
             </div>
+                        {/* WhatsApp da Loja */}
+                        <div id="whatsapp" className="mb-3 rounded-lg border border-green-200 bg-green-50 p-3">
+              <div className="mb-2 text-sm font-semibold text-green-800">
+                WhatsApp da Loja
+              </div>
+              <label className="block text-xs text-gray-700">Número da loja (E.164 ou nacional)</label>
+              <input
+                type="text"
+                value={whatsappStoreNumber}
+                onChange={(e) => setWhatsappStoreNumber(e.target.value)}
+                placeholder="+55DDDNxxxxxxxx ou 4799xxxxxxx"
+                className="mb-2 mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm"
+              />
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs text-gray-700">Phone Number ID (Cloud API)</label>
+                  <input
+                    type="text"
+                    value={whatsappPhoneNumberId}
+                    onChange={(e) => setWhatsappPhoneNumberId(e.target.value)}
+                    placeholder="Ex.: 123456789012345"
+                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-700">Access Token (Cloud API)</label>
+                  <input
+                    type="password"
+                    value={whatsappAccessToken}
+                    onChange={(e) => setWhatsappAccessToken(e.target.value)}
+                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
 
             {/* PIX Banco (futuro) */}
             <details className="mb-3 rounded-lg border border-gray-200 bg-gray-50 p-3">

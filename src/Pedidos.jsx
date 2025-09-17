@@ -366,7 +366,10 @@ export default function Pedidos() {
                             >
                               {pedido.status?.toUpperCase() || "PENDENTE"}
                             </span>
-                          </div>
+                          </div>                          {pedido.whatsappNotifiedAt && (
+                            <div><strong>WhatsApp:</strong> enviado</div>
+                          )}
+
                         </div>
 
                         <ul className="mt-3 divide-y divide-gray-100 text-sm">

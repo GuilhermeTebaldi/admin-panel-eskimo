@@ -46,6 +46,7 @@
 │   ├── pages
 │   │   ├── CategoryManager.jsx
 │   │   └── EstoquePorLoja.jsx
+│   ├── PaymentSettings.jsx
 │   ├── Pedidos.jsx
 │   ├── PrivateRoute.jsx
 │   ├── ProductList.jsx
@@ -60,4 +61,4 @@
 ├── vercel.json
 └── vite.config.js
 
-13 directories, 48 files
+13 directories, 49 files
