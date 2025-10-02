@@ -306,50 +306,49 @@ export default function ProductList() {
 
       {/* Lista com drag-and-drop */}
       <DragDropContext onDragEnd={handleDragEnd}>
-        <Droppable droppableId="products">
-          {(provided) => (
-            <table
-              className="min-w-full bg-white rounded shadow mt-6"
-              ref={provided.innerRef}
-              {...provided.droppableProps}
-            >
-              <thead className="bg-green-100 text-green-900">
-                <tr>
-                  <th className="p-3 text-left">Produto</th>
-                  <th className="p-3 text-left">Preço</th>
-                  <th className="p-3 text-left">Categoria</th>
-                  <th className="p-3 text-left">Subcategoria</th>
-                  <th className="p-3 text-left">Ações</th>
+  <table className="min-w-full bg-white rounded shadow mt-6">
+    <thead className="bg-green-100 text-green-900">
+      <tr>
+        <th className="p-3 text-left">Produto</th>
+        <th className="p-3 text-left">Preço</th>
+        <th className="p-3 text-left">Categoria</th>
+        <th className="p-3 text-left">Subcategoria</th>
+        <th className="p-3 text-left">Ações</th>
+      </tr>
+    </thead>
+
+    <Droppable droppableId="products">
+      {(provided) => (
+        <tbody ref={provided.innerRef} {...provided.droppableProps}>
+          {filteredProducts.map((p, index) => (
+            <Draggable key={p?.id} draggableId={String(p?.id)} index={index}>
+              {(prov) => (
+                <tr
+                  ref={prov.innerRef}
+                  {...prov.draggableProps}
+                  {...prov.dragHandleProps}
+                  style={prov.draggableProps.style}
+                  className="border-t hover:bg-gray-50"
+                >
+                  <td className="p-3">{p?.name ?? "—"}</td>
+                  <td className="p-3">R$ {money(p?.price)}</td>
+                  <td className="p-3">{p?.categoryName ?? "—"}</td>
+                  <td className="p-3">{p?.subcategoryName ?? "—"}</td>
+                  <td className="p-3 flex gap-2">
+                    <button onClick={() => handleEdit(p)} className="text-blue-600 hover:underline">✏️</button>
+                    <button onClick={() => handleDelete(p?.id)} className="text-red-600 hover:underline">🗑️</button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {filteredProducts.map((p, index) => (
-                  <Draggable key={p?.id} draggableId={String(p?.id)} index={index}>
-                    {(prov) => (
-                      <tr
-                        ref={prov.innerRef}
-                        {...prov.draggableProps}
-                        {...prov.dragHandleProps}
-                        className="border-t hover:bg-gray-50"
-                      >
-                        <td className="p-3">{p?.name ?? "—"}</td>
-                        <td className="p-3">R$ {money(p?.price)}</td>
-                        <td className="p-3">{p?.categoryName ?? "—"}</td>
-                        <td className="p-3">{p?.subcategoryName ?? "—"}</td>
-                        <td className="p-3 flex gap-2">
-                          <button onClick={() => handleEdit(p)} className="text-blue-600 hover:underline">✏️</button>
-                          <button onClick={() => handleDelete(p?.id)} className="text-red-600 hover:underline">🗑️</button>
-                        </td>
-                      </tr>
-                    )}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
-              </tbody>
-            </table>
-          )}
-        </Droppable>
-      </DragDropContext>
+              )}
+            </Draggable>
+          ))}
+          {provided.placeholder}
+        </tbody>
+      )}
+    </Droppable>
+  </table>
+</DragDropContext>
+
 
       {/* Editor lateral permanece igual (editar produto) */}
       {editingProduct && (
