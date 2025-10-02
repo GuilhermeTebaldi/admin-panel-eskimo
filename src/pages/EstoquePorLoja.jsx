@@ -41,6 +41,7 @@ export default function EstoquePorLoja() {
     };
 
     fetchDados();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleChange = (productId, loja, value) => {

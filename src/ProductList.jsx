@@ -122,7 +122,7 @@ export default function ProductList() {
     for (const p of list) {
       // salva sequencialmente para manter simples e robusto
       // (se quiser otimizar: Promise.all com cuidado)
-      // eslint-disable-next-line no-await-in-loop
+       
       await savePrice(p?.id);
     }
     alert("✅ Preços atualizados.");
