@@ -22,12 +22,78 @@ export default function ProductList() {
     stock: { efapi: 0, palmital: 0, passo: 0 },
   });
   const lojas = ["efapi", "palmital", "passo"];
+// —— Edição rápida de preços ——
+const [showPricePanel, setShowPricePanel] = useState(false);
+// id -> string (mantém o que o usuário digitou)
+const [priceEdits, setPriceEdits] = useState({});
+
+// Abre o painel já preenchendo os preços atuais
+const openPricePanel = () => {
+  const map = {};
+  (filteredProducts ?? products ?? []).forEach((p) => {
+    map[p?.id] = (p?.price ?? "").toString();
+  });
+  setPriceEdits(map);
+  setShowPricePanel(true);
+};
+// Atualiza o preço de um único produto
+const savePrice = async (id) => {
+  try {
+    const raw = priceEdits[id];
+    const price = parseFloat(String(raw).replace(",", ".")) || 0;
+    const p = (products || []).find((x) => x?.id === id);
+    if (!p) return alert("Produto não encontrado na lista atual.");
+
+    // UI otimista
+    setProducts((prev) =>
+      (prev ?? []).map((it) => (it?.id === id ? { ...it, price } : it))
+    );
+    setPriceEdits((prev) => ({ ...prev, [id]: price.toString() }));
+
+    // PUT real
+    const body = {
+      name: p?.name ?? "",
+      description: p?.description ?? "",
+      price,
+      imageUrl: p?.imageUrl ?? "",
+      categoryId: p?.categoryId ?? null,
+      subcategoryId: p?.subcategoryId ?? null,
+    };
+    await api.put(`/products/${id}`, body);
+
+    await fetchProducts(); // confirma com servidor
+
+    if (showPricePanel) {
+      const map = {};
+      (filteredProducts ?? products ?? []).forEach((pp) => {
+        map[pp?.id] = (pp?.price ?? "").toString();
+      });
+      setPriceEdits(map);
+    }
+  } catch (e) {
+    console.error(e);
+    alert("❌ Erro ao salvar preço.");
+  }
+};
+
+
+// Salva todos os itens visíveis no painel
+const saveAllPrices = async () => {
+  const list = (filteredProducts ?? products ?? []).slice();
+  for (const p of list) {
+    await savePrice(p?.id);
+  }
+  alert("✅ Preços atualizados.");
+  await fetchProducts();
+  openPricePanel(); // re-sincroniza os valores exibidos
+};
 
   // --------- API calls ---------
   const fetchProducts = useCallback(async () => {
     const res = await api.get("/products/list", {
-      params: { name: searchTerm, page: 1, pageSize },
+      params: { name: searchTerm, page: 1, pageSize, _t: Date.now() },
     });
+    
     const data = res?.data ?? [];
     const items = Array.isArray(data) ? data : Array.isArray(data.items) ? data.items : [];
     const ordered = items.slice().sort((a, b) => {
@@ -72,6 +138,16 @@ export default function ProductList() {
     if (!Number.isFinite(cid)) return [];
     return subcategories.filter((s) => s?.categoryId === cid);
   }, [subcategories, form.categoryId]);
+  // Mantém o painel de preços sincronizado ao mudar filtro/lista
+useEffect(() => {
+  if (!showPricePanel) return;
+  const map = {};
+  (filteredProducts ?? products ?? []).forEach((p) => {
+    map[p?.id] = (p?.price ?? "").toString();
+  });
+  setPriceEdits(map);
+}, [showPricePanel, filteredProducts, products]);
+
 
   // --------- Handlers ---------
   const handleEdit = async (product) => {
@@ -184,6 +260,29 @@ export default function ProductList() {
       >
         ← Voltar
       </button>
+      <div className="flex flex-wrap items-center gap-3 mt-4">
+  <button
+    onClick={() => (showPricePanel ? setShowPricePanel(false) : openPricePanel())}
+    className={`rounded-md px-4 py-2 text-sm font-semibold shadow border
+      ${showPricePanel ? "bg-yellow-200 border-yellow-300 text-gray-800" : "bg-white border-gray-300 text-gray-700 hover:bg-gray-100"}`}
+  >
+    💲 Preços
+  </button>
+
+  {showPricePanel && (
+    <>
+      <button
+        onClick={saveAllPrices}
+        className="rounded-md px-4 py-2 text-sm font-semibold shadow bg-green-600 text-white hover:bg-green-700"
+      >
+        💾 Salvar todos
+      </button>
+      <span className="text-sm text-gray-600">
+        Editando {filteredProducts.length} produto(s)
+      </span>
+    </>
+  )}
+</div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 mt-4">
         <input
@@ -206,6 +305,55 @@ export default function ProductList() {
           ))}
         </select>
       </div>
+      {showPricePanel && (
+  <div className="mb-6 rounded border border-gray-200 bg-white p-3 shadow-sm">
+    <h3 className="mb-3 text-base font-semibold text-green-700">Edição rápida de preços</h3>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+      {filteredProducts.map((p) => (
+        <div key={p?.id} className="flex items-center gap-3 rounded border border-gray-200 p-2">
+          <img
+            src={p?.imageUrl}
+            alt={p?.name}
+            className="h-12 w-12 rounded object-contain border"
+          />
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-sm font-medium text-gray-800">{p?.name ?? "—"}</div>
+            <div className="truncate text-xs text-gray-500">
+              {p?.categoryName ?? "—"}{p?.subcategoryName ? ` • ${p.subcategoryName}` : ""}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500">R$</span>
+            <input
+  type="number"
+  step="0.01"
+  inputMode="decimal"
+  value={priceEdits[p?.id] ?? (p?.price ?? "")}
+  onChange={(e) => {
+    const v = e.target.value;
+    setPriceEdits((prev) => ({ ...prev, [p?.id]: v }));
+  }}
+  onKeyDown={(e) => {
+    if (e.key === "Enter") savePrice(p?.id);
+  }}
+  className="w-28 rounded border border-gray-300 px-2 py-1 text-right text-sm"
+/>
+
+            <button
+              onClick={() => savePrice(p?.id)}
+              className="rounded bg-green-600 px-2 py-1 text-xs font-semibold text-white hover:bg-green-700"
+              title="Salvar este produto"
+            >
+              Salvar
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
 
       <table className="min-w-full bg-white rounded shadow">
         <thead className="bg-green-100 text-green-900">
