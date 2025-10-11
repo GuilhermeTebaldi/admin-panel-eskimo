@@ -11,12 +11,15 @@ export default function EstoquePorLoja() {
   const [filtroSubcategoria, setFiltroSubcategoria] = useState("");
   const [estoquePadrao, setEstoquePadrao] = useState("");
   const [loading, setLoading] = useState(false); // 🔥 novo estado de loading
+  const [aba, setAba] = useState("ativos"); // 'ativos' | 'arquivados'
+
   const lojas = ["efapi", "palmital", "passo"];
 
   useEffect(() => {
     const fetchDados = async () => {
       try {
-        const res = await api.get("/products/list?page=1&pageSize=1000");
+        const res = await api.get("/products/list?page=1&pageSize=1000&includeArchived=true");
+
         const produtosOrdenados = (res.data.items || res.data).sort((a, b) => a.name.localeCompare(b.name));
         setProdutos(produtosOrdenados);
 
@@ -71,13 +74,35 @@ export default function EstoquePorLoja() {
   const salvarTodos = async () => {
     setLoading(true);
     try {
-      await Promise.all(produtosFiltrados.map((produto) => salvarEstoque(produto.id, true)));
+      await Promise.all(produtosAtivosFiltrados.map((produto) => salvarEstoque(produto.id, true)));
+
       alert("✅ Estoques salvos!");
     } catch (err) {
       console.error("Erro ao salvar todos os estoques:", err);
       alert("❌ Erro ao salvar estoques.");
     } finally {
       setLoading(false);
+    }
+  };
+  const arquivarProduto = async (id) => {
+    try {
+      await api.patch(`/products/${id}/archive`, { isArchived: true });
+      setProdutos(prev => prev.map(p => p.id === id ? { ...p, isArchived: true } : p));
+      alert("📦 Produto arquivado.");
+    } catch (e) {
+      console.error(e);
+      alert("Erro ao arquivar.");
+    }
+  };
+  
+  const recolocarProduto = async (id) => {
+    try {
+      await api.patch(`/products/${id}/archive`, { isArchived: false });
+      setProdutos(prev => prev.map(p => p.id === id ? { ...p, isArchived: false } : p));
+      alert("✅ Produto recolocado no site.");
+    } catch (e) {
+      console.error(e);
+      alert("Erro ao recolocar.");
     }
   };
   
@@ -87,10 +112,11 @@ export default function EstoquePorLoja() {
     if (isNaN(valor)) return alert("Insira um valor válido");
 
     const novosEstoques = { ...estoques };
-    produtosFiltrados.forEach((p) => {
+    produtosAtivosFiltrados.forEach((p) => {
       const key = `${p.id}-${loja}`;
       novosEstoques[key] = valor;
     });
+    
     setEstoques(novosEstoques);
   };
 
@@ -99,7 +125,10 @@ export default function EstoquePorLoja() {
     (filtroCategoria === "" || p.categoryName === filtroCategoria) &&
     (filtroSubcategoria === "" || p.subcategoryName === filtroSubcategoria)
   );
-
+  const produtosArquivados = produtosFiltrados.filter(p => p.isArchived === true);
+  const produtosAtivos = produtosFiltrados.filter(p => !p.isArchived);
+  const produtosAtivosFiltrados = produtosAtivos; // usado nas tabelas de estoque
+  
   return (
     <div style={pageStyle}>
       <h1 style={titleStyle}>📦 Estoque por Loja</h1>
@@ -109,6 +138,16 @@ export default function EstoquePorLoja() {
       >
         ← Voltar
       </button>
+      <div style={{ display: "flex", gap: "0.5rem", margin: "1rem 0" }}>
+  <button onClick={() => setAba("ativos")}
+    style={{ ...tabBtn, ...(aba === "ativos" ? tabBtnActive : {}) }}>
+    Ativos
+  </button>
+  <button onClick={() => setAba("arquivados")}
+    style={{ ...tabBtn, ...(aba === "arquivados" ? tabBtnActive : {}) }}>
+    Arquivados
+  </button>
+</div>
 
       <div style={filterStyle}>
         <input type="text" placeholder="🔍 Buscar por nome..." value={filtroNome} onChange={(e) => setFiltroNome(e.target.value)} style={inputFiltro} />
@@ -183,9 +222,10 @@ export default function EstoquePorLoja() {
               </tr>
             </thead>
             <tbody>
-              {produtosFiltrados.filter((produto) =>
-                lojas.some((loja) => (estoques[`${produto.id}-${loja}`] ?? 0) === 0)
-              ).map((produto) => (
+            {produtosAtivosFiltrados.filter((produto) =>
+  lojas.some((loja) => (estoques[`${produto.id}-${loja}`] ?? 0) === 0)
+).map((produto) => (
+
                 <tr key={produto.id} style={{ borderTop: "1px solid #fca5a5" }}>
                   <td style={tdStyle}>{produto.name}</td>
                   {lojas.map((loja) => (
@@ -195,6 +235,8 @@ export default function EstoquePorLoja() {
                   ))}
                   <td style={tdStyle}>
                     <button onClick={() => salvarEstoque(produto.id)} style={btnPrimary}>💾 Salvar</button>
+                    <button onClick={() => arquivarProduto(produto.id)} style={btnArchive}>🗄️ Arquivar</button>
+
                   </td>
                 </tr>
               ))}
@@ -214,7 +256,8 @@ export default function EstoquePorLoja() {
             </tr>
           </thead>
           <tbody>
-            {produtosFiltrados.map((produto) => (
+          {produtosAtivosFiltrados.map((produto) => (
+
               <tr key={produto.id} style={{ borderTop: "1px solid #e5e7eb" }}>
                 <td style={tdStyle}>{produto.name}</td>
                 {lojas.map((loja) => (
@@ -224,12 +267,44 @@ export default function EstoquePorLoja() {
                 ))}
                 <td style={tdStyle}>
                   <button onClick={() => salvarEstoque(produto.id)} style={btnPrimary}>💾 Salvar</button>
+                  <button onClick={() => arquivarProduto(produto.id)} style={btnArchive}>🗄️ Arquivar</button>
+
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+      {aba === "arquivados" && (
+  <div style={{ marginTop: "1rem" }}>
+    <h2 style={{ ...titleStyle, fontSize: "1.5rem", color: "#1e293b" }}>🗄️ Produtos Arquivados</h2>
+    <div style={{ overflowX: "auto", borderRadius: "0.5rem" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <thead style={{ background: "#e5e7eb", color: "#111827" }}>
+          <tr>
+            <th style={thStyle}>Produto</th>
+            <th style={thStyle}>Categoria</th>
+            <th style={thStyle}>Subcategoria</th>
+            <th style={thStyle}>Ação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {produtosArquivados.map((p) => (
+            <tr key={p.id} style={{ borderTop: "1px solid #e5e7eb" }}>
+              <td style={tdStyle}>{p.name}</td>
+              <td style={tdStyle}>{p.categoryName || "-"}</td>
+              <td style={tdStyle}>{p.subcategoryName || "-"}</td>
+              <td style={tdStyle}>
+                <button onClick={() => recolocarProduto(p.id)} style={btnUnarchive}>↩️ Recolocar no site</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+)}
+
     </div>
   );
 }
@@ -243,3 +318,7 @@ const inputStyle = { width: "80px", padding: "0.4rem", border: "1px solid #ccc",
 const inputFiltro = { padding: "0.5rem", borderRadius: "0.5rem", border: "1px solid #d1d5db", minWidth: "200px" };
 const btnPrimary = { background: "#059669", color: "white", padding: "0.4rem 0.8rem", borderRadius: "0.5rem", border: "none", cursor: "pointer", fontWeight: "bold" };
 const btnApply = { background: "#facc15", color: "#1e293b", padding: "0.4rem 0.8rem", borderRadius: "0.5rem", border: "none", cursor: "pointer", fontWeight: "bold" };
+const tabBtn = { padding: "0.4rem 0.8rem", borderRadius: "0.5rem", border: "1px solid #cbd5e1", background: "white", cursor: "pointer", fontWeight: 600 };
+const tabBtnActive = { background: "#dbeafe", borderColor: "#93c5fd" };
+const btnArchive = { marginLeft: "0.5rem", background: "#f3f4f6", color: "#111827", padding: "0.4rem 0.8rem", borderRadius: "0.5rem", border: "1px solid #e5e7eb", cursor: "pointer", fontWeight: "bold" };
+const btnUnarchive = { background: "#eab308", color: "#1f2937", padding: "0.4rem 0.8rem", borderRadius: "0.5rem", border: "none", cursor: "pointer", fontWeight: "bold" };

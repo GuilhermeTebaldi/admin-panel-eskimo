@@ -11,6 +11,7 @@
 │   │   └── index-DOufiYnx.js
 │   ├── index.html
 │   └── vite.svg
+├── dump_projeto_admin.txt
 ├── eslint.config.js
 ├── estrutura_pastas.txt
 ├── index.html
@@ -21,7 +22,8 @@
 ├── postcss.config.cjs
 ├── postcss.config.js
 ├── public
-│   └── vite.svg
+│   ├── vite.svg
+│   └── vite2.png
 ├── railway.json
 ├── README.md
 ├── src
@@ -61,4 +63,4 @@
 ├── vercel.json
 └── vite.config.js
 
-13 directories, 49 files
+13 directories, 51 files

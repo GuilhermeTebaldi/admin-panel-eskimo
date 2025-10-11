@@ -1,0 +1,3582 @@
+index.html:
+```html
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite2.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Editor Eskimo </title>
+
+    <style>
+      /* Preloader */
+      #preloader {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background: linear-gradient(to bottom right, #e0f2f1, #f0fdf4);
+        color: #065f46;
+        font-family: 'Inter', sans-serif;
+        font-weight: bold;
+        font-size: 2rem;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        z-index: 9999;
+      }
+      #preloader p {
+        margin-top: 1rem;
+        font-size: 1.2rem;
+        color: #059669;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Preloader (antes do React carregar) -->
+    <div id="preloader">
+     Volpesites
+      <p>Carregando...</p>
+    </div>
+
+    <div id="root"></div>
+
+    <script type="module">
+      // Remove o preloader assim que o React montar
+      window.addEventListener('DOMContentLoaded', () => {
+        const root = document.getElementById('root');
+        if (root) {
+          new MutationObserver(() => {
+            const preloader = document.getElementById('preloader');
+            if (preloader) preloader.remove();
+          }).observe(root, { childList: true });
+        }
+      });
+    </script>
+
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+
+```
+
+package.json:
+```json
+{
+  "name": "admin-panel",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@hello-pangea/dnd": "^18.0.1",
+    "@radix-ui/react-dialog": "^1.1.7",
+    "@radix-ui/react-label": "^2.1.3",
+    "@radix-ui/react-slot": "^1.2.0",
+    "aos": "^2.3.4",
+    "axios": "^1.8.4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.487.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-helmet": "^6.1.0",
+    "react-loading": "^2.0.3",
+    "react-router-dom": "^7.5.0",
+    "react-toastify": "^11.0.5",
+    "tailwind-merge": "^3.2.0",
+    "tailwind-variants": "^1.0.0",
+    "tw-animate-css": "^1.2.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.21.0",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^9.21.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^15.15.0",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.1",
+    "vite": "^6.2.0"
+  }
+}
+
+```
+
+vite.config.js:
+```js
+
+
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import path from 'path'
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+
+
+export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
+});
+
+```
+
+tailwind.config.js:
+```js
+export default {
+  
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+    "./site-efapi/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+};
+
+```
+
+postcss.config.js:
+```js
+export default {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+};
+
+```
+
+eslint.config.js:
+```js
+import js from '@eslint/js'
+import globals from 'globals'
+import reactHooks from 'eslint-plugin-react-hooks'
+import reactRefresh from 'eslint-plugin-react-refresh'
+
+export default [
+  { ignores: ['dist'] },
+  {
+    files: ['**/*.{js,jsx}'],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        ecmaFeatures: { jsx: true },
+        sourceType: 'module',
+      },
+    },
+    plugins: {
+      'react-hooks': reactHooks,
+      'react-refresh': reactRefresh,
+    },
+    rules: {
+      ...js.configs.recommended.rules,
+      ...reactHooks.configs.recommended.rules,
+      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      'react-refresh/only-export-components': [
+        'warn',
+        { allowConstantExport: true },
+      ],
+    },
+  },
+]
+
+```
+
+tsconfig.json:
+```json
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "jsx": "react-jsx",
+    "module": "esnext",
+    "target": "esnext",
+    "moduleResolution": "node",
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true, 
+    "strict": false
+  },
+  "include": ["src"],
+  "exclude": ["node_modules"]
+}
+
+```
+
+jsconfig.json:
+```json
+{
+    "compilerOptions": {
+      "baseUrl": ".",
+      "paths": {
+        "@/*": ["src/*"]
+        
+      }
+    }
+  }
+  
+```
+
+src/main.jsx:
+```jsx
+import { StrictMode, useState, useEffect } from "react";
+import { createRoot } from "react-dom/client";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import "./index.css";
+
+import SettingsManager from "./SettingsManager";
+import Pedidos from "./Pedidos";
+import App from "./App.jsx";
+import ProductList from "./ProductList.jsx";
+import Login from "./Login.jsx";
+import PrivateRoute from "./PrivateRoute.jsx";
+import HomePublic from "./HomePublic";
+import CategoryManager from "./pages/CategoryManager";
+import EstoquePorLoja from "./pages/EstoquePorLoja";
+import PaymentSettings from "./PaymentSettings.jsx";
+
+
+// 🦊 Splash screen para carregamento inicial
+// eslint-disable-next-line react-refresh/only-export-components
+function SplashScreen() {
+  return (
+    <div style={{
+      minHeight: "100vh",
+      background: "linear-gradient(to bottom right, #e0f2f1, #f0fdf4)",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center",
+      alignItems: "center",
+      animation: "fadeIn 0.8s ease-in-out"
+    }}>
+      <h1 style={{ fontSize: "2.5rem", color: "#065f46", fontWeight: "bold" }}>
+        ESKIMÓ CHAPECÓ
+      </h1>
+      <p style={{ fontSize: "1.2rem", color: "#065f46", marginTop: "1rem" }}>
+        Carregando...
+      </p>
+    </div>
+  );
+}
+
+// 🌐 App principal com rotas
+// eslint-disable-next-line react-refresh/only-export-components
+function MainApp() {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) return <SplashScreen />;
+
+  return (
+    <>
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/efapi" element={<HomePublic />} />
+        <Route path="/cadastro" element={<PrivateRoute><App /></PrivateRoute>} />
+        <Route path="/produtos" element={<PrivateRoute><ProductList /></PrivateRoute>} />
+        <Route path="/categorias" element={<PrivateRoute><CategoryManager /></PrivateRoute>} />
+        <Route path="/configuracoes" element={<PrivateRoute><SettingsManager /></PrivateRoute>} />
+        <Route path="/pedidos" element={<PrivateRoute><Pedidos /></PrivateRoute>} />
+        <Route path="/estoque" element={<PrivateRoute><EstoquePorLoja /></PrivateRoute>} />
+        <Route path="/pagamentos" element={<PaymentSettings />} />
+
+      </Routes>
+
+      <ToastContainer
+        position="top-center"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
+    </>
+  );
+}
+
+// 🧠 Renderização do app
+createRoot(document.getElementById("root")).render(
+  <StrictMode>
+    <BrowserRouter>
+      <MainApp />
+    </BrowserRouter>
+  </StrictMode>
+);
+
+```
+
+src/index.css:
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+```
+
+src/App.jsx:
+```jsx
+// App.jsx atualizado para funcionar em sincronia com estoque automático baseado em quantidade
+import React, { useState, useEffect } from "react";
+import api from "@/services/api";
+import { useNavigate } from "react-router-dom";
+
+export default function AdminPanel() {
+  const navigate = useNavigate();
+
+  const [form, setForm] = useState({
+    name: "",
+    description: "",
+    price: "",
+    imageUrl: "",
+    categoryId: ""
+  });
+
+  const [categories, setCategories] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
+  const [filteredSubcategories, setFilteredSubcategories] = useState([]);
+  const [subcategoryId, setSubcategoryId] = useState("");
+  const [estoques, setEstoques] = useState({ efapi: 1, palmital: 1, passo: 1 });
+  
+  useEffect(() => {
+    const checkSync = async () => {
+      const precisaAtualizar = localStorage.getItem("categoriasAtualizadas");
+      if (precisaAtualizar === "true") {
+        await fetchCategories();
+        localStorage.removeItem("categoriasAtualizadas");
+      }
+    };
+    fetchCategories();
+    fetchSubcategories();
+    checkSync();
+  }, []);
+  
+  useEffect(() => {
+    fetchCategories();
+    fetchSubcategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const result = await api.get("/categories");
+      setCategories(result.data);
+    } catch (error) {
+      console.error("Erro ao carregar categorias:", error);
+    }
+  };
+
+  const fetchSubcategories = async () => {
+    try {
+      const result = await api.get("/subcategories");
+      setSubcategories(result.data);
+    } catch (error) {
+      console.error("Erro ao carregar subcategorias:", error);
+    }
+  };
+
+  useEffect(() => {
+    const filtered = subcategories.filter(
+      (s) => s.categoryId === parseInt(form.categoryId)
+    );
+    setFilteredSubcategories(filtered);
+    setSubcategoryId("");
+  }, [form.categoryId, subcategories]);
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleEstoqueChange = (store, value) => {
+    setEstoques((prev) => ({
+      ...prev,
+      [store]: parseInt(value) || 0
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const data = {
+      name: form.name,
+      description: form.description,
+      price: parseFloat(form.price),
+      imageUrl: form.imageUrl,
+      categoryId: parseInt(form.categoryId),
+      subcategoryId: subcategoryId ? parseInt(subcategoryId) : null
+    };
+
+    try {
+      const res = await api.post("/products", data);
+      const productId = res.data.id;
+      await api.post(`/stock/${productId}`, estoques);
+
+      alert("✅ Produto cadastrado com sucesso!");
+      setForm({ name: "", description: "", price: "", imageUrl: "", categoryId: "" });
+      setSubcategoryId("");
+      setEstoques({ efapi: 0, palmital: 0, passo: 0 });
+    } catch (error) {
+      console.error("Erro:", error.response?.data || error.message);
+      alert("❌ Erro ao salvar produto.");
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/");
+  };
+
+  return (
+    <div style={containerStyle}>
+      <div style={cardStyle}>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1rem" }}>
+          <button onClick={handleLogout} style={btnDanger}>🚪 Sair</button>
+        </div>
+
+        <h1 style={titleStyle}>Eskimó</h1>
+        <h2 style={subtitleStyle}>Cadastro de Produto</h2>
+        <p style={textStyle}>Preencha os campos abaixo para adicionar um novo produto.</p>
+
+        <form onSubmit={handleSubmit} style={formGridStyle}>
+          <Input label="Nome" name="name" value={form.name} onChange={handleChange} />
+          <Input label="Descrição" name="description" value={form.description} onChange={handleChange} />
+          <Input label="Preço" name="price" value={form.price} onChange={handleChange} />
+          <Input label="Imagem (URL)" name="imageUrl" value={form.imageUrl} onChange={handleChange} />
+
+          <Dropdown label="Categoria" name="categoryId" value={form.categoryId} onChange={handleChange} options={categories} />
+          <Dropdown label="Subcategoria" value={subcategoryId} onChange={(e) => setSubcategoryId(e.target.value)} options={filteredSubcategories} />
+
+          <div className="w-full px-6 py-4">
+      <label className="block mb-2 text-lg font-semibold text-gray-700">Estoque por loja:</label>
+      <div className="grid grid-cols-3 gap-4">
+        {Object.keys(estoques).map((store) => (
+          <div key={store} className="flex flex-col">
+            <label className="mb-1 text-gray-600">{store.charAt(0).toUpperCase() + store.slice(1)}</label>
+            <input
+              type="number"
+              min="0"
+              value={estoques[store]}
+              onChange={(e) => handleEstoqueChange(store, e.target.value)}
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            />
+          </div>
+        ))}
+            </div>
+          </div>
+
+          <div style={buttonGroupStyle}>
+            <button type="submit" style={btnPrimary}>Cadastrar Produto</button>
+            <button type="button" onClick={() => navigate("/produtos")} style={btnOutline}>📦 Ver Produtos</button>
+            <button type="button" onClick={() => navigate("/estoque")} style={btnOutline}>🏪 Estoque por Loja</button>
+            <button type="button" onClick={() => navigate("/pedidos")} style={btnOutline}>✅ Ver Pedidos</button>
+            <button type="button" onClick={() => navigate("/configuracoes")} style={btnOutline}>⚙️ Configurações de Entrega</button>
+            <button type="button" onClick={() => navigate("/categorias")} style={btnOutline}>⚙️ Categorias </button>
+            
+            <button type="button" onClick={() => navigate("/pagamentos#whatsapp")} style={btnOutline}>📲Pagamentos e WhatsApp da Loja</button>
+
+
+          </div>
+        </form>
+
+        <h2
+  style={{
+    fontSize: "1.2rem",
+    color: "#065f46",
+    fontWeight: "bold",
+    marginTop: "2rem",
+  }}
+>
+  EISTALT{" "}
+  <a
+    href="https://eistalt.vercel.app/"
+    target="_blank"
+    rel="noopener noreferrer"
+    style={{
+      color: "#059669", // verde elegante
+      textDecoration: "none",
+      fontWeight: "600",
+    }}
+    onMouseOver={(e) => (e.currentTarget.style.textDecoration = "underline")}
+    onMouseOut={(e) => (e.currentTarget.style.textDecoration = "none")}
+  >
+    https://eistalt.vercel.app/
+  </a>
+</h2>
+
+      </div>
+    </div>
+  );
+}
+
+function Input({ label, name, value, onChange }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
+      <label htmlFor={name} style={labelStyle}>{label}</label>
+      <input id={name} name={name} value={value} onChange={onChange} required style={inputStyle} />
+    </div>
+  );
+}
+
+function Dropdown({ label, name, value, onChange, options }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
+      <label style={labelStyle}>{label}</label>
+      <select name={name} value={value} onChange={onChange} style={inputStyle} required>
+        <option value="">Selecione...</option>
+        {options.map((opt) => (
+          <option key={opt.id} value={opt.id}>{opt.name}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+const containerStyle = {
+  minHeight: "100vh", background: "#f0fdf4", display: "flex", justifyContent: "center", alignItems: "center", padding: "2rem", animation: "fadeIn 0.8s ease-in-out"
+};
+
+const cardStyle = {
+  width: "100%", maxWidth: "1000px", background: "white", borderRadius: "1.5rem", padding: "3rem", boxShadow: "0 10px 30px rgba(0,0,0,0.1)", textAlign: "center"
+};
+
+const formGridStyle = {
+  display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginBottom: "2rem"
+};
+
+const titleStyle = {
+  fontSize: "3rem", color: "#065f46", fontWeight: "800", marginBottom: "1.5rem"
+};
+
+const subtitleStyle = {
+  fontSize: "2rem", color: "#065f46", fontWeight: "bold", marginBottom: "1rem"
+};
+
+const textStyle = {
+  fontSize: "1rem", color: "#4b5563", marginBottom: "2rem"
+};
+
+const buttonGroupStyle = {
+  gridColumn: "span 2", display: "flex", flexDirection: "column", gap: "0.75rem"
+};
+
+const labelStyle = {
+  marginBottom: "0.25rem", fontSize: "0.875rem", color: "#374151"
+};
+
+const inputStyle = {
+  width: "100%", padding: "0.75rem", borderRadius: "0.75rem", border: "1px solid #cbd5e1", background: "#f9fdfb", color: "#111827", fontSize: "1rem", boxSizing: "border-box", outline: "none", transition: "border-color 0.3s ease"
+};
+
+const btnPrimary = {
+  background: "#059669", color: "white", padding: "0.75rem 1.5rem", fontWeight: "bold", border: "none", borderRadius: "0.75rem", cursor: "pointer", fontSize: "1rem", transition: "background-color 0.3s ease"
+};
+
+const btnDanger = {
+  background: "#dc2626", color: "white", padding: "0.5rem 1.25rem", borderRadius: "0.75rem", border: "none", cursor: "pointer", fontWeight: "bold", transition: "background-color 0.3s ease"
+};
+
+const btnOutline = {
+  background: "transparent", color: "#065f46", padding: "0.75rem 1.5rem", fontWeight: "bold", border: "2px solid #065f46", borderRadius: "0.75rem", cursor: "pointer", fontSize: "1rem", transition: "all 0.3s ease"
+};
+
+```
+
+src/Login.jsx:
+```jsx
+import React, { useState } from "react";
+import axios from "axios";
+
+import { toast } from "react-toastify";
+import Loading from 'react-loading';
+
+const API_URL = "https://backend-eskimo.onrender.com/api";
+
+export default function LoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+  
+    if (!email || !password) {
+      toast.warn("⚠️ Preencha todos os campos.");
+      return;
+    }
+  
+    setLoading(true);
+    try {
+      const res = await axios.post(`${API_URL}/auth/login`, { email, password });
+      localStorage.setItem("token", res.data.token);
+      toast.success("✅ Login realizado com sucesso!");
+  
+      setTimeout(() => {
+        window.location.href = "/cadastro"; // 🚀 Força reload real para montar já logado
+      }, 1200);
+  
+    } catch (err) {
+      console.error("Erro ao logar:", err.response?.data || err.message);
+      toast.error("❌ Email ou senha inválidos.");
+      setLoading(false);
+    }
+  };
+  
+
+  return (
+    <div style={{ minHeight: "100vh", background: "linear-gradient(to bottom right, #e0f2f1, #f0fdf4)", display: "flex", justifyContent: "center", alignItems: "center", padding: "2rem", animation: "fadeIn 0.8s ease-in-out" }}>
+      <div style={{ width: "100%", maxWidth: "420px", background: "white", padding: "2.5rem", borderRadius: "1.5rem", boxShadow: "0 10px 25px rgba(0,0,0,0.1)", textAlign: "center" }}>
+        <h1 style={{ fontSize: "2.5rem", color: "#065f46", fontWeight: "bold", marginBottom: "1rem" }}>🔒 Acesso Eskimó</h1>
+        <p style={{ color: "#6b7280", fontSize: "1rem", marginBottom: "2rem" }}>Entre com seu e-mail e senha para continuar</p>
+
+        {loading ? (
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", flexDirection: "column", gap: "1rem", height: "150px" }}>
+            <Loading type="spin" color="#059669" height={50} width={50} />
+            <p style={{ color: "#065f46", fontWeight: "bold" }}>Carregando...</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+            <div style={{ textAlign: "left" }}>
+              <label htmlFor="email" style={labelStyle}>Email</label>
+              <input
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Digite seu email"
+                required
+                style={inputStyle}
+              />
+            </div>
+
+            <div style={{ textAlign: "left" }}>
+              <label htmlFor="password" style={labelStyle}>Senha</label>
+              <input
+                type="password"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Digite sua senha"
+                required
+                style={inputStyle}
+              />
+            </div>
+
+            <button
+              type="submit"
+              style={btnPrimary}
+            >
+              Entrar
+            </button>
+
+            <h2
+  style={{
+    fontSize: "1.2rem",
+    color: "#065f46",
+    fontWeight: "bold",
+    marginTop: "2rem",
+  }}
+>
+  EISTALT{" "}
+  <a
+    href="https://eistalt.vercel.app/"
+    target="_blank"
+    rel="noopener noreferrer"
+    style={{
+      color: "#059669", // verde elegante
+      textDecoration: "none",
+      fontWeight: "600",
+    }}
+    onMouseOver={(e) => (e.currentTarget.style.textDecoration = "underline")}
+    onMouseOut={(e) => (e.currentTarget.style.textDecoration = "none")}
+  >
+    https://eistalt.vercel.app/
+  </a>
+</h2>
+
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const labelStyle = {
+  fontSize: "0.875rem",
+  color: "#374151",
+  marginBottom: "0.5rem",
+  display: "block"
+};
+
+const inputStyle = {
+  width: "100%",
+  padding: "0.75rem",
+  borderRadius: "0.75rem",
+  border: "1px solid #cbd5e1",
+  background: "#f9fdfb",
+  fontSize: "1rem",
+  boxSizing: "border-box"
+};
+
+const btnPrimary = {
+  backgroundColor: "#059669",
+  color: "white",
+  fontWeight: "bold",
+  fontSize: "1rem",
+  padding: "0.75rem",
+  borderRadius: "0.75rem",
+  border: "none",
+  cursor: "pointer",
+  transition: "all 0.3s",
+  boxSizing: "border-box",
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center"
+};
+
+```
+
+src/PrivateRoute.jsx:
+```jsx
+import React, { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
+
+export default function PrivateRoute({ children }) {
+  const [tokenExists, setTokenExists] = useState(!!localStorage.getItem("token"));
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const token = localStorage.getItem("token");
+      setTokenExists(!!token);
+    }, 300); // verifica a cada 300ms se o token existe
+
+    return () => clearInterval(interval);
+  }, []);
+
+  if (!tokenExists) {
+    return <Navigate to="/" />;
+  }
+
+  return children;
+}
+
+```
+
+src/HomePublic.jsx:
+```jsx
+import { useEffect, useState } from "react";
+import axios from "axios";
+
+export default function HomePublic() {
+  const [products, setProducts] = useState([]);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await axios.get("https://backend-eskimo.onrender.com/api/products/list?page=1&pageSize=100");
+        if (res.data && Array.isArray(res.data.items)) {
+          setProducts(res.data.items);
+        } else {
+          throw new Error("Resposta da API inválida ou sem produtos.");
+        }
+      } catch (err) {
+        console.error("Erro ao buscar produtos", err);
+        setError("Erro ao buscar produtos. Tente novamente mais tarde.");
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-white text-gray-800 font-sans">
+      <div className="bg-green-200 text-green-900 text-xl text-center font-bold py-4 shadow-md">
+        Tailwind funcionando? ✅ Se você vê esta faixa verde, está tudo OK!
+      </div>
+
+      <header className="flex items-center justify-between px-6 py-4 shadow-md bg-red-600 text-white">
+        <div className="flex items-center gap-4">
+          <img src="https://eskimo.com.br/wp-content/uploads/2023/03/image-1.png" alt="Eskimo" className="h-10" />
+          <h1 className="text-2xl font-bold">Eskimo Sorvetes</h1>
+        </div>
+        <nav className="flex gap-6">
+          <a href="#produtos" className="hover:underline">Produtos</a>
+          <a href="#carrinho" className="hover:underline">Carrinho</a>
+        </nav>
+      </header>
+
+      <section className="px-6 py-12 bg-gradient-to-b from-white to-red-50 text-center">
+        <h2 className="text-3xl font-bold mb-2">Bem-vindo à nossa loja online 🍦</h2>
+        <p className="text-gray-600">Escolha seus sabores favoritos e receba em casa!</p>
+      </section>
+
+      <section id="produtos" className="px-6 py-12 max-w-6xl mx-auto">
+        <h3 className="text-2xl font-bold mb-6">Produtos disponíveis</h3>
+        {error ? (
+          <p className="text-red-600 font-semibold text-center">{error}</p>
+        ) : (
+          <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+            {products.map(product => (
+              <div key={product.id} className="border rounded-xl p-4 shadow-sm bg-white">
+                <img src={product.imageUrl} alt={product.name} className="w-full h-40 object-cover rounded" />
+                <h4 className="mt-4 text-lg font-semibold">{product.name}</h4>
+                <p className="text-sm text-gray-600">{product.description}</p>
+                <p className="mt-2 font-bold">R$ {product.price.toFixed(2)}</p>
+                <button className="mt-4 w-full bg-red-600 text-white py-2 rounded hover:bg-red-700">Adicionar ao Carrinho</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <footer className="text-center text-sm text-gray-500 py-6 bg-gray-100">
+        © 2025 Eskimo Sorvetes. Todos os direitos reservados.
+      </footer>
+    </div>
+  );
+}
+
+```
+
+src/SplashScreen.jsx:
+```jsx
+import React from "react";
+
+export default function SplashScreen() {
+  return (
+    <div style={{
+      minHeight: "100vh",
+      background: "linear-gradient(to bottom right, #e0f2f1, #f0fdf4)",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center",
+      alignItems: "center",
+      animation: "fadeIn 0.8s ease-in-out"
+    }}>
+      <h1 style={{ fontSize: "2.5rem", color: "#065f46", fontWeight: "bold" }}>
+ESKIMÓ
+      </h1>
+      <p style={{ fontSize: "1.2rem", color: "#065f46", marginTop: "1rem" }}>
+        Carregando...
+      </p>
+    </div>
+  );
+}
+
+```
+
+src/ProductList.jsx:
+```jsx
+// ProductList.jsx — DnD + Preços rápidos + salvar layout robusto
+import React, { useEffect, useMemo, useCallback, useState } from "react";
+import api from "@/services/api";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+
+const pageSize = 1000;
+
+export default function ProductList() {
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [form, setForm] = useState({
+    id: null,
+    name: "",
+    description: "",
+    price: "",
+    imageUrl: "",
+    categoryId: "",
+    subcategoryId: "",
+    stock: { efapi: 0, palmital: 0, passo: 0 },
+  });
+  const lojas = ["efapi", "palmital", "passo"];
+
+  // —— Edição rápida de preços ——
+  const [showPricePanel, setShowPricePanel] = useState(false);
+  const [priceEdits, setPriceEdits] = useState({});
+
+  // —— Ordenação / layout ——
+  const [layoutEdits, setLayoutEdits] = useState({});
+
+  // helper: constrói o mapa de layout a partir da lista atual
+  const buildLayoutMap = (list) =>
+    (list ?? []).reduce((acc, p, idx) => {
+      const id = p?.id;
+      if (!id) return acc;
+      acc[id] = { sortRank: idx, pinnedTop: idx === 0 };
+      return acc;
+    }, {});
+
+  // Drag end handler
+  const handleDragEnd = (result) => {
+    if (!result.destination) return;
+    const reordered = Array.from(products);
+    const [removed] = reordered.splice(result.source.index, 1);
+    reordered.splice(result.destination.index, 0, removed);
+    setProducts(reordered);
+    setLayoutEdits(buildLayoutMap(reordered));
+  };
+
+  const saveLayout = async () => {
+    try {
+      // Se o usuário não arrastou nada, ainda assim salva a ordem atual:
+      const items =
+        Object.keys(layoutEdits).length > 0
+          ? layoutEdits
+          : buildLayoutMap(products);
+
+      // Se o seu api.baseURL NÃO incluir "/api", use "/api/storefront/layout"
+      await api.put("/storefront/layout", { items });
+
+      // Recarrega para refletir ordenação do servidor (PinnedTop/SortRank)
+      await fetchProducts();
+      setLayoutEdits({});
+      alert("✅ Layout salvo com sucesso!");
+    } catch (e) {
+      console.error("layout error:", {
+        status: e?.response?.status,
+        data: e?.response?.data,
+        url: e?.config?.url,
+        payload: layoutEdits,
+      });
+      alert("❌ Erro ao salvar layout.");
+    }
+  };
+
+  // —— Preços rápidos ——
+  const openPricePanel = () => {
+    const map = {};
+    (filteredProducts ?? products ?? []).forEach((p) => {
+      map[p?.id] = (p?.price ?? "").toString();
+    });
+    setPriceEdits(map);
+    setShowPricePanel(true);
+  };
+
+  const savePrice = async (id) => {
+    try {
+      const raw = priceEdits[id];
+      const price = parseFloat(String(raw).replace(",", ".")) || 0;
+      const p = (products || []).find((x) => x?.id === id);
+      if (!p) return alert("Produto não encontrado na lista atual.");
+
+      // UI otimista
+      setProducts((prev) =>
+        (prev ?? []).map((it) => (it?.id === id ? { ...it, price } : it))
+      );
+      setPriceEdits((prev) => ({ ...prev, [id]: price.toString() }));
+
+      const body = {
+        name: p?.name ?? "",
+        description: p?.description ?? "",
+        price,
+        imageUrl: p?.imageUrl ?? "",
+        categoryId: p?.categoryId ?? null,
+        subcategoryId: p?.subcategoryId ?? null,
+      };
+      await api.put(`/products/${id}`, body);
+      await fetchProducts();
+      if (showPricePanel) openPricePanel();
+    } catch (e) {
+      console.error(e);
+      alert("❌ Erro ao salvar preço.");
+    }
+  };
+
+  const saveAllPrices = async () => {
+    const list = (filteredProducts ?? products ?? []).slice();
+    for (const p of list) {
+      // salva sequencialmente para manter simples e robusto
+      // (se quiser otimizar: Promise.all com cuidado)
+       
+      await savePrice(p?.id);
+    }
+    alert("✅ Preços atualizados.");
+    await fetchProducts();
+    openPricePanel(); // re-sincroniza
+  };
+
+  // --------- API calls ---------
+  const fetchProducts = useCallback(async () => {
+    const res = await api.get("/products/list", {
+      params: { name: searchTerm, page: 1, pageSize, _t: Date.now() },
+    });
+    const data = res?.data ?? [];
+    // o servidor já ordena por PinnedTop/SortRank/Name
+    const items = Array.isArray(data)
+      ? data
+      : Array.isArray(data.items)
+      ? data.items
+      : [];
+    setProducts(items);
+  }, [searchTerm]);
+
+  const fetchCategories = useCallback(async () => {
+    const res = await api.get("/categories");
+    const data = res?.data ?? [];
+    setCategories(Array.isArray(data) ? data : []);
+  }, []);
+
+  const fetchSubcategories = useCallback(async () => {
+    const res = await api.get("/subcategories");
+    const data = res?.data ?? [];
+    setSubcategories(Array.isArray(data) ? data : []);
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        await Promise.all([fetchProducts(), fetchCategories(), fetchSubcategories()]);
+      } catch (error) {
+        console.error("Erro ao carregar dados:", error);
+      }
+    })();
+  }, [fetchProducts, fetchCategories, fetchSubcategories]);
+
+  // --------- Derivados ---------
+  const filteredProducts = useMemo(() => {
+    if (!categoryFilter) return products;
+    const cf = categoryFilter.toLowerCase();
+    return products.filter((p) => (p?.categoryName ?? "").toLowerCase() === cf);
+  }, [products, categoryFilter]);
+
+  const filteredSubcategories = useMemo(() => {
+    const cid = parseInt(form.categoryId);
+    if (!Number.isFinite(cid)) return [];
+    return subcategories.filter((s) => s?.categoryId === cid);
+  }, [subcategories, form.categoryId]);
+
+  // Mantém o painel de preços sincronizado ao mudar filtro/lista
+  useEffect(() => {
+    if (!showPricePanel) return;
+    const map = {};
+    (filteredProducts ?? products ?? []).forEach((p) => {
+      map[p?.id] = (p?.price ?? "").toString();
+    });
+    setPriceEdits(map);
+  }, [showPricePanel, filteredProducts, products]);
+
+  // --------- Handlers (editar / salvar / deletar) ---------
+  const handleEdit = async (product) => {
+    try {
+      const stockRes = await api.get("/stock");
+      const stockArr = Array.isArray(stockRes?.data) ? stockRes.data : [];
+      const stockData = stockArr.find((s) => s?.productId === product?.id);
+      setEditingProduct(product);
+      setForm({
+        id: product?.id ?? null,
+        name: product?.name ?? "",
+        description: product?.description ?? "",
+        price: (product?.price ?? "").toString(),
+        imageUrl: product?.imageUrl ?? "",
+        categoryId: (product?.categoryId ?? "").toString(),
+        subcategoryId: product?.subcategoryId ? product.subcategoryId.toString() : "",
+        stock: {
+          efapi: stockData?.efapi ?? 0,
+          palmital: stockData?.palmital ?? 0,
+          passo: stockData?.passo ?? 0,
+        },
+      });
+    } catch (err) {
+      console.error("Erro ao carregar estoque:", err);
+    }
+  };
+
+  const handleUpdate = async () => {
+    try {
+      const body = {
+        name: form.name,
+        description: form.description,
+        price: parseFloat(form.price) || 0,
+        imageUrl: form.imageUrl,
+        categoryId: parseInt(form.categoryId) || null,
+        subcategoryId: form.subcategoryId ? parseInt(form.subcategoryId) : null,
+      };
+      await api.put(`/products/${form.id}`, body);
+      await api.post(`/stock/${form.id}`, form.stock);
+      alert("✅ Produto atualizado com sucesso!");
+      setEditingProduct(null);
+      setForm({
+        id: null,
+        name: "",
+        description: "",
+        price: "",
+        imageUrl: "",
+        categoryId: "",
+        subcategoryId: "",
+        stock: { efapi: 0, palmital: 0, passo: 0 },
+      });
+      fetchProducts();
+    } catch (err) {
+      console.error("Erro ao atualizar produto:", err);
+      alert("❌ Erro ao atualizar produto.");
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm("Deseja excluir este produto?")) {
+      try {
+        await api.delete(`/products/${id}`);
+        fetchProducts();
+      } catch (err) {
+        console.error("Erro ao excluir produto:", err);
+      }
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingProduct(null);
+    setForm({
+      id: null,
+      name: "",
+      description: "",
+      price: "",
+      imageUrl: "",
+      categoryId: "",
+      subcategoryId: "",
+      stock: { efapi: 0, palmital: 0, passo: 0 },
+    });
+  };
+
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const handleStockChange = (loja, value) => {
+    const v = parseInt(value);
+    setForm((prev) => ({
+      ...prev,
+      stock: { ...prev.stock, [loja]: Number.isFinite(v) && v >= 0 ? v : 0 },
+    }));
+  };
+
+  const money = (v) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n.toFixed(2) : "0.00";
+  };
+
+  return (
+    <div className="p-8 bg-gray-50 min-h-screen text-gray-800">
+      <h1 className="text-3xl font-bold mb-6 text-center">
+        📦 Lista de Produtos ({filteredProducts.length})
+      </h1>
+
+      <div className="flex gap-3 mb-4">
+        <button
+          onClick={() => window.history.back()}
+          className="rounded-md border border-gray-300 bg-white px-4 py-1 text-sm text-gray-600 hover:bg-gray-100"
+        >
+          ← Voltar
+        </button>
+        <button
+          onClick={saveLayout}
+          className="rounded-md bg-blue-600 text-white px-4 py-1 text-sm hover:bg-blue-700"
+          title="Arraste linhas para alterar a ordem e salve"
+        >
+          💾 Salvar Layout
+        </button>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3 mt-4">
+        <button
+          onClick={() => (showPricePanel ? setShowPricePanel(false) : openPricePanel())}
+          className={`rounded-md px-4 py-2 text-sm font-semibold shadow border
+            ${showPricePanel ? "bg-yellow-200 border-yellow-300 text-gray-800" : "bg-white border-gray-300 text-gray-700 hover:bg-gray-100"}`}
+        >
+          💲 Preços
+        </button>
+        {showPricePanel && (
+          <>
+            <button
+              onClick={saveAllPrices}
+              className="rounded-md px-4 py-2 text-sm font-semibold shadow bg-green-600 text-white hover:bg-green-700"
+            >
+              💾 Salvar todos
+            </button>
+            <span className="text-sm text-gray-600">
+              Editando {filteredProducts.length} produto(s)
+            </span>
+          </>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 mt-4">
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="🔍 Buscar por nome"
+          className="p-3 border rounded"
+        />
+        <select
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+          className="p-3 border rounded"
+        >
+          <option value="">Todas as categorias</option>
+          {categories.map((cat) => (
+            <option key={cat?.id} value={cat?.name}>
+              {cat?.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Painel de preços rápidos */}
+      {showPricePanel && (
+        <div className="mb-6 rounded border border-gray-200 bg-white p-3 shadow-sm">
+          <h3 className="mb-3 text-base font-semibold text-green-700">Edição rápida de preços</h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            {filteredProducts.map((p) => (
+              <div key={p?.id} className="flex items-center gap-3 rounded border border-gray-200 p-2">
+                <img
+                  src={p?.imageUrl}
+                  alt={p?.name}
+                  className="h-12 w-12 rounded object-contain border"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-medium text-gray-800">{p?.name ?? "—"}</div>
+                  <div className="truncate text-xs text-gray-500">
+                    {p?.categoryName ?? "—"}{p?.subcategoryName ? ` • ${p.subcategoryName}` : ""}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500">R$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    inputMode="decimal"
+                    value={priceEdits[p?.id] ?? (p?.price ?? "")}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setPriceEdits((prev) => ({ ...prev, [p?.id]: v }));
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") savePrice(p?.id);
+                    }}
+                    className="w-28 rounded border border-gray-300 px-2 py-1 text-right text-sm"
+                  />
+
+                  <button
+                    onClick={() => savePrice(p?.id)}
+                    className="rounded bg-green-600 px-2 py-1 text-xs font-semibold text-white hover:bg-green-700"
+                    title="Salvar este produto"
+                  >
+                    Salvar
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tabela com drag-and-drop nas linhas */}
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <table className="min-w-full bg-white rounded shadow mt-6">
+          <thead className="bg-green-100 text-green-900">
+            <tr>
+              <th className="p-3 text-left">Produto</th>
+              <th className="p-3 text-left">Preço</th>
+              <th className="p-3 text-left">Categoria</th>
+              <th className="p-3 text-left">Subcategoria</th>
+              <th className="p-3 text-left">Ações</th>
+            </tr>
+          </thead>
+
+          <Droppable droppableId="products">
+            {(provided) => (
+              <tbody ref={provided.innerRef} {...provided.droppableProps}>
+                {filteredProducts.map((p, index) => (
+                  <Draggable key={p?.id} draggableId={String(p?.id)} index={index}>
+                    {(prov) => (
+                      <tr
+                        ref={prov.innerRef}
+                        {...prov.draggableProps}
+                        {...prov.dragHandleProps}
+                        style={prov.draggableProps.style}
+                        className="border-t hover:bg-gray-50"
+                      >
+                        <td className="p-3">{p?.name ?? "—"}</td>
+                        <td className="p-3">R$ {money(p?.price)}</td>
+                        <td className="p-3">{p?.categoryName ?? "—"}</td>
+                        <td className="p-3">{p?.subcategoryName ?? "—"}</td>
+                        <td className="p-3 flex gap-2">
+                          <button onClick={() => handleEdit(p)} className="text-blue-600 hover:underline">✏️</button>
+                          <button onClick={() => handleDelete(p?.id)} className="text-red-600 hover:underline">🗑️</button>
+                        </td>
+                      </tr>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </tbody>
+            )}
+          </Droppable>
+        </table>
+      </DragDropContext>
+
+      {/* Editor lateral (igual ao antigo) */}
+      {editingProduct && (
+        <div className="fixed top-0 right-0 w-full max-w-sm h-full bg-white p-6 shadow-xl overflow-y-auto z-50">
+          <button
+            onClick={handleCancelEdit}
+            className="text-gray-600 text-xl float-right"
+            aria-label="Fechar edição"
+          >
+            ✖
+          </button>
+          <h2 className="text-xl font-bold mb-4 text-green-700">✏️ Editar Produto</h2>
+
+          {"name description price imageUrl".split(" ").map((field) => (
+            <div className="mb-4" key={field}>
+              <label className="block text-sm mb-1">
+                {field.charAt(0).toUpperCase() + field.slice(1)}
+              </label>
+              <input
+                name={field}
+                value={form[field]}
+                onChange={handleChange}
+                className="w-full p-2 border rounded"
+              />
+            </div>
+          ))}
+
+          <div className="mb-4">
+            <label className="block text-sm mb-1">Categoria</label>
+            <select
+              name="categoryId"
+              value={form.categoryId}
+              onChange={handleChange}
+              className="w-full p-2 border rounded"
+            >
+              <option value="">Selecione...</option>
+              {categories.map((cat) => (
+                <option key={cat?.id} value={cat?.id}>
+                  {cat?.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm mb-1">Subcategoria</label>
+            <select
+              name="subcategoryId"
+              value={form.subcategoryId}
+              onChange={handleChange}
+              className="w-full p-2 border rounded"
+            >
+              <option value="">Selecione...</option>
+              {filteredSubcategories.map((sub) => (
+                <option key={sub?.id} value={sub?.id}>
+                  {sub?.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-sm mb-1">Estoque por Loja</label>
+            {lojas.map((loja) => (
+              <div key={loja} className="mb-2">
+                <label className="text-sm capitalize">{loja}</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={form.stock[loja]}
+                  onChange={(e) => handleStockChange(loja, e.target.value)}
+                  className="w-full p-2 border rounded"
+                />
+              </div>
+            ))}
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={handleUpdate}
+              className="bg-green-600 text-white px-4 py-2 rounded"
+            >
+              💾 Salvar
+            </button>
+            <button
+              onClick={handleCancelEdit}
+              className="bg-gray-300 px-4 py-2 rounded"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+```
+
+src/CategoryList.jsx:
+```jsx
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+//const API_URL = "https://backend-eskimo.onrender.com/api/categories"; // ou http://localhost:8080/api/categories
+//const API_URL = "http://localhost:8080/api/categories";
+const API_URL = "https://backend-eskimo.onrender.com/api/categories";
+
+
+export default function CategoryList() {
+  const [categories, setCategories] = useState([]);
+  const [name, setName] = useState("");
+  const [editingId, setEditingId] = useState(null);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await axios.get(API_URL, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      setCategories(res.data);
+    } catch (err) {
+      console.error("Erro ao buscar categorias:", err);
+    }
+  };
+  
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingId) {
+        await axios.put(
+          `${API_URL}/${editingId}`,
+          { name },
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+      } else {
+        await axios.post(
+          API_URL,
+          { name },
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+      }
+      setName("");
+      setEditingId(null);
+      fetchCategories();
+    } catch (err) {
+      console.error("Erro ao salvar categoria:", err);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Deseja excluir esta categoria?")) return;
+    try {
+      await axios.delete(`${API_URL}/${id}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      fetchCategories();
+    } catch (err) {
+      console.error("Erro ao excluir categoria:", err);
+    }
+  };
+
+  const handleEdit = (category) => {
+    setName(category.name);
+    setEditingId(category.id);
+  };
+
+  return (
+    <div className="p-6">
+      <h2 className="text-2xl font-bold mb-4">📂 Gerenciar Categorias</h2>
+
+      <form onSubmit={handleSubmit} className="mb-6 flex gap-4 items-end">
+        <div>
+          <Label>Nome da Categoria</Label>
+          <Input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+        </div>
+        <Button type="submit">
+          {editingId ? "Atualizar" : "Cadastrar"}
+        </Button>
+      </form>
+
+      <Card className="p-4">
+        {categories.length === 0 ? (
+          <p className="text-gray-500">Nenhuma categoria cadastrada.</p>
+        ) : (
+          categories.map((cat) => (
+            <div
+              key={cat.id}
+              className="flex justify-between items-center border-b py-2"
+            >
+              <span>{cat.name}</span>
+              <div className="flex gap-2">
+                <Button onClick={() => handleEdit(cat)}>Editar</Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => handleDelete(cat.id)}
+                >
+                  Excluir
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
+      </Card>
+    </div>
+  );
+}
+
+```
+
+src/PaymentSettings.jsx:
+```jsx
+import { useEffect, useMemo, useState } from "react";
+import axios from "axios";
+import { toast } from "react-toastify";
+
+// Base da API (usa VITE_API_URL, cai pra localhost se não tiver)
+const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080/api";
+
+// Cabeçalho com JWT, se existir
+const auth = {
+  headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+};
+
+// Mapeamento oficial (o site usa estes SLUGS na Loja)
+const STORES = [
+  { label: "Efapi", slug: "efapi" },
+  { label: "Palmital", slug: "palmital" },
+  { label: "Passo dos Fortes", slug: "passo" }, // slug "passo" no site
+];
+
+// Normaliza string para comparar (sem acento, lower, trim)
+const normalize = (s) =>
+  (s ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+
+// Converte qualquer nome livre para um slug conhecido
+const toSlug = (s) => {
+  const n = normalize(s);
+  if (n.includes("efapi")) return "efapi";
+  if (n.includes("palmital")) return "palmital";
+  // várias formas comuns para "Passo dos Fortes"
+  if (["passo", "passo dos fortes", "passo-dos-fortes"].includes(n)) return "passo";
+  return n; // fallback (mas no nosso fluxo vamos sempre salvar slug válido)
+};
+
+export default function PaymentSettings() {
+  const [configs, setConfigs] = useState([]); // lista crua que vem da API
+  const [loading, setLoading] = useState(true);
+
+  // Loja selecionada (sempre por slug)
+  const [storeSlug, setStoreSlug] = useState(STORES[0].slug);
+
+  // Formulário
+  const [cnpj, setCnpj] = useState("");
+  const [provider, setProvider] = useState("mercadopago");
+  const [isActive, setIsActive] = useState(true);
+
+  // Mercado Pago
+  const [mpPublicKey, setMpPublicKey] = useState("");
+  const [mpAccessToken, setMpAccessToken] = useState("");
+    // WhatsApp Cloud API
+    const [whatsappStoreNumber, setWhatsappStoreNumber] = useState("");
+    const [whatsappPhoneNumberId, setWhatsappPhoneNumberId] = useState("");
+    const [whatsappAccessToken, setWhatsappAccessToken] = useState("");
+  
+
+  // PIX Banco (futuro)
+  const [pixKey, setPixKey] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [bankClientId, setBankClientId] = useState("");
+  const [bankClientSecret, setBankClientSecret] = useState("");
+  const [bankCertPath, setBankCertPath] = useState("");
+  const [bankCertPassword, setBankCertPassword] = useState("");
+
+  // Índice das configs por slug (aceita qualquer "store" que já esteja salvo)
+  const configsBySlug = useMemo(() => {
+    const map = new Map();
+    for (const c of configs) {
+      const slug = toSlug(c.store);
+      if (!map.has(slug)) map.set(slug, c);
+    }
+    return map;
+  }, [configs]);
+
+  // Carrega todas as configs
+  const loadAll = async () => {
+    try {
+      const tryGet = async (withAuth) =>
+        axios.get(`${API_URL}/paymentconfigs`, withAuth ? auth : undefined);
+
+      let data;
+      try {
+        ({ data } = await tryGet(true));
+      } catch (e) {
+        // se a rota não exigir auth, tenta sem header
+        if (e?.response?.status === 401) throw e;
+        ({ data } = await tryGet(false));
+      }
+      setConfigs(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error(e);
+      toast.error("Não foi possível carregar as configurações de pagamento.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAll();
+     
+  }, []);
+
+  // Preenche o formulário com base no slug selecionado
+  const fillFormFromSlug = (slug) => {
+    const cfg = configsBySlug.get(slug);
+    setCnpj(cfg?.cnpj || "");
+    setProvider(cfg?.provider || "mercadopago");
+    setIsActive(cfg?.isActive ?? true);
+    setMpPublicKey(cfg?.mpPublicKey || "");
+    setMpAccessToken(cfg?.mpAccessToken || "");
+    setWhatsappStoreNumber(cfg?.whatsappStoreNumber || "");
+    setWhatsappPhoneNumberId(cfg?.whatsappPhoneNumberId || "");
+    setWhatsappAccessToken(cfg?.whatsappAccessToken || "");
+
+    setPixKey(cfg?.pixKey || "");
+    setBankName(cfg?.bankName || "");
+    setBankClientId(cfg?.bankClientId || "");
+    setBankClientSecret(cfg?.bankClientSecret || "");
+    setBankCertPath(cfg?.bankCertPath || "");
+    setBankCertPassword(cfg?.bankCertPassword || "");
+  };
+
+  // Quando configs carregarem, sincroniza o form da loja atual
+  useEffect(() => {
+    fillFormFromSlug(storeSlug);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [configsBySlug]);
+
+  // Quando trocar a loja no select
+  useEffect(() => {
+    fillFormFromSlug(storeSlug);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storeSlug]);
+
+  // Salva (sempre por slug) — PUT /paymentconfigs/{slug}
+  const handleSave = async () => {
+    try {
+      const body = {
+        // Força salvar a store em slug para casar com a Loja (efapi/palmital/passo)
+        store: storeSlug,
+        cnpj,
+        provider,
+        isActive,
+        mpPublicKey,
+        mpAccessToken,
+        whatsappStoreNumber,
+        whatsappPhoneNumberId,
+        whatsappAccessToken,
+        pixKey,
+        bankName,
+        bankClientId,
+        bankClientSecret,
+        bankCertPath,
+        bankCertPassword,
+      };
+
+      const tryPut = async (withAuth) =>
+        axios.put(
+          `${API_URL}/paymentconfigs/${encodeURIComponent(storeSlug)}`,
+          body,
+          withAuth ? auth : undefined
+        );
+
+      try {
+        await tryPut(true);
+      } catch (e) {
+        if (e?.response?.status === 401) throw e;
+        // pode ser rota pública no seu backend
+        await tryPut(false);
+      }
+
+      const label = STORES.find((s) => s.slug === storeSlug)?.label ?? storeSlug;
+      toast.success(`Configuração da loja "${label}" salva!`);
+      loadAll();
+    } catch (e) {
+      console.error(e);
+      toast.error("Falha ao salvar configuração.");
+    }
+  };
+
+  // Excluir (sempre por slug) — DELETE /paymentconfigs/{slug}
+  const handleDelete = async () => {
+    const label = STORES.find((s) => s.slug === storeSlug)?.label ?? storeSlug;
+    if (!window.confirm(`Remover configuração da loja "${label}"?`)) return;
+
+    try {
+      const tryDelete = async (withAuth) =>
+        axios.delete(
+          `${API_URL}/paymentconfigs/${encodeURIComponent(storeSlug)}`,
+          withAuth ? auth : undefined
+        );
+
+      try {
+        await tryDelete(true);
+      } catch (e) {
+        if (e?.response?.status === 401) throw e;
+        await tryDelete(false);
+      }
+
+      toast.info(`Configuração da loja "${label}" removida.`);
+      loadAll();
+    } catch (e) {
+      console.error(e);
+      toast.error("Falha ao remover configuração.");
+    }
+  };
+
+  return (
+    <div className="min-h-screen w-full bg-gradient-to-br from-white to-gray-50 py-10 px-4 text-gray-800">
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-6 flex items-center justify-between">
+          <h1 className="text-2xl font-extrabold text-gray-900">⚙️ Pagamentos por Loja (CNPJ)</h1>
+          <button
+            onClick={() => window.history.back()}
+            className="rounded-md border border-gray-300 bg-white px-4 py-1 text-sm text-gray-600 hover:bg-gray-100"
+          >
+            ← Voltar
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {/* Coluna esquerda */}
+          <div className="rounded-xl border bg-white p-4 shadow">
+            <h2 className="mb-3 text-lg font-bold text-gray-800">Lojas configuradas</h2>
+
+            {loading ? (
+              <p className="text-sm text-gray-500">Carregando…</p>
+            ) : (
+              <ul className="divide-y divide-gray-100">
+                {STORES.map(({ label, slug }) => {
+                  const cfg = configsBySlug.get(slug);
+                  return (
+                    <li key={slug} className="flex items-center justify-between py-3">
+                      <div>
+                        <div className="font-semibold">{label}</div>
+                        <div className="text-xs text-gray-600">
+                          {cfg ? (
+                            <>
+                              <span className="mr-2">CNPJ: {cfg.cnpj || "—"}</span>
+                              <span className="mr-2">Prov.: {cfg.provider || "—"}</span>
+                              <span>Status: {cfg.isActive ? "Ativo" : "Inativo"}</span>
+                            </>
+                          ) : (
+                            <span className="text-amber-700">Sem configuração</span>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setStoreSlug(slug)}
+                        className={`rounded px-3 py-1 text-sm font-semibold ${
+                          storeSlug === slug
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                        }`}
+                      >
+                        {storeSlug === slug ? "Selecionado" : "Selecionar"}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
+          {/* Coluna direita */}
+          <div className="rounded-xl border bg-white p-4 shadow">
+            <h2 className="mb-3 text-lg font-bold text-gray-800">Editar configuração</h2>
+
+            <div className="mb-3">
+              <label className="block text-sm font-medium text-gray-700">Loja</label>
+              <select
+                value={storeSlug}
+                onChange={(e) => setStoreSlug(e.target.value)}
+                className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm"
+              >
+                {STORES.map(({ label, slug }) => (
+                  <option key={slug} value={slug}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="mb-3">
+              <label className="block text-sm font-medium text-gray-700">CNPJ</label>
+              <input
+                type="text"
+                value={cnpj}
+                onChange={(e) => setCnpj(e.target.value)}
+                placeholder="00.000.000/0000-00"
+                className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm"
+              />
+            </div>
+
+            <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Provedor</label>
+                <select
+                  value={provider}
+                  onChange={(e) => setProvider(e.target.value)}
+                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                >
+                  <option value="mercadopago">Mercado Pago</option>
+                  <option value="pix_banco">PIX (Banco)</option>
+                </select>
+              </div>
+              <div className="flex items-end">
+                <label className="inline-flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={isActive}
+                    onChange={(e) => setIsActive(e.target.checked)}
+                    className="h-4 w-4"
+                  />
+                  <span className="text-sm text-gray-700">Ativo</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Mercado Pago */}
+            <div className="mb-2 rounded-lg border border-blue-200 bg-blue-50 p-3">
+              <div className="mb-2 text-sm font-semibold text-blue-800">
+                Credenciais Mercado Pago
+              </div>
+              <label className="block text-xs text-gray-700">Public Key</label>
+              <input
+                type="text"
+                value={mpPublicKey}
+                onChange={(e) => setMpPublicKey(e.target.value)}
+                placeholder="APP_USR-..."
+                className="mb-2 mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm"
+              />
+              <label className="block text-xs text-gray-700">Access Token</label>
+              <input
+                type="text"
+                value={mpAccessToken}
+                onChange={(e) => setMpAccessToken(e.target.value)}
+                placeholder="APP_USR-..."
+                className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm"
+              />
+            </div>
+                        {/* WhatsApp da Loja */}
+                        <div id="whatsapp" className="mb-3 rounded-lg border border-green-200 bg-green-50 p-3">
+              <div className="mb-2 text-sm font-semibold text-green-800">
+                WhatsApp da Loja
+              </div>
+              <label className="block text-xs text-gray-700">Número da loja (E.164 ou nacional)</label>
+              <input
+                type="text"
+                value={whatsappStoreNumber}
+                onChange={(e) => setWhatsappStoreNumber(e.target.value)}
+                placeholder="+55DDDNxxxxxxxx ou 4799xxxxxxx"
+                className="mb-2 mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm"
+              />
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs text-gray-700">Phone Number ID (Cloud API)</label>
+                  <input
+                    type="text"
+                    value={whatsappPhoneNumberId}
+                    onChange={(e) => setWhatsappPhoneNumberId(e.target.value)}
+                    placeholder="Ex.: 123456789012345"
+                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-700">Access Token (Cloud API)</label>
+                  <input
+                    type="password"
+                    value={whatsappAccessToken}
+                    onChange={(e) => setWhatsappAccessToken(e.target.value)}
+                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
+
+            {/* PIX Banco (futuro) */}
+            <details className="mb-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+              <summary className="cursor-pointer text-sm font-semibold text-gray-800">
+                PIX (Banco) — avançado
+              </summary>
+              <div className="mt-2 grid grid-cols-1 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-700">Chave PIX</label>
+                  <input
+                    type="text"
+                    value={pixKey}
+                    onChange={(e) => setPixKey(e.target.value)}
+                    placeholder="CNPJ/EVP/email/telefone"
+                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-700">Banco</label>
+                  <input
+                    type="text"
+                    value={bankName}
+                    onChange={(e) => setBankName(e.target.value)}
+                    placeholder="Itaú / Sicredi / ... "
+                    className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                  />
+                </div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-xs text-gray-700">Client ID</label>
+                    <input
+                      type="text"
+                      value={bankClientId}
+                      onChange={(e) => setBankClientId(e.target.value)}
+                      className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-700">Client Secret</label>
+                    <input
+                      type="password"
+                      value={bankClientSecret}
+                      onChange={(e) => setBankClientSecret(e.target.value)}
+                      className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-xs text-gray-700">Cert Path</label>
+                    <input
+                      type="text"
+                      value={bankCertPath}
+                      onChange={(e) => setBankCertPath(e.target.value)}
+                      className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-700">Cert Password</label>
+                    <input
+                      type="password"
+                      value={bankCertPassword}
+                      onChange={(e) => setBankCertPassword(e.target.value)}
+                      className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+            </details>
+
+            <div className="mt-4 flex items-center gap-2">
+              <button
+                onClick={handleSave}
+                className="rounded bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
+              >
+                💾 Salvar
+              </button>
+              <button
+                onClick={handleDelete}
+                className="rounded bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+              >
+                🗑 Remover Configuração
+              </button>
+            </div>
+
+            <p className="mt-3 text-xs text-gray-500">
+              Importante: salvamos internamente os nomes das lojas como slugs{" "}
+              <code>efapi</code>, <code>palmital</code>, <code>passo</code>. A Loja
+              consome <code>/paymentconfigs/&lt;slug&gt;</code>, então isso garante que o
+              botão do Mercado Pago apareça quando <code>provider</code> for{" "}
+              <code>mercadopago</code> e <code>isActive</code> estiver marcado.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+src/Pedidos.jsx:
+```jsx
+import { useEffect, useState, useRef } from "react";
+import axios from "axios";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
+// ✅ Usa variável de ambiente com fallback para DEV
+//    Ex.: VITE_API_URL=http://localhost:8080/api
+const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080/api";
+
+// ✅ Headers com token (JWT) para todas as chamadas protegidas
+const auth = {
+  headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+};
+
+export default function Pedidos() {
+  const [pedidos, setPedidos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [pedidoSelecionado, setPedidoSelecionado] = useState(null);
+  const [filtroStatus, setFiltroStatus] = useState("todos");
+  const [filtroStore, setFiltroStore] = useState("todos");
+  const [gerandoRelatorio, setGerandoRelatorio] = useState(false);
+  const [mostrarModalExcluirTodos, setMostrarModalExcluirTodos] = useState(false);
+
+  // 🔎 Filtros de data para relatório
+  const [fromDate, setFromDate] = useState(""); // "YYYY-MM-DD"
+  const [toDate, setToDate] = useState("");     // "YYYY-MM-DD"
+
+  const lojasFixas = ["Efapi", "Palmital", "Passo dos Fortes"];
+  const lastIds = useRef(new Set());
+
+  const mapStore = (store) => {
+    if (!store) return "";
+    const lower = store.toLowerCase();
+    if (lower.includes("passo")) return "passo";
+    if (lower.includes("efapi")) return "efapi";
+    if (lower.includes("palmital")) return "palmital";
+    return lower;
+  };
+
+  const getDataPedido = (pedido) => {
+    const rawDate =
+      pedido.createdAt || pedido.created_at || pedido.CreatedAt || pedido.date;
+    return rawDate ? new Date(rawDate) : null;
+  };
+
+  const fetchPedidos = () => {
+    axios
+      .get(`${API_URL}/orders`, auth)
+      .then((res) => {
+        const novos = res.data.filter((p) => !lastIds.current.has(p.id));
+        if (novos.length > 0 && lastIds.current.size > 0) {
+          toast.info(`🆕 ${novos.length} novo(s) pedido(s) recebido(s)!`);
+        }
+        res.data.forEach((p) => lastIds.current.add(p.id));
+        setPedidos(res.data);
+      })
+      .catch(() => {
+        toast.error("Erro ao buscar pedidos.");
+      })
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchPedidos();
+    const interval = setInterval(fetchPedidos, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const marcarComoEntregue = async (id) => {
+    try {
+      await axios.patch(`${API_URL}/orders/${id}/deliver`, null, auth);
+      toast.success("Pedido marcado como entregue!");
+      fetchPedidos();
+    } catch {
+      toast.error("Erro ao atualizar pedido.");
+    }
+  };
+
+  const confirmarPedido = async () => {
+    if (!pedidoSelecionado) return;
+    try {
+      await axios.patch(
+        `${API_URL}/orders/${pedidoSelecionado.id}/confirm`,
+        null,
+        auth
+      );
+      toast.success("Pagamento confirmado!");
+      setPedidoSelecionado(null);
+      fetchPedidos();
+    } catch {
+      toast.error("Erro ao confirmar pagamento.");
+    }
+  };
+
+  const cancelarPedido = async (id) => {
+    if (!window.confirm("Cancelar este pedido? O estoque será devolvido para a loja.")) return;
+    try {
+      await axios.patch(`${API_URL}/orders/${id}/cancel`, null, auth);
+      toast.success("Pedido cancelado e estoque devolvido!");
+      fetchPedidos();
+    } catch {
+      toast.error("Erro ao cancelar pedido.");
+    }
+  };
+
+  const excluirPedido = async (id) => {
+    if (!window.confirm("Tem certeza que deseja excluir este pedido?")) return;
+    try {
+      await axios.delete(`${API_URL}/orders/${id}`, auth);
+      toast.info("Pedido excluído com sucesso.");
+      fetchPedidos();
+    } catch {
+      toast.error("Erro ao excluir pedido.");
+    }
+  };
+
+  const excluirTodosPedidos = async () => {
+    try {
+      await axios.delete(`${API_URL}/orders/clear`, auth);
+      toast.success("Todos os pedidos foram excluídos.");
+      setMostrarModalExcluirTodos(false);
+      fetchPedidos();
+    } catch {
+      toast.error("Erro ao excluir todos os pedidos.");
+    }
+  };
+
+  // ✅ Query string a partir de from/to (YYYY-MM-DD)
+  const buildReportQuery = () => {
+    const params = new URLSearchParams();
+    if (fromDate) params.append("from", fromDate);
+    if (toDate) params.append("to", toDate);
+    const qs = params.toString();
+    return qs ? `?${qs}` : "";
+  };
+
+  // ✅ Baixa PDF por loja (com JWT, via blob)
+  const baixarPDFPorLoja = async (lojaSlug) => {
+    const qs = buildReportQuery();
+    const fileSuffix =
+      fromDate && toDate
+        ? `_${fromDate}-${toDate}`
+        : fromDate
+        ? `_${fromDate}-`
+        : toDate
+        ? `_-${toDate}`
+        : "";
+    const fileName = `relatorio-${lojaSlug}${fileSuffix}.pdf`;
+
+    const { data: blob } = await axios.get(`${API_URL}/reports/${lojaSlug}${qs}`, {
+      ...auth,
+      responseType: "blob",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  // 🧾 Gera e BAIXA os PDFs (sem WhatsApp)
+  const gerarRelatoriosPDF = async () => {
+    setGerandoRelatorio(true);
+    toast.info("Gerando PDF...");
+
+    try {
+      let lojasParaGerar = [];
+
+      if (filtroStore === "todos") {
+        lojasParaGerar = ["efapi", "palmital", "passo"];
+      } else {
+        lojasParaGerar = [mapStore(filtroStore)];
+      }
+
+      // Baixa 1 PDF por loja (com auth, via blob)
+      for (let loja of lojasParaGerar) {
+        await baixarPDFPorLoja(loja);
+      }
+
+      const periodo =
+        fromDate || toDate
+          ? ` (${fromDate || "início"} → ${toDate || "hoje"})`
+          : "";
+
+      toast.success(`Relatório(s) baixado(s) com sucesso${periodo}!`);
+    } catch (e) {
+      console.error(e);
+      toast.error("Falha ao gerar/baixar relatórios.");
+    } finally {
+      setGerandoRelatorio(false);
+    }
+  };
+
+  const pedidosFiltrados = pedidos.filter((p) => {
+    const statusOk = filtroStatus === "todos" || p.status === filtroStatus;
+    const storeOk = filtroStore === "todos" || mapStore(p.store) === mapStore(filtroStore);
+    return statusOk && storeOk;
+  });
+
+  const formatDate = (date) => {
+    const d = new Date(date);
+    return d.toISOString().split("T")[0];
+  };
+
+  const pedidosAgrupados = pedidosFiltrados.reduce((acc, pedido) => {
+    const dataPedido = getDataPedido(pedido);
+    const data = dataPedido ? formatDate(dataPedido) : "Data desconhecida";
+    if (!acc[data]) acc[data] = [];
+    acc[data].push(pedido);
+    return acc;
+  }, {});
+
+  const datasOrdenadas = Object.keys(pedidosAgrupados).sort((a, b) => new Date(b) - new Date(a));
+
+  return (
+    <div className="min-h-screen w-full bg-gradient-to-br from-white to-gray-50 py-10 px-4 text-gray-800">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <h1 className="text-3xl font-extrabold text-gray-900">📦 Pedidos Recebidos</h1>
+          <div className="flex flex-wrap gap-2">
+            <select
+              className="rounded-md border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700"
+              value={filtroStore}
+              onChange={(e) => setFiltroStore(e.target.value)}
+            >
+              <option value="todos">Todas as Unidades</option>
+              {lojasFixas.map((store) => (
+                <option key={store} value={store}>
+                  {store}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className="rounded-md border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700"
+              value={filtroStatus}
+              onChange={(e) => setFiltroStatus(e.target.value)}
+            >
+              <option value="todos">Todos</option>
+              <option value="pendente">Pendentes</option>
+              <option value="pago">Pagos</option>
+              <option value="entregue">Entregues</option>
+              <option value="cancelado">Cancelados</option>
+            </select>
+
+            {/* 🔎 Filtros de período (apenas para relatório) */}
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              className="rounded-md border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700"
+              title="Data inicial do relatório"
+            />
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              className="rounded-md border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700"
+              title="Data final do relatório"
+            />
+
+            <button
+              onClick={() => window.history.back()}
+              className="rounded-md border border-gray-300 bg-white px-4 py-1 text-sm text-gray-600 hover:bg-gray-100"
+            >
+              ← Voltar
+            </button>
+            <button
+              onClick={() => setMostrarModalExcluirTodos(true)}
+              className="rounded bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700"
+            >
+              🗑 Limpar Histórico
+            </button>
+          </div>
+        </div>
+
+        {/* Relatórios */}
+        <div className="mb-8 rounded-lg border bg-white p-4 shadow-sm">
+          <h2 className="mb-2 text-lg font-bold text-blue-800">📄 Relatórios (download)</h2>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <button
+              onClick={gerarRelatoriosPDF}
+              disabled={gerandoRelatorio}
+              className="rounded bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700"
+            >
+              {gerandoRelatorio ? "Gerando..." : "⬇️ Baixar PDF(s) por loja"}
+            </button>
+          </div>
+          <p className="mt-2 text-xs text-gray-500">
+            Observação: os relatórios somam apenas pedidos <strong>pagos</strong> e <strong>entregues</strong>.
+            Pedidos <em>pendentes</em> e <em>cancelados</em> ficam fora da conta.
+          </p>
+          {(fromDate || toDate) && (
+            <p className="mt-1 text-xs text-gray-500">
+              Período aplicado: <strong>{fromDate || "início"}</strong> → <strong>{toDate || "hoje"}</strong>
+            </p>
+          )}
+        </div>
+
+        {loading ? (
+          <div className="text-center text-lg text-gray-500">Carregando pedidos...</div>
+        ) : datasOrdenadas.length === 0 ? (
+          <div className="text-center text-lg text-gray-500">Nenhum pedido encontrado.</div>
+        ) : (
+          datasOrdenadas.map((data) => {
+            const lista = pedidosAgrupados[data];
+            const dataFormatada = new Date(data).toLocaleDateString();
+            return (
+              <div key={data}>
+                <h2 className="mt-6 mb-2 text-lg font-bold text-gray-700">📅 {dataFormatada}</h2>
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {lista.map((pedido) => {
+                    const dataPedido = getDataPedido(pedido);
+                    const isHoje = dataPedido && formatDate(dataPedido) === formatDate(new Date());
+
+                    // ✅ Horário com fuso "America/Sao_Paulo"
+                    const horario = dataPedido
+                      ? new Date(dataPedido).toLocaleTimeString("pt-BR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: false,
+                          timeZone: "America/Sao_Paulo",
+                        })
+                      : "Sem horário";
+
+                    return (
+                      <div
+                        key={pedido.id}
+                        className={`rounded-xl border p-6 shadow-md hover:shadow-lg transition ${
+                          pedido.deliveryType === "entregar"
+                            ? "bg-blue-50 border-blue-200"
+                            : "bg-white border-gray-100"
+                        } ${isHoje ? "ring-2 ring-green-400" : ""}`}
+                      >
+                        <div className="mb-3 space-y-1 text-sm text-gray-700">
+                          <div><strong>Número do Pedido:</strong> #{pedido.id}</div>
+                          <div><strong>Horário:</strong> {horario}</div>
+                          <div><strong>Cliente:</strong> {pedido.customerName}</div>
+                          <div><strong>Telefone:</strong> {pedido.phoneNumber || "Não informado"}</div>
+                          <div><strong>Unidade:</strong> {pedido.store}</div>
+                          <div><strong>Entrega:</strong> {pedido.deliveryType}</div>
+                          {pedido.address && (
+                            <div>
+                              <strong>Endereço:</strong> {pedido.address}, {pedido.street}, nº {pedido.number}{" "}
+                              {pedido.complement && `, ${pedido.complement}`}
+                            </div>
+                          )}
+                          <div><strong>Entrega (frete):</strong> R$ {pedido.deliveryFee?.toFixed(2) ?? "0,00"}</div>
+                          <div><strong>Total:</strong> R$ {pedido.total.toFixed(2)}</div>
+                          <div>
+                            <strong>Status:</strong>{" "}
+                            <span
+                              className={`font-semibold ${
+                                pedido.status === "pago"
+                                  ? "text-green-600"
+                                  : pedido.status === "entregue"
+                                  ? "text-blue-600"
+                                  : pedido.status === "cancelado"
+                                  ? "text-amber-700"
+                                  : "text-yellow-600"
+                              }`}
+                            >
+                              {pedido.status?.toUpperCase() || "PENDENTE"}
+                            </span>
+                          </div>                          {pedido.whatsappNotifiedAt && (
+                            <div><strong>WhatsApp:</strong> enviado</div>
+                          )}
+
+                        </div>
+
+                        <ul className="mt-3 divide-y divide-gray-100 text-sm">
+                          {pedido.items.map((item, index) => (
+                            <li key={index} className="flex items-center justify-between gap-4 py-2">
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src={item.imageUrl}
+                                  alt={item.name}
+                                  className="h-10 w-10 rounded-md object-cover border border-gray-200"
+                                />
+                                <span>{item.name} (x{item.quantity})</span>
+                              </div>
+                              <span className="font-medium">R$ {(item.price * item.quantity).toFixed(2)}</span>
+                            </li>
+                          ))}
+                        </ul>
+
+                        <div className="mt-4 flex gap-2 flex-wrap">
+                          {pedido.status === "pendente" && (
+                            <>
+                              <button
+                                onClick={() => setPedidoSelecionado(pedido)}
+                                className="rounded bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
+                              >
+                                ✅ Confirmar Pagamento
+                              </button>
+                              <button
+                                onClick={() => cancelarPedido(pedido.id)}
+                                className="rounded bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700"
+                              >
+                                🛑 Cancelar Pedido
+                              </button>
+                            </>
+                          )}
+                          {pedido.status === "pago" && (
+                            <>
+                              <button
+                                onClick={() => marcarComoEntregue(pedido.id)}
+                                className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                              >
+                                📬 Marcar como Entregue
+                              </button>
+                              <button
+                                onClick={() => cancelarPedido(pedido.id)}
+                                className="rounded bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700"
+                              >
+                                🛑 Cancelar Pedido
+                              </button>
+                            </>
+                          )}
+                          <button
+                            onClick={() => excluirPedido(pedido.id)}
+                            className="rounded bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+                          >
+                            🗑 Excluir Pedido
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Modal Confirmar Pagamento */}
+      {pedidoSelecionado && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl">
+            <h2 className="text-xl font-bold text-gray-800">Confirmar Pagamento</h2>
+            <p className="mt-2 text-sm text-gray-600">
+              Deseja confirmar que o pagamento do pedido de{" "}
+              <strong>{pedidoSelecionado.customerName}</strong> foi realizado?
+            </p>
+            <div className="mt-6 flex justify-center gap-4">
+              <button
+                onClick={() => setPedidoSelecionado(null)}
+                className="rounded bg-gray-100 px-4 py-2 text-sm text-gray-800 hover:bg-gray-200"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmarPedido}
+                className="rounded bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Excluir Todos */}
+      {mostrarModalExcluirTodos && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl">
+            <h2 className="text-xl font-bold text-gray-800">⚠️ Limpar Histórico</h2>
+            <p className="mt-2 text-sm text-gray-600">
+              Tem certeza que deseja excluir <strong>todos os pedidos</strong>? Essa ação não poderá ser desfeita.
+            </p>
+            <div className="mt-6 flex justify-center gap-4">
+              <button
+                onClick={() => setMostrarModalExcluirTodos(false)}
+                className="rounded bg-gray-100 px-4 py-2 text-sm text-gray-800 hover:bg-gray-200"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={excluirTodosPedidos}
+                className="rounded bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+              >
+                Excluir Tudo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+```
+
+src/SettingsManager.tsx:
+```tsx
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+
+const API_URL = "https://backend-eskimo.onrender.com/api";
+
+export default function SettingsManager() {
+  const [deliveryRate, setDeliveryRate] = useState<number | null>(null);
+  const [minDelivery, setMinDelivery] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/settings`);
+      setDeliveryRate(res.data.deliveryRate);
+      setMinDelivery(res.data.minDelivery);
+    } catch (err) {
+      console.log("Nenhuma configuração encontrada.");
+      setDeliveryRate(null);
+      setMinDelivery(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await axios.put(`${API_URL}/settings`, {
+        deliveryRate: deliveryRate ?? 0,
+        minDelivery: minDelivery ?? 0,
+      });
+      alert("✅ Configurações salvas com sucesso!");
+    } catch (err) {
+      console.error("Erro ao salvar:", err);
+      alert("❌ Erro ao salvar configuração.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-green-50 px-4">
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+        <div
+          style={{ display: "flex", justifyContent: "center", marginBottom: "1.5rem" }}
+        >
+          <button
+            onClick={() => window.history.back()}
+            className="rounded-md border border-gray-300 bg-white px-4 py-1 text-sm text-gray-600 hover:bg-gray-100"
+          >
+            ← Voltar
+          </button>
+        </div>
+
+        <h1 className="mb-6 text-center text-2xl font-bold text-green-700">
+          ⚙️ Configuração de Entrega
+        </h1>
+
+        {loading ? (
+          <p className="text-center text-gray-600">Carregando...</p>
+        ) : (
+          <>
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Valor por quilômetro (R$):
+            </label>
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              value={deliveryRate ?? ""}
+              onChange={(e) => setDeliveryRate(parseFloat(e.target.value))}
+              className="mb-4 w-full rounded border px-4 py-2 text-gray-800 shadow"
+              placeholder="Ex: 2.5"
+            />
+
+            <label className="mb-2 block text-sm font-medium text-gray-700">
+              Valor mínimo de entrega (R$):
+            </label>
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              value={minDelivery ?? ""}
+              onChange={(e) => setMinDelivery(parseFloat(e.target.value))}
+              className="mb-4 w-full rounded border px-4 py-2 text-gray-800 shadow"
+              placeholder="Ex: 8.0"
+            />
+
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="w-full rounded bg-green-600 px-4 py-2 font-semibold text-white shadow hover:bg-green-700 disabled:opacity-60"
+            >
+              {saving ? "Salvando..." : "💾 Salvar Configuração"}
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+```
+
+src/pages/CategoryManager.jsx:
+```jsx
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+
+
+
+const API_URL = import.meta.env.VITE_API_URL;
+
+
+export default function CategoryManager() {
+ 
+  const [categories, setCategories] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
+  const [newCategory, setNewCategory] = useState("");
+  const [newSubcategory, setNewSubcategory] = useState({ name: "", categoryId: "" });
+  const [editCategoryId, setEditCategoryId] = useState(null);
+  const [editCategoryName, setEditCategoryName] = useState("");
+  const [editSubcategoryId, setEditSubcategoryId] = useState(null);
+  const [editSubcategoryData, setEditSubcategoryData] = useState({ name: "", categoryId: "" });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        await fetchCategories();
+        await fetchSubcategories();
+      } catch (err) {
+        console.error("Erro ao carregar dados:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const fetchCategories = async () => {
+    const response = await axios.get(`${API_URL}/categories`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+    });
+    setCategories(response.data);
+  };
+
+  const fetchSubcategories = async () => {
+    const response = await axios.get(`${API_URL}/subcategories`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+    });
+    setSubcategories(response.data);
+  };
+
+  const handleAddCategory = async () => {
+    if (!newCategory.trim()) return;
+    await axios.post(`${API_URL}/categories`, { name: newCategory }, {
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+    });
+    setNewCategory("");
+    fetchCategories();
+  };
+
+  const handleAddSubcategory = async () => {
+    if (!newSubcategory.name || !newSubcategory.categoryId) return;
+    await axios.post(`${API_URL}/subcategories`, {
+      name: newSubcategory.name,
+      categoryId: parseInt(newSubcategory.categoryId),
+    }, {
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+    });
+    setNewSubcategory({ name: "", categoryId: "" });
+    fetchSubcategories();
+  };
+
+  const handleDeleteCategory = async (id) => {
+    if (!window.confirm("Deseja excluir esta categoria?")) return;
+    await axios.delete(`${API_URL}/categories/${id}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+    });
+    fetchCategories();
+  };
+
+  const handleDeleteSubcategory = async (id) => {
+    if (!window.confirm("Deseja excluir esta subcategoria?")) return;
+    await axios.delete(`${API_URL}/subcategories/${id}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+    });
+    fetchSubcategories();
+  };
+
+  const handleEditCategory = async () => {
+    await axios.put(`${API_URL}/categories/${editCategoryId}`, { name: editCategoryName }, {
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+    });
+    setEditCategoryId(null);
+    setEditCategoryName("");
+    fetchCategories();
+  };
+
+  const handleEditSubcategory = async () => {
+    await axios.put(`${API_URL}/subcategories/${editSubcategoryId}`, {
+      name: editSubcategoryData.name,
+      categoryId: parseInt(editSubcategoryData.categoryId),
+    }, {
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+    });
+    setEditSubcategoryId(null);
+    setEditSubcategoryData({ name: "", categoryId: "" });
+    fetchSubcategories();
+  };
+
+  if (isLoading) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center", fontSize: "1.5rem", color: "#059669" }}>
+        🔄 Carregando categorias...
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: "2rem", maxWidth: "1000px", margin: "0 auto" }}>
+      <h1 style={titleStyle}>📂 Gerenciar Categorias</h1>
+
+          <button
+              onClick={() => window.history.back()}
+              className="rounded-md border border-gray-300 bg-white px-4 py-1 text-sm text-gray-600 hover:bg-gray-100"
+            >
+              ← Voltar
+            </button>
+
+      <Section title="Nova Categoria">
+        <div style={rowStyle}>
+          <input
+            value={newCategory}
+            onChange={(e) => setNewCategory(e.target.value)}
+            placeholder="Nome da nova categoria"
+            style={{ ...inputStyle, flex: "1" }}
+          />
+          <button onClick={handleAddCategory} style={btnPrimary}>➕ Adicionar Categoria</button>
+        </div>
+      </Section>
+
+      <Section title="Categorias">
+        <ul style={listStyle}>
+          {categories.map((cat) => (
+            <ListItem
+              key={cat.id}
+              isEditing={editCategoryId === cat.id}
+              name={cat.name}
+              onEdit={() => { setEditCategoryId(cat.id); setEditCategoryName(cat.name); }}
+              onDelete={() => handleDeleteCategory(cat.id)}
+              editValue={editCategoryName}
+              setEditValue={setEditCategoryName}
+              onSave={handleEditCategory}
+              onCancel={() => setEditCategoryId(null)}
+            />
+          ))}
+        </ul>
+      </Section>
+
+      <Section title="Nova Subcategoria">
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <input
+            value={newSubcategory.name}
+            onChange={(e) => setNewSubcategory({ ...newSubcategory, name: e.target.value })}
+            placeholder="Nome da subcategoria"
+            style={inputStyle}
+          />
+          <select
+            value={newSubcategory.categoryId}
+            onChange={(e) => setNewSubcategory({ ...newSubcategory, categoryId: e.target.value })}
+            style={inputStyle}
+          >
+            <option value="">Selecione a categoria</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            ))}
+          </select>
+          <button onClick={handleAddSubcategory} style={btnPrimary}>➕ Adicionar Subcategoria</button>
+        </div>
+      </Section>
+
+      <Section title="Subcategorias">
+        <ul style={listStyle}>
+          {subcategories.map((sub) => (
+            <ListItem
+              key={sub.id}
+              isEditing={editSubcategoryId === sub.id}
+              name={`${sub.name} (Categoria: ${categories.find(c => c.id === sub.categoryId)?.name || sub.categoryId})`}
+              onEdit={() => {
+                setEditSubcategoryId(sub.id);
+                setEditSubcategoryData({ name: sub.name, categoryId: sub.categoryId.toString() });
+              }}
+              onDelete={() => handleDeleteSubcategory(sub.id)}
+              editValue={editSubcategoryData.name}
+              setEditValue={(v) => setEditSubcategoryData({ ...editSubcategoryData, name: v })}
+              onSave={handleEditSubcategory}
+              onCancel={() => setEditSubcategoryId(null)}
+            />
+          ))}
+        </ul>
+      </Section>
+
+      <h1 style={footerStyle}>Volpesites 🦊</h1>
+    </div>
+  );
+}
+
+function Section({ title, children }) {
+  return (
+    <section style={{ marginBottom: "3rem" }}>
+      <h2 style={subtitleStyle}>{title}</h2>
+      {children}
+    </section>
+  );
+}
+
+function ListItem({ isEditing, name, onEdit, onDelete, editValue, setEditValue, onSave, onCancel }) {
+  return (
+    <li style={itemStyle}>
+      {isEditing ? (
+        <>
+          <input value={editValue} onChange={(e) => setEditValue(e.target.value)} style={inputStyle} />
+          <button onClick={onSave} style={btnPrimary}>Salvar</button>
+          <button onClick={onCancel} style={{ ...btnOutline, color: "#dc2626" }}>Cancelar</button>
+        </>
+      ) : (
+        <>
+          <span style={{ flex: 1 }}>{name}</span>
+          <button onClick={onEdit} style={btnOutline}>Editar</button>
+          <button onClick={onDelete} style={btnDangerSmall}>Excluir</button>
+        </>
+      )}
+    </li>
+  );
+}
+
+const titleStyle = { fontSize: "2.5rem", marginBottom: "2rem", color: "#065f46", textAlign: "center" };
+const subtitleStyle = { fontSize: "1.75rem", marginBottom: "1rem", borderBottom: "2px solid #e5e7eb", paddingBottom: "0.5rem" };
+const footerStyle = { fontSize: "1rem", color: "#065f46", fontWeight: "bold", marginTop: "3rem", textAlign: "center" };
+const rowStyle = { display: "flex", gap: "1rem", flexWrap: "wrap" };
+const listStyle = { listStyle: "none", paddingLeft: 0 };
+const itemStyle = { marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" };
+const inputStyle = { width: "100%", maxWidth: "400px", padding: "0.75rem", borderRadius: "0.5rem", border: "1px solid #ccc", boxSizing: "border-box" };
+const btnPrimary = { background: "#059669", color: "white", padding: "0.5rem 1.25rem", borderRadius: "0.5rem", border: "none", cursor: "pointer", fontWeight: "bold", transition: "background 0.3s" };
+const btnOutline = { background: "transparent", color: "#065f46", padding: "0.5rem 1.25rem", borderRadius: "0.5rem", border: "2px solid #065f46", cursor: "pointer", fontWeight: "bold", transition: "all 0.3s" };
+const btnDangerSmall = { background: "#dc2626", color: "white", padding: "0.5rem 1.25rem", border: "none", borderRadius: "0.5rem", cursor: "pointer", fontWeight: "bold" };
+
+```
+
+src/pages/EstoquePorLoja.jsx:
+```jsx
+import React, { useEffect, useState } from "react";
+import api from "@/services/api";
+
+export default function EstoquePorLoja() {
+  const [produtos, setProdutos] = useState([]);
+  const [categorias, setCategorias] = useState([]);
+  const [subcategorias, setSubcategorias] = useState([]);
+  const [estoques, setEstoques] = useState({});
+  const [filtroNome, setFiltroNome] = useState("");
+  const [filtroCategoria, setFiltroCategoria] = useState("");
+  const [filtroSubcategoria, setFiltroSubcategoria] = useState("");
+  const [estoquePadrao, setEstoquePadrao] = useState("");
+  const [loading, setLoading] = useState(false); // 🔥 novo estado de loading
+  const lojas = ["efapi", "palmital", "passo"];
+
+  useEffect(() => {
+    const fetchDados = async () => {
+      try {
+        const res = await api.get("/products/list?page=1&pageSize=1000");
+        const produtosOrdenados = (res.data.items || res.data).sort((a, b) => a.name.localeCompare(b.name));
+        setProdutos(produtosOrdenados);
+
+        const categoriasUnicas = [...new Set(produtosOrdenados.map(p => p.categoryName).filter(Boolean))];
+        setCategorias(categoriasUnicas);
+
+        const subRes = await api.get("/subcategories");
+        setSubcategorias(subRes.data);
+
+        const estoqueRes = await api.get("/stock");
+        const dados = {};
+        for (const item of estoqueRes.data) {
+          lojas.forEach((loja) => {
+            const key = `${item.productId}-${loja}`;
+            dados[key] = item[loja] ?? 0;
+          });
+        }
+        setEstoques(dados);
+      } catch (err) {
+        console.error("Erro ao buscar dados:", err);
+      }
+    };
+
+    fetchDados();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleChange = (productId, loja, value) => {
+    const key = `${productId}-${loja}`;
+    setEstoques((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const salvarEstoque = async (productId, silent = false) => {
+    try {
+      const payload = {};
+      lojas.forEach((loja) => {
+        payload[loja] = parseInt(estoques[`${productId}-${loja}`]) || 0;
+      });
+
+      await api.post(`/stock/${productId}`, payload);
+      if (!silent) {
+        alert("✅ Estoque salvo!");
+      }
+    } catch (err) {
+      console.error("Erro ao salvar estoque:", err);
+      if (!silent) {
+        alert("❌ Erro ao salvar estoque.");
+      }
+    }
+  };
+
+  const salvarTodos = async () => {
+    setLoading(true);
+    try {
+      await Promise.all(produtosFiltrados.map((produto) => salvarEstoque(produto.id, true)));
+      alert("✅ Estoques salvos!");
+    } catch (err) {
+      console.error("Erro ao salvar todos os estoques:", err);
+      alert("❌ Erro ao salvar estoques.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+
+  const aplicarEstoquePadrao = (loja) => {
+    const valor = parseInt(estoquePadrao);
+    if (isNaN(valor)) return alert("Insira um valor válido");
+
+    const novosEstoques = { ...estoques };
+    produtosFiltrados.forEach((p) => {
+      const key = `${p.id}-${loja}`;
+      novosEstoques[key] = valor;
+    });
+    setEstoques(novosEstoques);
+  };
+
+  const produtosFiltrados = produtos.filter(p =>
+    p.name.toLowerCase().includes(filtroNome.toLowerCase()) &&
+    (filtroCategoria === "" || p.categoryName === filtroCategoria) &&
+    (filtroSubcategoria === "" || p.subcategoryName === filtroSubcategoria)
+  );
+
+  return (
+    <div style={pageStyle}>
+      <h1 style={titleStyle}>📦 Estoque por Loja</h1>
+      <button
+        onClick={() => window.history.back()}
+        className="rounded-md border border-gray-300 bg-white px-4 py-1 text-sm text-gray-600 hover:bg-gray-100"
+      >
+        ← Voltar
+      </button>
+
+      <div style={filterStyle}>
+        <input type="text" placeholder="🔍 Buscar por nome..." value={filtroNome} onChange={(e) => setFiltroNome(e.target.value)} style={inputFiltro} />
+        <select value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)} style={inputFiltro}>
+          <option value="">Todas as categorias</option>
+          {categorias.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+        </select>
+        <select value={filtroSubcategoria} onChange={(e) => setFiltroSubcategoria(e.target.value)} style={inputFiltro}>
+          <option value="">Todas as subcategorias</option>
+          {subcategorias.map((sub) => <option key={sub.id} value={sub.name}>{sub.name}</option>)}
+        </select>
+        <input type="number" placeholder="Estoque p/ aplicar" value={estoquePadrao} onChange={(e) => setEstoquePadrao(e.target.value)} style={inputFiltro} />
+        {lojas.map((loja) => (
+          <button key={loja} onClick={() => aplicarEstoquePadrao(loja)} style={btnApply}>
+            Aplicar p/ {loja.charAt(0).toUpperCase() + loja.slice(1)}
+          </button>
+        ))}
+        <button onClick={salvarTodos} style={btnPrimary}>💾 Salvar Todos</button>
+      </div>
+
+      {loading && (
+  <div style={{
+    position: "fixed",
+    top: 0, left: 0,
+    width: "100%", height: "100%",
+    backgroundColor: "rgba(0,0,0,0.5)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 9999
+  }}>
+    <div style={{
+      background: "white",
+      padding: "2rem 3rem",
+      borderRadius: "0.75rem",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      boxShadow: "0 4px 10px rgba(0,0,0,0.2)"
+    }}>
+      <div style={{
+        border: "4px solid #f3f3f3",
+        borderTop: "4px solid #059669",
+        borderRadius: "50%",
+        width: "40px",
+        height: "40px",
+        animation: "spin 1s linear infinite",
+        marginBottom: "1rem"
+      }}></div>
+      <p style={{ fontWeight: "bold", color: "#065f46" }}>⏳ Salvando estoques, por favor aguarde...</p>
+    </div>
+    <style>{`
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    `}</style>
+  </div>
+)}
+
+
+      {/* 🔴 Produtos com estoque 0 */}
+      <div style={{ marginBottom: "2rem" }}>
+        <h2 style={{ ...titleStyle, fontSize: "1.5rem", color: "#b91c1c" }}>❌ Produtos com estoque 0</h2>
+        <div style={{ overflowX: "auto", borderRadius: "0.5rem" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead style={{ background: "#fee2e2", color: "#b91c1c" }}>
+              <tr>
+                <th style={thStyle}>Produto</th>
+                {lojas.map((loja) => <th key={loja} style={thStyle}>{loja.charAt(0).toUpperCase() + loja.slice(1)}</th>)}
+                <th style={thStyle}>Ação</th>
+              </tr>
+            </thead>
+            <tbody>
+              {produtosFiltrados.filter((produto) =>
+                lojas.some((loja) => (estoques[`${produto.id}-${loja}`] ?? 0) === 0)
+              ).map((produto) => (
+                <tr key={produto.id} style={{ borderTop: "1px solid #fca5a5" }}>
+                  <td style={tdStyle}>{produto.name}</td>
+                  {lojas.map((loja) => (
+                    <td key={loja} style={tdStyle}>
+                      <input type="number" min="0" value={estoques[`${produto.id}-${loja}`] ?? ""} onChange={(e) => handleChange(produto.id, loja, e.target.value)} style={inputStyle} />
+                    </td>
+                  ))}
+                  <td style={tdStyle}>
+                    <button onClick={() => salvarEstoque(produto.id)} style={btnPrimary}>💾 Salvar</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* 🟢 Lista normal de produtos */}
+      <div style={{ overflowX: "auto", borderRadius: "0.5rem" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead style={{ background: "#d1fae5", color: "#065f46" }}>
+            <tr>
+              <th style={thStyle}>Produto</th>
+              {lojas.map((loja) => <th key={loja} style={thStyle}>{loja.charAt(0).toUpperCase() + loja.slice(1)}</th>)}
+              <th style={thStyle}>Ação</th>
+            </tr>
+          </thead>
+          <tbody>
+            {produtosFiltrados.map((produto) => (
+              <tr key={produto.id} style={{ borderTop: "1px solid #e5e7eb" }}>
+                <td style={tdStyle}>{produto.name}</td>
+                {lojas.map((loja) => (
+                  <td key={loja} style={tdStyle}>
+                    <input type="number" min="0" value={estoques[`${produto.id}-${loja}`] ?? ""} onChange={(e) => handleChange(produto.id, loja, e.target.value)} style={inputStyle} />
+                  </td>
+                ))}
+                <td style={tdStyle}>
+                  <button onClick={() => salvarEstoque(produto.id)} style={btnPrimary}>💾 Salvar</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+const pageStyle = { padding: "2rem", background: "#f0fdf4", minHeight: "100vh" };
+const titleStyle = { fontSize: "2rem", fontWeight: "bold", color: "#065f46", marginBottom: "1.5rem" };
+const filterStyle = { marginBottom: "1rem", display: "flex", gap: "1rem", flexWrap: "wrap" };
+const thStyle = { padding: "0.75rem", textAlign: "left", fontWeight: "600", fontSize: "0.9rem" };
+const tdStyle = { padding: "0.75rem", fontSize: "0.95rem", color: "#374151" };
+const inputStyle = { width: "80px", padding: "0.4rem", border: "1px solid #ccc", borderRadius: "0.5rem" };
+const inputFiltro = { padding: "0.5rem", borderRadius: "0.5rem", border: "1px solid #d1d5db", minWidth: "200px" };
+const btnPrimary = { background: "#059669", color: "white", padding: "0.4rem 0.8rem", borderRadius: "0.5rem", border: "none", cursor: "pointer", fontWeight: "bold" };
+const btnApply = { background: "#facc15", color: "#1e293b", padding: "0.4rem 0.8rem", borderRadius: "0.5rem", border: "none", cursor: "pointer", fontWeight: "bold" };
+
+```
+
+src/services/api.js:
+```js
+import axios from "axios";
+
+const API_URL = "https://backend-eskimo.onrender.com/api";
+
+const api = axios.create({
+  baseURL: API_URL,
+});
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+export default api;
+
+```
+
+src/components/ui/button.jsx:
+```jsx
+import * as React from "react"
+import { Slot } from "@radix-ui/react-slot"
+import { cva } from "class-variance-authority";
+
+import { cn } from "@/lib/utils"
+
+const buttonVariants = cva(
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+  {
+    variants: {
+      variant: {
+        default:
+          "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90",
+        destructive:
+          "bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
+        outline:
+          "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50",
+        secondary:
+          "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80",
+        ghost:
+          "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
+        link: "text-primary underline-offset-4 hover:underline",
+      },
+      size: {
+        default: "h-9 px-4 py-2 has-[>svg]:px-3",
+        sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
+        lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
+        icon: "size-9",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  }
+)
+
+function Button({
+  className,
+  variant,
+  size,
+  asChild = false,
+  ...props
+}) {
+  const Comp = asChild ? Slot : "button"
+
+  return (
+    <Comp
+      data-slot="button"
+      className={cn(buttonVariants({ variant, size, className }))}
+      {...props} />
+  );
+}
+
+export { Button, buttonVariants }
+
+```
+
+src/components/ui/card.jsx:
+```jsx
+import * as React from "react"
+
+import { cn } from "@/lib/utils"
+
+function Card({
+  className,
+  ...props
+}) {
+  return (
+    <div
+      data-slot="card"
+      className={cn(
+        "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm",
+        className
+      )}
+      {...props} />
+  );
+}
+
+function CardHeader({
+  className,
+  ...props
+}) {
+  return (
+    <div
+      data-slot="card-header"
+      className={cn(
+        "@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6",
+        className
+      )}
+      {...props} />
+  );
+}
+
+function CardTitle({
+  className,
+  ...props
+}) {
+  return (
+    <div
+      data-slot="card-title"
+      className={cn("leading-none font-semibold", className)}
+      {...props} />
+  );
+}
+
+function CardDescription({
+  className,
+  ...props
+}) {
+  return (
+    <div
+      data-slot="card-description"
+      className={cn("text-muted-foreground text-sm", className)}
+      {...props} />
+  );
+}
+
+function CardAction({
+  className,
+  ...props
+}) {
+  return (
+    <div
+      data-slot="card-action"
+      className={cn(
+        "col-start-2 row-span-2 row-start-1 self-start justify-self-end",
+        className
+      )}
+      {...props} />
+  );
+}
+
+function CardContent({
+  className,
+  ...props
+}) {
+  return (<div data-slot="card-content" className={cn("px-6", className)} {...props} />);
+}
+
+function CardFooter({
+  className,
+  ...props
+}) {
+  return (
+    <div
+      data-slot="card-footer"
+      className={cn("flex items-center px-6 [.border-t]:pt-6", className)}
+      {...props} />
+  );
+}
+
+export {
+  Card,
+  CardHeader,
+  CardFooter,
+  CardTitle,
+  CardAction,
+  CardDescription,
+  CardContent,
+}
+
+```
+
+src/components/ui/dialog.jsx:
+```jsx
+"use client"
+
+import * as React from "react"
+import * as DialogPrimitive from "@radix-ui/react-dialog"
+import { XIcon } from "lucide-react"
+
+import { cn } from "@/lib/utils"
+
+function Dialog({
+  ...props
+}) {
+  return <DialogPrimitive.Root data-slot="dialog" {...props} />;
+}
+
+function DialogTrigger({
+  ...props
+}) {
+  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />;
+}
+
+function DialogPortal({
+  ...props
+}) {
+  return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />;
+}
+
+function DialogClose({
+  ...props
+}) {
+  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />;
+}
+
+function DialogOverlay({
+  className,
+  ...props
+}) {
+  return (
+    <DialogPrimitive.Overlay
+      data-slot="dialog-overlay"
+      className={cn(
+        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
+        className
+      )}
+      {...props} />
+  );
+}
+
+function DialogContent({
+  className,
+  children,
+  ...props
+}) {
+  return (
+    <DialogPortal data-slot="dialog-portal">
+      <DialogOverlay />
+      <DialogPrimitive.Content
+        data-slot="dialog-content"
+        className={cn(
+          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
+          className
+        )}
+        {...props}>
+        {children}
+        <DialogPrimitive.Close
+          className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4">
+          <XIcon />
+          <span className="sr-only">Close</span>
+        </DialogPrimitive.Close>
+      </DialogPrimitive.Content>
+    </DialogPortal>
+  );
+}
+
+function DialogHeader({
+  className,
+  ...props
+}) {
+  return (
+    <div
+      data-slot="dialog-header"
+      className={cn("flex flex-col gap-2 text-center sm:text-left", className)}
+      {...props} />
+  );
+}
+
+function DialogFooter({
+  className,
+  ...props
+}) {
+  return (
+    <div
+      data-slot="dialog-footer"
+      className={cn("flex flex-col-reverse gap-2 sm:flex-row sm:justify-end", className)}
+      {...props} />
+  );
+}
+
+function DialogTitle({
+  className,
+  ...props
+}) {
+  return (
+    <DialogPrimitive.Title
+      data-slot="dialog-title"
+      className={cn("text-lg leading-none font-semibold", className)}
+      {...props} />
+  );
+}
+
+function DialogDescription({
+  className,
+  ...props
+}) {
+  return (
+    <DialogPrimitive.Description
+      data-slot="dialog-description"
+      className={cn("text-muted-foreground text-sm", className)}
+      {...props} />
+  );
+}
+
+export {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
+  DialogTrigger,
+}
+
+```
+
+src/components/ui/input.jsx:
+```jsx
+import * as React from "react"
+
+import { cn } from "@/lib/utils"
+
+function Input({
+  className,
+  type,
+  ...props
+}) {
+  return (
+    <input
+      type={type}
+      data-slot="input"
+      className={cn(
+        "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+        "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+        "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+        className
+      )}
+      {...props} />
+  );
+}
+
+export { Input }
+
+```
+
+src/components/ui/label.jsx:
+```jsx
+import * as React from "react"
+import * as LabelPrimitive from "@radix-ui/react-label"
+
+import { cn } from "@/lib/utils"
+
+function Label({
+  className,
+  ...props
+}) {
+  return (
+    <LabelPrimitive.Root
+      data-slot="label"
+      className={cn(
+        "flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
+        className
+      )}
+      {...props} />
+  );
+}
+
+export { Label }
+
+```
+
+README.md:
+```md
+# React + Vite
+
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+
+Currently, two official plugins are available:
+
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+
+## Expanding the ESLint configuration
+
+If you are developing a production application, we recommend using TypeScript and enable type-aware lint rules. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+```
+
