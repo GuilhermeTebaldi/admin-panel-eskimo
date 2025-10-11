@@ -197,7 +197,7 @@ export default function CategoryManager() {
         </ul>
       </Section>
 
-      <h1 style={footerStyle}>Volpesites 🦊</h1>
+      <h1 style={footerStyle}>🦊</h1>
     </div>
   );
 }
