@@ -408,15 +408,17 @@ export default function ProductList() {
       {/* Tabela com drag-and-drop nas linhas */}
       <DragDropContext onDragEnd={handleDragEnd}>
         <table className="min-w-full bg-white rounded shadow mt-6">
-          <thead className="bg-green-100 text-green-900">
-            <tr>
-              <th className="p-3 text-left">Produto</th>
-              <th className="p-3 text-left">Preço</th>
-              <th className="p-3 text-left">Categoria</th>
-              <th className="p-3 text-left">Subcategoria</th>
-              <th className="p-3 text-left">Ações</th>
-            </tr>
-          </thead>
+        <thead className="bg-green-100 text-green-900">
+  <tr>
+    <th className="p-3 text-left">Imagem</th>
+    <th className="p-3 text-left">Produto</th>
+    <th className="p-3 text-left">Preço</th>
+    <th className="p-3 text-left">Categoria</th>
+    <th className="p-3 text-left">Subcategoria</th>
+    <th className="p-3 text-left">Ações</th>
+  </tr>
+</thead>
+
 
           <Droppable droppableId="products">
             {(provided) => (
@@ -425,14 +427,23 @@ export default function ProductList() {
                   <Draggable key={p?.id} draggableId={String(p?.id)} index={index}>
                     {(prov) => (
                       <tr
-                        ref={prov.innerRef}
-                        {...prov.draggableProps}
-                        {...prov.dragHandleProps}
-                        style={prov.draggableProps.style}
-                        className="border-t hover:bg-gray-50"
-                      >
-                        <td className="p-3">{p?.name ?? "—"}</td>
-                        <td className="p-3">R$ {money(p?.price)}</td>
+                      ref={prov.innerRef}
+                      {...prov.draggableProps}
+                      {...prov.dragHandleProps}
+                      style={prov.draggableProps.style}
+                      className="border-t hover:bg-gray-50"
+                    >
+                      <td className="p-3">
+                        <img
+                          src={p?.imageUrl}
+                          alt={p?.name}
+                          className="h-12 w-12 rounded border object-contain bg-white"
+                          onError={(e)=>{ e.currentTarget.src="https://via.placeholder.com/48?text=No+Img"; }}
+                        />
+                      </td>
+                      <td className="p-3">{p?.name ?? "—"}</td>
+                      <td className="p-3">R$ {money(p?.price)}</td>
+                    
                         <td className="p-3">{p?.categoryName ?? "—"}</td>
                         <td className="p-3">{p?.subcategoryName ?? "—"}</td>
                         <td className="p-3 flex gap-2">

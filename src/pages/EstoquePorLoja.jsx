@@ -232,18 +232,24 @@ export default function EstoquePorLoja() {
           <h2 style={{ ...titleStyle, fontSize: "1.5rem", color: "#b91c1c" }}>❌ Produtos com estoque 0</h2>
           <div style={{ overflowX: "auto", borderRadius: "0.5rem" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead style={{ background: "#fee2e2", color: "#b91c1c" }}>
-                <tr>
-                  <th style={thStyle}>Produto</th>
-                  {lojas.map((loja) => <th key={loja} style={thStyle}>{loja.charAt(0).toUpperCase() + loja.slice(1)}</th>)}
-                  <th style={thStyle}>Ação</th>
-                </tr>
-              </thead>
+            <thead style={{ background: "#fee2e2", color: "#b91c1c" }}>
+  <tr>
+    <th style={thStyle}>Imagem</th>
+    <th style={thStyle}>Produto</th>
+    {lojas.map((loja) => <th key={loja} style={thStyle}>{loja.charAt(0).toUpperCase() + loja.slice(1)}</th>)}
+    <th style={thStyle}>Ação</th>
+  </tr>
+</thead>
+
               <tbody>
                 {produtosZeroEstoque.map((produto) => (
                   <tr key={produto.id} style={{ borderTop: "1px solid #fca5a5" }}>
-                    <td style={tdStyle}>{produto.name}</td>
-                    {lojas.map((loja) => (
+                  <td style={tdImgTd}>
+                    <img src={produto.imageUrl} alt={produto.name} style={imgThumb} onError={(e)=>{e.currentTarget.src="https://via.placeholder.com/48?text=No+Img"}} />
+                  </td>
+                  <td style={tdStyle}>{produto.name}</td>
+                  {lojas.map((loja) => (
+                
                       <td key={loja} style={tdStyle}>
                         <input
                           type="number"
@@ -274,18 +280,24 @@ export default function EstoquePorLoja() {
         <div style={{ overflowX: "auto", borderRadius: "0.5rem" }}>
           <h2 style={{ ...titleStyle, fontSize: "1.5rem", color: "#065f46" }}>🟢 Produtos Ativos</h2>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead style={{ background: "#d1fae5", color: "#065f46" }}>
-              <tr>
-                <th style={thStyle}>Produto</th>
-                {lojas.map((loja) => <th key={loja} style={thStyle}>{loja.charAt(0).toUpperCase() + loja.slice(1)}</th>)}
-                <th style={thStyle}>Ação</th>
-              </tr>
-            </thead>
+          <thead style={{ background: "#d1fae5", color: "#065f46" }}>
+  <tr>
+    <th style={thStyle}>Imagem</th>
+    <th style={thStyle}>Produto</th>
+    {lojas.map((loja) => <th key={loja} style={thStyle}>{loja.charAt(0).toUpperCase() + loja.slice(1)}</th>)}
+    <th style={thStyle}>Ação</th>
+  </tr>
+</thead>
+
             <tbody>
               {produtosAtivosFiltrados.map((produto) => (
                 <tr key={produto.id} style={{ borderTop: "1px solid #e5e7eb" }}>
-                  <td style={tdStyle}>{produto.name}</td>
-                  {lojas.map((loja) => (
+                <td style={tdImgTd}>
+                  <img src={produto.imageUrl} alt={produto.name} style={imgThumb} onError={(e)=>{e.currentTarget.src="https://via.placeholder.com/48?text=No+Img"}} />
+                </td>
+                <td style={tdStyle}>{produto.name}</td>
+                {lojas.map((loja) => (
+              
                     <td key={loja} style={tdStyle}>
                       <input
                         type="number"
@@ -360,3 +372,5 @@ const tabBtn = { padding: "0.4rem 0.8rem", borderRadius: "0.5rem", border: "1px 
 const tabBtnActive = { background: "#dbeafe", borderColor: "#93c5fd" };
 const btnArchive = { marginLeft: "0.5rem", background: "#f3f4f6", color: "#111827", padding: "0.4rem 0.8rem", borderRadius: "0.5rem", border: "1px solid #e5e7eb", cursor: "pointer", fontWeight: "bold" };
 const btnUnarchive = { background: "#eab308", color: "#1f2937", padding: "0.4rem 0.8rem", borderRadius: "0.5rem", border: "none", cursor: "pointer", fontWeight: "bold" };
+const tdImgTd = { ...tdStyle, width: "56px" };
+const imgThumb = { width: "48px", height: "48px", objectFit: "contain", borderRadius: "0.375rem", border: "1px solid #e5e7eb", background: "white" };
