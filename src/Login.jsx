@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import axios from "axios";
-
 import { toast } from "react-toastify";
 import Loading from 'react-loading';
 
@@ -10,51 +9,53 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     if (!email || !password) {
       toast.warn("⚠️ Preencha todos os campos.");
       return;
     }
-  
+
     setLoading(true);
     try {
       const res = await axios.post(`${API_URL}/auth/login`, { email, password });
-      localStorage.setItem("token", res.data.token);
+      const token = res.data.token || "";
+      localStorage.setItem("token", token);
 
-// Define role com fallback seguro e força admin para o e-mail do administrador
-let role = "operator";
-let permissions = "{}";
-try {
-  const payload = JSON.parse(atob((res.data.token || "").split(".")[1] || ""));
-  role = String(payload.role || payload.Role || "operator").toLowerCase();
-  permissions = payload.permissions || "{}";
-} catch { /* empty */ }
+      let role = "operator";
+      let permissions = "{}";
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1] || ""));
+        role = String(payload.role || payload.Role || "operator").toLowerCase();
+        permissions = payload.permissions || "{}";
+      } catch { /* empty */ }
 
-if (String(email).toLowerCase() === "admin@eskimo.com") {
-  role = "admin";
-}
+      // força admin para o e-mail do administrador
+      if (String(email).toLowerCase() === "admin@eskimo.com") {
+        role = "admin";
+      }
 
-localStorage.setItem("role", role);
-localStorage.setItem("permissions", typeof permissions === "string" ? permissions : JSON.stringify(permissions));
+      localStorage.setItem("role", role);
+      localStorage.setItem("permissions", typeof permissions === "string" ? permissions : JSON.stringify(permissions));
 
-toast.success("✅ Login realizado com sucesso!");
+      toast.success("✅ Login realizado com sucesso!");
 
-  
       setTimeout(() => {
-        window.location.href = "/cadastro"; // 🚀 Força reload real para montar já logado
+        // admin direto em cadastro. outros ao painel inicial
+        if (role === "admin") {
+          window.location.href = "/cadastro";
+        } else {
+          window.location.href = "/inicio";
+        }
       }, 1200);
-  
     } catch (err) {
       console.error("Erro ao logar:", err.response?.data || err.message);
       toast.error("❌ Email ou senha inválidos.");
       setLoading(false);
     }
   };
-  
 
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(to bottom right, #e0f2f1, #f0fdf4)", display: "flex", justifyContent: "center", alignItems: "center", padding: "2rem", animation: "fadeIn 0.8s ease-in-out" }}>
@@ -95,15 +96,7 @@ toast.success("✅ Login realizado com sucesso!");
               />
             </div>
 
-            <button
-              type="submit"
-              style={btnPrimary}
-            >
-              Entrar
-            </button>
-
-            
-
+            <button type="submit" style={btnPrimary}>Entrar</button>
           </form>
         )}
       </div>

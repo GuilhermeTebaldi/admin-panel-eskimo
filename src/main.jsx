@@ -16,7 +16,7 @@ import CategoryManager from "./pages/CategoryManager";
 import EstoquePorLoja from "./pages/EstoquePorLoja";
 import PaymentSettings from "./PaymentSettings.jsx";
 import UserManager from "./pages/UserManager";
-
+import Dashboard from "./Dashboard.jsx";
 
 // 🦊 Splash screen para carregamento inicial
 // eslint-disable-next-line react-refresh/only-export-components
@@ -58,6 +58,11 @@ function MainApp() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/efapi" element={<HomePublic />} />
+
+        {/* Painel inicial por papel/permissão */}
+        <Route path="/inicio" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+
+        {/* Admin-only e telas com gate interno */}
         <Route path="/cadastro" element={<PrivateRoute><App /></PrivateRoute>} />
         <Route path="/produtos" element={<PrivateRoute><ProductList /></PrivateRoute>} />
         <Route path="/categorias" element={<PrivateRoute><CategoryManager /></PrivateRoute>} />
@@ -66,8 +71,6 @@ function MainApp() {
         <Route path="/estoque" element={<PrivateRoute><EstoquePorLoja /></PrivateRoute>} />
         <Route path="/pagamentos" element={<PaymentSettings />} />
         <Route path="/users" element={<UserManager />} />
-
-
       </Routes>
 
       <ToastContainer
