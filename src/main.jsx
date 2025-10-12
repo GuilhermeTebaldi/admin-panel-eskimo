@@ -15,6 +15,7 @@ import HomePublic from "./HomePublic";
 import CategoryManager from "./pages/CategoryManager";
 import EstoquePorLoja from "./pages/EstoquePorLoja";
 import PaymentSettings from "./PaymentSettings.jsx";
+import UserManager from "./pages/UserManager";
 
 
 // 🦊 Splash screen para carregamento inicial
@@ -64,6 +65,8 @@ function MainApp() {
         <Route path="/pedidos" element={<PrivateRoute><Pedidos /></PrivateRoute>} />
         <Route path="/estoque" element={<PrivateRoute><EstoquePorLoja /></PrivateRoute>} />
         <Route path="/pagamentos" element={<PaymentSettings />} />
+        <Route path="/users" element={<UserManager />} />
+
 
       </Routes>
 

@@ -6,6 +6,8 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 const pageSize = 1000;
 
 export default function ProductList() {
+  
+
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
@@ -286,7 +288,10 @@ export default function ProductList() {
     const n = Number(v);
     return Number.isFinite(n) ? n.toFixed(2) : "0.00";
   };
-
+  const role = localStorage.getItem("role");
+  const isAdmin = role === "admin";
+  if (!isAdmin) return <div className="p-8">Acesso restrito ao administrador.</div>;
+  
   return (
     <div className="p-8 bg-gray-50 min-h-screen text-gray-800">
       <h1 className="text-3xl font-bold mb-6 text-center">

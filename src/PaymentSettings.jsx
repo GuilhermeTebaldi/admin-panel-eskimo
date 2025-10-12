@@ -36,6 +36,8 @@ const toSlug = (s) => {
 };
 
 export default function PaymentSettings() {
+  
+
   const [configs, setConfigs] = useState([]); // lista crua que vem da API
   const [loading, setLoading] = useState(true);
 
@@ -206,7 +208,9 @@ export default function PaymentSettings() {
       toast.error("Falha ao remover configuração.");
     }
   };
-
+  const role = localStorage.getItem("role");
+  if (role !== "admin") return <div className="p-8">Acesso restrito ao administrador.</div>;
+  
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-white to-gray-50 py-10 px-4 text-gray-800">
       <div className="mx-auto max-w-5xl">

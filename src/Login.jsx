@@ -24,10 +24,18 @@ export default function LoginPage() {
     try {
       const res = await axios.post(`${API_URL}/auth/login`, { email, password });
       localStorage.setItem("token", res.data.token);
+      try {
+        const payload = JSON.parse(atob(res.data.token.split(".")[1]));
+        const role = payload.role || payload.Role || "operator";
+        const permissions = payload.permissions || "{}";
+        localStorage.setItem("role", role);
+        localStorage.setItem("permissions", typeof permissions === "string" ? permissions : JSON.stringify(permissions));
+      } catch { /* ignore */ }
+      
       toast.success("✅ Login realizado com sucesso!");
   
       setTimeout(() => {
-        window.location.href = "/cadastro"; // 🚀 Força reload real para montar já logado
+        window.location.href = "/users"; // 🚀 Força reload real para montar já logado
       }, 1200);
   
     } catch (err) {

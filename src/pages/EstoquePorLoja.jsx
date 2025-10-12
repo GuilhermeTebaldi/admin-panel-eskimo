@@ -14,6 +14,17 @@ export default function EstoquePorLoja() {
   const [aba, setAba] = useState("ativos"); // 'ativos' | 'zero' | 'arquivados'
 
   const lojas = ["efapi", "palmital", "passo"];
+  const role = localStorage.getItem("role");
+  const isAdmin = role === "admin";
+  let perms = {};
+  try { perms = JSON.parse(localStorage.getItem("permissions") || "{}"); } catch { /* noop */ }
+
+  const canEditStore = (slug) => {
+    if (isAdmin) return true;
+    const s = perms?.stores?.[slug];
+    return !!(s && s.edit_stock === true);
+  };
+
 
   useEffect(() => {
     const fetchDados = async () => {
@@ -257,12 +268,13 @@ export default function EstoquePorLoja() {
                           value={estoques[`${produto.id}-${loja}`] ?? ""}
                           onChange={(e) => handleChange(produto.id, loja, e.target.value)}
                           style={inputStyle}
+                          disabled={!canEditStore(loja)}
                         />
                       </td>
                     ))}
                     <td style={tdStyle}>
-                      <button onClick={() => salvarEstoque(produto.id)} style={btnPrimary}>💾 Salvar</button>
-                      <button onClick={() => arquivarProduto(produto.id)} style={btnArchive}>🗄️ Arquivar</button>
+                    <button onClick={() => salvarEstoque(produto.id)} style={btnPrimary} disabled={!lojas.some(canEditStore)}>💾 Salvar</button>
+                    <button onClick={() => arquivarProduto(produto.id)} style={btnArchive}>🗄️ Arquivar</button>
                     </td>
                   </tr>
                 ))}
@@ -305,12 +317,13 @@ export default function EstoquePorLoja() {
                         value={estoques[`${produto.id}-${loja}`] ?? ""}
                         onChange={(e) => handleChange(produto.id, loja, e.target.value)}
                         style={inputStyle}
+                        disabled={!canEditStore(loja)}
                       />
                     </td>
                   ))}
                   <td style={tdStyle}>
-                    <button onClick={() => salvarEstoque(produto.id)} style={btnPrimary}>💾 Salvar</button>
-                    <button onClick={() => arquivarProduto(produto.id)} style={btnArchive}>🗄️ Arquivar</button>
+                  <button onClick={() => salvarEstoque(produto.id)} style={btnPrimary} disabled={!lojas.some(canEditStore)}>💾 Salvar</button>
+                  <button onClick={() => arquivarProduto(produto.id)} style={btnArchive}>🗄️ Arquivar</button>
                   </td>
                 </tr>
               ))}

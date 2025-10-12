@@ -7,7 +7,8 @@ const API_URL = import.meta.env.VITE_API_URL;
 
 
 export default function CategoryManager() {
- 
+
+
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
   const [newCategory, setNewCategory] = useState("");
@@ -104,7 +105,9 @@ export default function CategoryManager() {
     setEditSubcategoryData({ name: "", categoryId: "" });
     fetchSubcategories();
   };
-
+  const role = localStorage.getItem("role");
+  if (role !== "admin") return <div className="p-8">Acesso restrito ao administrador.</div>;
+  
   if (isLoading) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center", fontSize: "1.5rem", color: "#059669" }}>
