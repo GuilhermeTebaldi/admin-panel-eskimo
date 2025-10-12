@@ -24,18 +24,28 @@ export default function LoginPage() {
     try {
       const res = await axios.post(`${API_URL}/auth/login`, { email, password });
       localStorage.setItem("token", res.data.token);
-      try {
-        const payload = JSON.parse(atob(res.data.token.split(".")[1]));
-        const role = payload.role || payload.Role || "operator";
-        const permissions = payload.permissions || "{}";
-        localStorage.setItem("role", role);
-        localStorage.setItem("permissions", typeof permissions === "string" ? permissions : JSON.stringify(permissions));
-      } catch { /* ignore */ }
-      
-      toast.success("✅ Login realizado com sucesso!");
+
+// Define role com fallback seguro e força admin para o e-mail do administrador
+let role = "operator";
+let permissions = "{}";
+try {
+  const payload = JSON.parse(atob((res.data.token || "").split(".")[1] || ""));
+  role = String(payload.role || payload.Role || "operator").toLowerCase();
+  permissions = payload.permissions || "{}";
+} catch { /* empty */ }
+
+if (String(email).toLowerCase() === "admin@eskimo.com") {
+  role = "admin";
+}
+
+localStorage.setItem("role", role);
+localStorage.setItem("permissions", typeof permissions === "string" ? permissions : JSON.stringify(permissions));
+
+toast.success("✅ Login realizado com sucesso!");
+
   
       setTimeout(() => {
-        window.location.href = "/users"; // 🚀 Força reload real para montar já logado
+        window.location.href = "/cadastro"; // 🚀 Força reload real para montar já logado
       }, 1200);
   
     } catch (err) {

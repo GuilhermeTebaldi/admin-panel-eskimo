@@ -1,11 +1,17 @@
 import React, { useEffect, useState } from "react";
+
+
 import api from "@/services/api";
+
+import { useNavigate } from "react-router-dom";
 
 function safeJsonParse(s, fallback = {}) {
   try { return JSON.parse(s); } catch { return fallback; }
 }
 
 export default function UserManager() {
+  const navigate = useNavigate();
+
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState({ id: null, username: "", email: "", password: "", role: "operator", isEnabled: true, permissionsJson: "{}" });
   const [editing, setEditing] = useState(false);
@@ -40,6 +46,8 @@ export default function UserManager() {
     }
     await load(); reset(); setEditing(false);
     alert("✅ Usuário salvo.");
+    navigate("/cadastro");
+    
   };
 
   const edit = (u) => {
@@ -72,8 +80,8 @@ export default function UserManager() {
   return (
     <div className="p-8 bg-gray-50 min-h-screen text-gray-800">
       <div className="mb-4 flex items-center gap-3">
-        <button onClick={() => window.history.back()} className="rounded-md border border-gray-300 bg-white px-4 py-1 text-sm text-gray-600 hover:bg-gray-100">← Voltar</button>
-        <h1 className="text-2xl font-bold">👥 Usuários e Permissões</h1>
+      <button onClick={() => navigate("/cadastro")} className="rounded-md border border-gray-300 bg-white px-4 py-1 text-sm text-gray-600 hover:bg-gray-100">← Voltar</button>
+      <h1 className="text-2xl font-bold">👥 Usuários e Permissões</h1>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
