@@ -116,7 +116,8 @@ export default function UserManager() {
       password: "",
       role: u.role || "operator",
       isEnabled: !!u.isEnabled,
-      permissionsJson: u.permissions || "{}",
+      permissionsJson: u.permissions || u.permissionsJson || "{}",
+
     });
   };
 

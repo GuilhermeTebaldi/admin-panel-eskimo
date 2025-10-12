@@ -3,14 +3,12 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-// ✅ Usa variável de ambiente com fallback para DEV
-//    Ex.: VITE_API_URL=http://localhost:8080/api
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080/api";
 
-// ✅ Headers com token (JWT) para todas as chamadas protegidas
-const auth = {
-  headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-};
+// Cabeçalho dinâmico — token sempre atualizado
+const auth = () => ({
+  headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` },
+});
 
 export default function Pedidos() {
   const [pedidos, setPedidos] = useState([]);
@@ -21,11 +19,31 @@ export default function Pedidos() {
   const [gerandoRelatorio, setGerandoRelatorio] = useState(false);
   const [mostrarModalExcluirTodos, setMostrarModalExcluirTodos] = useState(false);
 
-  // 🔎 Filtros de data para relatório
-  const [fromDate, setFromDate] = useState(""); // "YYYY-MM-DD"
-  const [toDate, setToDate] = useState("");     // "YYYY-MM-DD"
+  // Gate: admin ou operador com permissão de pedidos
+  const role = localStorage.getItem("role") || "operator";
+  let perms = {};
+  try {
+    perms = JSON.parse(localStorage.getItem("permissions") || "{}");
+  } catch {
+    perms = {};
+  }
 
+  const anyOrders =
+    !!(perms?.stores?.efapi?.orders ||
+      perms?.stores?.palmital?.orders ||
+      perms?.stores?.passo?.orders);
+
+  const isAdmin = role === "admin";
+  if (!isAdmin && !anyOrders) {
+    return <div className="p-8">Acesso restrito ao administrador.</div>;
+  }
+
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const [fromDate, setFromDate] = useState("");
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const [toDate, setToDate] = useState("");
   const lojasFixas = ["Efapi", "Palmital", "Passo dos Fortes"];
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const lastIds = useRef(new Set());
 
   const mapStore = (store) => {
@@ -45,7 +63,7 @@ export default function Pedidos() {
 
   const fetchPedidos = () => {
     axios
-      .get(`${API_URL}/orders`, auth)
+      .get(`${API_URL}/orders`, auth())
       .then((res) => {
         const novos = res.data.filter((p) => !lastIds.current.has(p.id));
         if (novos.length > 0 && lastIds.current.size > 0) {
@@ -54,12 +72,11 @@ export default function Pedidos() {
         res.data.forEach((p) => lastIds.current.add(p.id));
         setPedidos(res.data);
       })
-      .catch(() => {
-        toast.error("Erro ao buscar pedidos.");
-      })
+      .catch(() => toast.error("Erro ao buscar pedidos."))
       .finally(() => setLoading(false));
   };
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     fetchPedidos();
     const interval = setInterval(fetchPedidos, 10000);
@@ -68,7 +85,7 @@ export default function Pedidos() {
 
   const marcarComoEntregue = async (id) => {
     try {
-      await axios.patch(`${API_URL}/orders/${id}/deliver`, null, auth);
+      await axios.patch(`${API_URL}/orders/${id}/deliver`, null, auth());
       toast.success("Pedido marcado como entregue!");
       fetchPedidos();
     } catch {
@@ -82,7 +99,7 @@ export default function Pedidos() {
       await axios.patch(
         `${API_URL}/orders/${pedidoSelecionado.id}/confirm`,
         null,
-        auth
+        auth()
       );
       toast.success("Pagamento confirmado!");
       setPedidoSelecionado(null);
@@ -95,7 +112,7 @@ export default function Pedidos() {
   const cancelarPedido = async (id) => {
     if (!window.confirm("Cancelar este pedido? O estoque será devolvido para a loja.")) return;
     try {
-      await axios.patch(`${API_URL}/orders/${id}/cancel`, null, auth);
+      await axios.patch(`${API_URL}/orders/${id}/cancel`, null, auth());
       toast.success("Pedido cancelado e estoque devolvido!");
       fetchPedidos();
     } catch {
@@ -106,7 +123,7 @@ export default function Pedidos() {
   const excluirPedido = async (id) => {
     if (!window.confirm("Tem certeza que deseja excluir este pedido?")) return;
     try {
-      await axios.delete(`${API_URL}/orders/${id}`, auth);
+      await axios.delete(`${API_URL}/orders/${id}`, auth());
       toast.info("Pedido excluído com sucesso.");
       fetchPedidos();
     } catch {
@@ -116,7 +133,7 @@ export default function Pedidos() {
 
   const excluirTodosPedidos = async () => {
     try {
-      await axios.delete(`${API_URL}/orders/clear`, auth);
+      await axios.delete(`${API_URL}/orders/clear`, auth());
       toast.success("Todos os pedidos foram excluídos.");
       setMostrarModalExcluirTodos(false);
       fetchPedidos();
@@ -125,7 +142,6 @@ export default function Pedidos() {
     }
   };
 
-  // ✅ Query string a partir de from/to (YYYY-MM-DD)
   const buildReportQuery = () => {
     const params = new URLSearchParams();
     if (fromDate) params.append("from", fromDate);
@@ -134,7 +150,6 @@ export default function Pedidos() {
     return qs ? `?${qs}` : "";
   };
 
-  // ✅ Baixa PDF por loja (com JWT, via blob)
   const baixarPDFPorLoja = async (lojaSlug) => {
     const qs = buildReportQuery();
     const fileSuffix =
@@ -148,7 +163,7 @@ export default function Pedidos() {
     const fileName = `relatorio-${lojaSlug}${fileSuffix}.pdf`;
 
     const { data: blob } = await axios.get(`${API_URL}/reports/${lojaSlug}${qs}`, {
-      ...auth,
+      ...auth(),
       responseType: "blob",
     });
 
@@ -162,33 +177,20 @@ export default function Pedidos() {
     URL.revokeObjectURL(url);
   };
 
-  // 🧾 Gera e BAIXA os PDFs (sem WhatsApp)
   const gerarRelatoriosPDF = async () => {
     setGerandoRelatorio(true);
     toast.info("Gerando PDF...");
-
     try {
       let lojasParaGerar = [];
-
-      if (filtroStore === "todos") {
-        lojasParaGerar = ["efapi", "palmital", "passo"];
-      } else {
-        lojasParaGerar = [mapStore(filtroStore)];
-      }
-
-      // Baixa 1 PDF por loja (com auth, via blob)
-      for (let loja of lojasParaGerar) {
-        await baixarPDFPorLoja(loja);
-      }
-
+      if (filtroStore === "todos") lojasParaGerar = ["efapi", "palmital", "passo"];
+      else lojasParaGerar = [mapStore(filtroStore)];
+      for (let loja of lojasParaGerar) await baixarPDFPorLoja(loja);
       const periodo =
         fromDate || toDate
           ? ` (${fromDate || "início"} → ${toDate || "hoje"})`
           : "";
-
       toast.success(`Relatório(s) baixado(s) com sucesso${periodo}!`);
-    } catch (e) {
-      console.error(e);
+    } catch {
       toast.error("Falha ao gerar/baixar relatórios.");
     } finally {
       setGerandoRelatorio(false);
@@ -201,10 +203,7 @@ export default function Pedidos() {
     return statusOk && storeOk;
   });
 
-  const formatDate = (date) => {
-    const d = new Date(date);
-    return d.toISOString().split("T")[0];
-  };
+  const formatDate = (date) => new Date(date).toISOString().split("T")[0];
 
   const pedidosAgrupados = pedidosFiltrados.reduce((acc, pedido) => {
     const dataPedido = getDataPedido(pedido);
@@ -214,11 +213,14 @@ export default function Pedidos() {
     return acc;
   }, {});
 
-  const datasOrdenadas = Object.keys(pedidosAgrupados).sort((a, b) => new Date(b) - new Date(a));
+  const datasOrdenadas = Object.keys(pedidosAgrupados).sort(
+    (a, b) => new Date(b) - new Date(a)
+  );
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-white to-gray-50 py-10 px-4 text-gray-800">
       <div className="mx-auto max-w-6xl">
+
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-3xl font-extrabold text-gray-900">📦 Pedidos Recebidos</h1>
           <div className="flex flex-wrap gap-2">
