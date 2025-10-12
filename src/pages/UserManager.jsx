@@ -3,9 +3,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import api from "@/services/api";
 import { useNavigate } from "react-router-dom";
 
-function safeJsonParse(s, fallback = {}) {
-  try { return JSON.parse(s); } catch { return fallback; }
-}
+function safeJsonParse(s, fallback = {}) { try { return JSON.parse(s); } catch { return fallback; } }
 function json(v) { return JSON.stringify(v, null, 2); }
 
 export default function UserManager() {
@@ -13,12 +11,11 @@ export default function UserManager() {
 
   // Gate admin-only
   const role = (localStorage.getItem("role") || "operator").toLowerCase();
-  if (role !== "admin") {
-    return <div className="p-8">Acesso restrito ao administrador.</div>;
-  }
+  if (role !== "admin") return <div className="p-8">Acesso restrito ao administrador.</div>;
 
    
   const [users, setUsers] = useState([]);
+   
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
 
@@ -46,15 +43,12 @@ export default function UserManager() {
     } catch (e) {
       console.error("GET /user failed:", e?.response?.status, e?.response?.data);
       setUsers([]);
-    }
-     finally {
+    } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  useEffect(() => { fetchUsers(); }, []);
 
   const resetForm = () => {
     setForm({
@@ -86,8 +80,8 @@ export default function UserManager() {
   };
 
   const del = async (id) => {
-    const self = users.find(x => x.id === id);
-    if (self?.email?.toLowerCase() === "admin@eskimo.com") {
+    const target = users.find(x => x.id === id);
+    if (target?.email?.toLowerCase() === "admin@eskimo.com") {
       alert("Não é permitido excluir o administrador raiz.");
       return;
     }
@@ -103,7 +97,6 @@ export default function UserManager() {
 
   const toggleEnabled = async (u) => {
     if (u.email?.toLowerCase() === "admin@eskimo.com" && u.isEnabled) {
-      // evita desativar admin raiz
       alert("Não é permitido desativar o administrador raiz.");
       return;
     }
@@ -121,24 +114,16 @@ export default function UserManager() {
   );
 
   const save = async () => {
-    // Proteções do "único admin"
     if (editing) {
       const original = users.find((u) => u.id === form.id);
       const unicoAdminAtivo = countActiveAdmins === 1 && (original?.role || "").toLowerCase() === "admin" && original?.isEnabled;
 
       if (unicoAdminAtivo) {
-        if (form.role !== "admin") {
-          alert("Não é permitido remover o único administrador ativo.");
-          return;
-        }
-        if (original.isEnabled && form.isEnabled === false) {
-          alert("Não é permitido desativar o único administrador ativo.");
-          return;
-        }
+        if (form.role !== "admin") { alert("Não é permitido remover o único administrador ativo."); return; }
+        if (original.isEnabled && form.isEnabled === false) { alert("Não é permitido desativar o único administrador ativo."); return; }
       }
     }
 
-    // payload base
     const payload = {
       username: form.username?.trim() || form.email?.trim(),
       email: form.email?.trim(),
@@ -149,15 +134,10 @@ export default function UserManager() {
 
     try {
       if (editing) {
-        // troca de senha opcional
         if (form.newPassword?.trim()) payload.newPassword = form.newPassword.trim();
         await api.put(`/user/${form.id}`, payload);
       } else {
-        // criação exige password
-        if (!form.password?.trim()) {
-          alert("Senha é obrigatória para criar usuário.");
-          return;
-        }
+        if (!form.password?.trim()) { alert("Senha é obrigatória para criar usuário."); return; }
         await api.post("/user", { ...payload, password: form.password.trim() });
       }
       await fetchUsers();
@@ -316,7 +296,7 @@ export default function UserManager() {
                 </thead>
                 <tbody>
                   {users.map((u) => {
-                    const perms = useMemo(() => safeJsonParse(u.permissions || u.permissionsJson || "{}"), [u.permissions, u.permissionsJson]);
+                    const perms = safeJsonParse(u.permissions || u.permissionsJson || "{}");
                     return (
                       <tr key={u.id} className="border-t">
                         <td className="px-3 py-2">{u.id}</td>
@@ -324,9 +304,7 @@ export default function UserManager() {
                         <td className="px-3 py-2">{u.email}</td>
                         <td className="px-3 py-2">{(u.role || "").toLowerCase()}</td>
                         <td className="px-3 py-2">{u.isEnabled ? "Sim" : "Não"}</td>
-                        <td className="px-3 py-2 font-mono text-xs whitespace-pre-wrap">
-                          {json(perms)}
-                        </td>
+                        <td className="px-3 py-2 font-mono text-xs whitespace-pre-wrap">{json(perms)}</td>
                         <td className="px-3 py-2 flex gap-2">
                           <button
                             onClick={() => edit(u)}
