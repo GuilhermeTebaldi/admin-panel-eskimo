@@ -1,26 +1,27 @@
-import React, { useEffect, useState } from "react";
+/* eslint-disable react-hooks/rules-of-hooks */
+import React, { useEffect, useMemo, useState } from "react";
 import api from "@/services/api";
 import { useNavigate } from "react-router-dom";
 
 function safeJsonParse(s, fallback = {}) {
   try { return JSON.parse(s); } catch { return fallback; }
 }
-
-function json(v) {
-  return JSON.stringify(v, null, 2);
-}
+function json(v) { return JSON.stringify(v, null, 2); }
 
 export default function UserManager() {
   const navigate = useNavigate();
 
-  // gate admin-only
-  const role = localStorage.getItem("role");
-  const isAdmin = role === "admin";
-  if (!isAdmin) return <div className="p-8">Acesso restrito ao administrador.</div>;
+  // Gate admin-only
+  const role = (localStorage.getItem("role") || "operator").toLowerCase();
+  if (role !== "admin") {
+    return <div className="p-8">Acesso restrito ao administrador.</div>;
+  }
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
+   
   const [users, setUsers] = useState([]);
-  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+
   const [form, setForm] = useState({
     id: null,
     username: "",
@@ -29,82 +30,38 @@ export default function UserManager() {
     role: "operator",
     isEnabled: true,
     permissionsJson: "{}",
+    newPassword: "",
   });
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const [editing, setEditing] = useState(false);
 
-  const load = async () => {
-    const { data } = await api.get("/user");
-    setUsers(Array.isArray(data) ? data : []);
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get("/user");
+      setUsers(Array.isArray(res.data) ? res.data : []);
+    } catch (e) {
+      console.error("GET /user failed:", e?.response?.status, e?.response?.data);
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
-  const reset = () => setForm({
-    id: null,
-    username: "",
-    email: "",
-    password: "",
-    role: "operator",
-    isEnabled: true,
-    permissionsJson: "{}",
-  });
-
-  const countActiveAdmins = (list) =>
-    (list || []).filter((u) => u?.role === "admin" && u?.isEnabled).length;
-
-  const save = async () => {
-    // bloqueios de segurança do "único admin"
-    const currentAdmins = countActiveAdmins(users);
-
-    if (editing) {
-      const original = users.find((u) => u.id === form.id);
-      if (original?.role === "admin" && original?.isEnabled) {
-        // não pode remover o único admin ativo
-        if (currentAdmins === 1) {
-          // trocando role para operator?
-          if (form.role !== "admin") {
-            alert("Não é permitido remover o único administrador.");
-            return;
-          }
-          // desativando o único admin?
-          if (form.isEnabled === false) {
-            alert("Não é permitido desativar o único administrador.");
-            return;
-          }
-        }
-      }
-    } else {
-      // criação: se marcar admin, ok; se operator, ok. Sem bloqueio aqui.
-    }
-
-    // valida JSON de permissões
-    const pj = form.permissionsJson?.trim() || "{}";
-    safeJsonParse(pj);
-
-    if (editing) {
-      await api.put(`/user/${form.id}`, {
-        username: form.username,
-        email: form.email,
-        role: form.role,
-        isEnabled: form.isEnabled,
-        permissionsJson: pj,
-        newPassword: form.password ? form.password : undefined,
-      });
-    } else {
-      await api.post(`/user`, {
-        username: form.username,
-        email: form.email,
-        password: form.password,
-        role: form.role,
-        isEnabled: form.isEnabled,
-        permissionsJson: pj,
-      });
-    }
-    await load(); reset(); setEditing(false);
-    alert("✅ Usuário salvo.");
-    navigate("/cadastro");
+  const resetForm = () => {
+    setForm({
+      id: null,
+      username: "",
+      email: "",
+      password: "",
+      role: "operator",
+      isEnabled: true,
+      permissionsJson: "{}",
+      newPassword: "",
+    });
+    setEditing(false);
   };
 
   const edit = (u) => {
@@ -114,327 +71,283 @@ export default function UserManager() {
       username: u.username || "",
       email: u.email || "",
       password: "",
-      role: u.role || "operator",
+      role: (u.role || "operator").toLowerCase(),
       isEnabled: !!u.isEnabled,
       permissionsJson: u.permissions || u.permissionsJson || "{}",
-
+      newPassword: "",
     });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const removeUser = async (id) => {
-    const target = users.find((u) => u.id === id);
-    if (!target) return;
-    // bloqueio: não pode apagar o único admin ativo
-    if (target.role === "admin" && target.isEnabled && countActiveAdmins(users) === 1) {
-      alert("Não é permitido excluir o único administrador ativo.");
+  const del = async (id) => {
+    const self = users.find(x => x.id === id);
+    if (self?.email?.toLowerCase() === "admin@eskimo.com") {
+      alert("Não é permitido excluir o administrador raiz.");
       return;
     }
-    if (!confirm("Excluir este usuário?")) return;
-    await api.delete(`/user/${id}`);
-    await load();
+    if (!confirm("Confirmar exclusão do usuário?")) return;
+    try {
+      await api.delete(`/user/${id}`);
+      await fetchUsers();
+    } catch (e) {
+      console.error("DELETE /user/{id} failed:", e?.response?.status, e?.response?.data);
+      alert("Erro ao excluir usuário.");
+    }
   };
 
   const toggleEnabled = async (u) => {
-    // bloqueio: não pode desativar o único admin ativo
-    if (u.role === "admin" && u.isEnabled && countActiveAdmins(users) === 1) {
-      alert("Não é permitido desativar o único administrador.");
+    if (u.email?.toLowerCase() === "admin@eskimo.com" && u.isEnabled) {
+      // evita desativar admin raiz
+      alert("Não é permitido desativar o administrador raiz.");
       return;
     }
-    await api.put(`/user/${u.id}`, { isEnabled: !u.isEnabled });
-    await load();
+    try {
+      await api.put(`/user/${u.id}`, { isEnabled: !u.isEnabled });
+      await fetchUsers();
+    } catch {
+      alert("Erro ao atualizar status.");
+    }
   };
 
-  // presets de permissões (apenas para operator). Para admin o JSON é ignorado.
-  const setPreset = (preset) => {
-    if (preset === "ADMIN_TOTAL") {
-      setForm((f) => ({
-        ...f,
-        role: "admin",
-        isEnabled: true,
-        permissionsJson: "{}", // ignorado para admin
-      }));
-      return;
+  const countActiveAdmins = useMemo(
+    () => (users || []).filter((u) => (u?.role || "").toLowerCase() === "admin" && u?.isEnabled).length,
+    [users]
+  );
+
+  const save = async () => {
+    // Proteções do "único admin"
+    if (editing) {
+      const original = users.find((u) => u.id === form.id);
+      const unicoAdminAtivo = countActiveAdmins === 1 && (original?.role || "").toLowerCase() === "admin" && original?.isEnabled;
+
+      if (unicoAdminAtivo) {
+        if (form.role !== "admin") {
+          alert("Não é permitido remover o único administrador ativo.");
+          return;
+        }
+        if (original.isEnabled && form.isEnabled === false) {
+          alert("Não é permitido desativar o único administrador ativo.");
+          return;
+        }
+      }
     }
 
-    const base = {
-      can_manage_products: false,
-      can_delete_products: false,
-      stores: {
-        efapi: { orders: false, edit_stock: false },
-        palmital: { orders: false, edit_stock: false },
-        passo: { orders: false, edit_stock: false },
-      },
+    // payload base
+    const payload = {
+      username: form.username?.trim() || form.email?.trim(),
+      email: form.email?.trim(),
+      role: (form.role || "operator").toLowerCase(),
+      isEnabled: !!form.isEnabled,
+      permissionsJson: form.permissionsJson || "{}",
     };
 
-    const apply = (mutate) => {
-      const cfg = JSON.parse(JSON.stringify(base));
-      mutate(cfg);
-      setForm((f) => ({
-        ...f,
-        role: f.role === "admin" ? "operator" : f.role, // garante operator para usar JSON
-        permissionsJson: json(cfg),
-      }));
-    };
-
-    switch (preset) {
-      case "SEM_ACESSO":
-        apply(() => {});
-        break;
-
-      case "PEDIDOS_TODAS":
-        apply((c) => {
-          c.stores.efapi.orders = true;
-          c.stores.palmital.orders = true;
-          c.stores.passo.orders = true;
-        });
-        break;
-
-      case "PEDIDOS_ESTOQUE_TODAS":
-        apply((c) => {
-          ["efapi", "palmital", "passo"].forEach((s) => {
-            c.stores[s].orders = true;
-            c.stores[s].edit_stock = true;
-          });
-        });
-        break;
-
-      case "EFAPI_PEDIDOS_ESTOQUE":
-        apply((c) => { c.stores.efapi.orders = true; c.stores.efapi.edit_stock = true; });
-        break;
-
-      case "PALMITAL_PEDIDOS_ESTOQUE":
-        apply((c) => { c.stores.palmital.orders = true; c.stores.palmital.edit_stock = true; });
-        break;
-
-      case "PASSO_PEDIDOS_ESTOQUE":
-        apply((c) => { c.stores.passo.orders = true; c.stores.passo.edit_stock = true; });
-        break;
-
-      case "SO_PEDIDOS_TODAS":
-        apply((c) => {
-          ["efapi", "palmital", "passo"].forEach((s) => { c.stores[s].orders = true; });
-        });
-        break;
-
-      case "GESTAO_PRODUTOS_SEM_DELETAR":
-        apply((c) => {
-          c.can_manage_products = true;
-          ["efapi", "palmital", "passo"].forEach((s) => {
-            c.stores[s].orders = true;
-            c.stores[s].edit_stock = true;
-          });
-        });
-        break;
-
-      case "PODE_DELETAR_PRODUTOS":
-        apply((c) => {
-          c.can_manage_products = true;
-          c.can_delete_products = true;
-          ["efapi", "palmital", "passo"].forEach((s) => {
-            c.stores[s].orders = true;
-            c.stores[s].edit_stock = true;
-          });
-        });
-        break;
-
-      case "OPERADOR_SEM_ESTOQUE":
-        apply((c) => {
-          ["efapi", "palmital", "passo"].forEach((s) => {
-            c.stores[s].orders = true;
-            c.stores[s].edit_stock = false;
-          });
-        });
-        break;
-
-      default:
-        apply(() => {});
+    try {
+      if (editing) {
+        // troca de senha opcional
+        if (form.newPassword?.trim()) payload.newPassword = form.newPassword.trim();
+        await api.put(`/user/${form.id}`, payload);
+      } else {
+        // criação exige password
+        if (!form.password?.trim()) {
+          alert("Senha é obrigatória para criar usuário.");
+          return;
+        }
+        await api.post("/user", { ...payload, password: form.password.trim() });
+      }
+      await fetchUsers();
+      resetForm();
+      navigate("/cadastro");
+    } catch (e) {
+      console.error("SAVE user failed:", e?.response?.status, e?.response?.data);
+      alert("Erro ao salvar usuário.");
     }
   };
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen text-gray-800">
-      <div className="mb-4 flex items-center gap-3">
-        <button
-          onClick={() => navigate("/cadastro")}
-          className="rounded-md border border-gray-300 bg-white px-4 py-1 text-sm text-gray-600 hover:bg-gray-100"
-        >
-          ← Voltar
-        </button>
-        <h1 className="text-2xl font-bold">👥 Usuários e Permissões</h1>
-      </div>
+    <div className="min-h-screen w-full bg-gradient-to-br from-white to-gray-50 py-10 px-4 text-gray-800">
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-6 flex items-center justify-between">
+          <h1 className="text-2xl font-extrabold text-gray-900">👥 Usuários e Permissões</h1>
+          <button
+            onClick={() => navigate(-1)}
+            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+          >
+            Voltar
+          </button>
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Form */}
-        <div className="bg-white rounded shadow p-4">
-          <h2 className="text-lg font-semibold mb-3">
-            {editing ? "Editar Usuário" : "Novo Usuário"}
-          </h2>
+        {/* Formulário */}
+        <div className="mb-8 rounded-xl border border-gray-200 bg-white p-6 shadow">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Nome</label>
+              <input
+                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                value={form.username}
+                onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))}
+                placeholder="Nome do usuário"
+              />
+            </div>
 
-          <div className="grid grid-cols-1 gap-3">
-            <input
-              className="border rounded p-2"
-              placeholder="Username"
-              value={form.username}
-              onChange={(e) => setForm({ ...form, username: e.target.value })}
-            />
-            <input
-              className="border rounded p-2"
-              placeholder="Email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-            />
-            <input
-              className="border rounded p-2"
-              type="password"
-              placeholder={editing ? "Nova senha (opcional)" : "Senha"}
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-            />
+            <div>
+              <label className="text-sm font-medium text-gray-700">Email</label>
+              <input
+                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                value={form.email}
+                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                placeholder="email@dominio.com"
+                type="email"
+              />
+            </div>
 
-            <div className="flex items-center gap-3">
-              <select
-                className="border rounded p-2"
-                value={form.role}
-                onChange={(e) => setForm({ ...form, role: e.target.value })}
-              >
-                <option value="operator">operator</option>
-                <option value="admin">admin</option>
-              </select>
-
-              <label className="inline-flex items-center gap-2 text-sm">
+            {!editing && (
+              <div>
+                <label className="text-sm font-medium text-gray-700">Senha</label>
                 <input
-                  type="checkbox"
-                  checked={form.isEnabled}
-                  onChange={(e) => setForm({ ...form, isEnabled: e.target.checked })}
+                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  value={form.password}
+                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                  placeholder="Senha inicial"
+                  type="password"
                 />
-                Ativo
-              </label>
-            </div>
-
-            {/* Presets */}
-            <div className="rounded border p-3">
-              <div className="text-sm font-semibold mb-2">Presets rápidos</div>
-              <div className="flex flex-wrap gap-2">
-                <button className="rounded border px-3 py-1 text-sm" onClick={() => setPreset("ADMIN_TOTAL")}>
-                  👑 Admin total
-                </button>
-                <button className="rounded border px-3 py-1 text-sm" onClick={() => setPreset("SEM_ACESSO")}>
-                  🔒 Sem acesso extra
-                </button>
-                <button className="rounded border px-3 py-1 text-sm" onClick={() => setPreset("PEDIDOS_TODAS")}>
-                  🧾 Pedidos (todas as lojas)
-                </button>
-                <button className="rounded border px-3 py-1 text-sm" onClick={() => setPreset("SO_PEDIDOS_TODAS")}>
-                  👀 Somente pedidos
-                </button>
-                <button className="rounded border px-3 py-1 text-sm" onClick={() => setPreset("PEDIDOS_ESTOQUE_TODAS")}>
-                  🧾+📦 Pedidos+Estoque (todas)
-                </button>
-                <button className="rounded border px-3 py-1 text-sm" onClick={() => setPreset("EFAPI_PEDIDOS_ESTOQUE")}>
-                  Efapi pedidos+estoque
-                </button>
-                <button className="rounded border px-3 py-1 text-sm" onClick={() => setPreset("PALMITAL_PEDIDOS_ESTOQUE")}>
-                  Palmital pedidos+estoque
-                </button>
-                <button className="rounded border px-3 py-1 text-sm" onClick={() => setPreset("PASSO_PEDIDOS_ESTOQUE")}>
-                  Passo pedidos+estoque
-                </button>
-                <button className="rounded border px-3 py-1 text-sm" onClick={() => setPreset("OPERADOR_SEM_ESTOQUE")}>
-                  Operador: sem estoque
-                </button>
-                <button className="rounded border px-3 py-1 text-sm" onClick={() => setPreset("GESTAO_PRODUTOS_SEM_DELETAR")}>
-                  🧰 Gestão produtos (sem deletar)
-                </button>
-                <button className="rounded border px-3 py-1 text-sm" onClick={() => setPreset("PODE_DELETAR_PRODUTOS")}>
-                  ❗️Pode deletar produtos
-                </button>
               </div>
-              <p className="mt-2 text-xs text-gray-500">
-                Observação: para <b>admin</b>, o JSON de permissões é ignorado. Admin já tem tudo por padrão.
-              </p>
+            )}
+
+            {editing && (
+              <div>
+                <label className="text-sm font-medium text-gray-700">Nova senha (opcional)</label>
+                <input
+                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                  value={form.newPassword}
+                  onChange={(e) => setForm((f) => ({ ...f, newPassword: e.target.value }))}
+                  placeholder="Digite para trocar a senha"
+                  type="password"
+                />
+              </div>
+            )}
+
+            <div>
+              <label className="text-sm font-medium text-gray-700">Papel</label>
+              <select
+                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                value={form.role}
+                onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
+              >
+                <option value="operator">Operator</option>
+                <option value="admin">Admin</option>
+              </select>
             </div>
 
-            <label className="text-sm font-medium">Permissões (JSON)</label>
+            <div className="flex items-center gap-2">
+              <input
+                id="isenabled"
+                type="checkbox"
+                checked={form.isEnabled}
+                onChange={(e) => setForm((f) => ({ ...f, isEnabled: e.target.checked }))}
+              />
+              <label htmlFor="isenabled" className="text-sm text-gray-700">Ativo</label>
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <label className="text-sm font-medium text-gray-700">Permissões (JSON)</label>
             <textarea
-              className="border rounded p-2 font-mono text-sm min-h-[140px]"
+              className="mt-1 h-40 w-full rounded-md border border-gray-300 p-2 text-sm font-mono"
               value={form.permissionsJson}
-              onChange={(e) => setForm({ ...form, permissionsJson: e.target.value })}
+              onChange={(e) => setForm((f) => ({ ...f, permissionsJson: e.target.value }))}
+              placeholder='{"can_manage_products":true,"stores":{"efapi":{"orders":true,"edit_stock":true}}}'
             />
+            <p className="mt-1 text-xs text-gray-500">
+              Slugs: efapi, palmital, passo.
+            </p>
+          </div>
 
-            <div className="flex gap-2">
-              <button onClick={save} className="bg-green-600 text-white rounded px-4 py-2">
-                💾 Salvar
-              </button>
-              {editing && (
-                <button onClick={() => { reset(); setEditing(false); }} className="bg-gray-200 rounded px-4 py-2">
-                  Cancelar
-                </button>
-              )}
-            </div>
+          <div className="mt-4 flex gap-2">
+            <button
+              onClick={save}
+              className="rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
+            >
+              {editing ? "Salvar alterações" : "Criar usuário"}
+            </button>
+            <button
+              onClick={resetForm}
+              className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            >
+              Limpar
+            </button>
           </div>
         </div>
 
-        {/* Tabela */}
-        <div className="bg-white rounded shadow p-4">
-          <h2 className="text-lg font-semibold mb-3">Cadastrados</h2>
-          <div className="overflow-x-auto">
-            <table className="min-w-full">
-              <thead className="bg-green-100 text-green-900">
-                <tr>
-                  <th className="p-2 text-left">ID</th>
-                  <th className="p-2 text-left">Username</th>
-                  <th className="p-2 text-left">Email</th>
-                  <th className="p-2 text-left">Role</th>
-                  <th className="p-2 text-left">Ativo</th>
-                  <th className="p-2 text-left">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((u) => (
-                  <tr key={u.id} className="border-t">
-                    <td className="p-2">{u.id}</td>
-                    <td className="p-2">{u.username}</td>
-                    <td className="p-2">{u.email}</td>
-                    <td className="p-2">{u.role}</td>
-                    <td className="p-2">
-                      <button
-                        onClick={() => toggleEnabled(u)}
-                        className={`rounded px-2 py-1 text-xs ${u.isEnabled ? "bg-blue-600 text-white" : "bg-gray-200"}`}
-                        title={u.role === "admin" && u.isEnabled && countActiveAdmins(users) === 1 ? "Não é permitido desativar o único admin" : ""}
-                      >
-                        {u.isEnabled ? "Desativar" : "Ativar"}
-                      </button>
-                    </td>
-                    <td className="p-2 flex gap-2">
-                      <button onClick={() => edit(u)} className="text-blue-600 hover:underline">✏️</button>
-                      <button
-                        onClick={() => removeUser(u.id)}
-                        className="text-red-600 hover:underline"
-                        title={u.role === "admin" && u.isEnabled && countActiveAdmins(users) === 1 ? "Não é permitido excluir o único admin" : ""}
-                      >
-                        🗑️
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* Lista */}
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900">Lista de usuários</h2>
+            <button
+              onClick={fetchUsers}
+              className="rounded-md border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700 hover:bg-gray-100"
+            >
+              Recarregar
+            </button>
           </div>
 
-          <details className="mt-3">
-            <summary className="cursor-pointer text-sm font-semibold">
-              Ver permissões (JSON) dos usuários
-            </summary>
-            <pre className="mt-2 text-xs bg-gray-50 p-2 rounded overflow-auto">
-{JSON.stringify(users.map(u => ({
-  id: u.id,
-  username: u.username,
-  role: u.role,
-  isEnabled: u.isEnabled,
-  permissions: safeJsonParse(u.permissions)
-})), null, 2)}
-            </pre>
-          </details>
+          {loading ? (
+            <div className="text-gray-500">Carregando...</div>
+          ) : users.length === 0 ? (
+            <div className="text-gray-500">Nenhum usuário encontrado.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="text-left text-gray-600">
+                    <th className="px-3 py-2">ID</th>
+                    <th className="px-3 py-2">Nome</th>
+                    <th className="px-3 py-2">Email</th>
+                    <th className="px-3 py-2">Papel</th>
+                    <th className="px-3 py-2">Ativo</th>
+                    <th className="px-3 py-2">Permissões</th>
+                    <th className="px-3 py-2">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((u) => {
+                    const perms = useMemo(() => safeJsonParse(u.permissions || u.permissionsJson || "{}"), [u.permissions, u.permissionsJson]);
+                    return (
+                      <tr key={u.id} className="border-t">
+                        <td className="px-3 py-2">{u.id}</td>
+                        <td className="px-3 py-2">{u.username}</td>
+                        <td className="px-3 py-2">{u.email}</td>
+                        <td className="px-3 py-2">{(u.role || "").toLowerCase()}</td>
+                        <td className="px-3 py-2">{u.isEnabled ? "Sim" : "Não"}</td>
+                        <td className="px-3 py-2 font-mono text-xs whitespace-pre-wrap">
+                          {json(perms)}
+                        </td>
+                        <td className="px-3 py-2 flex gap-2">
+                          <button
+                            onClick={() => edit(u)}
+                            className="rounded-md bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-700"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            onClick={() => toggleEnabled(u)}
+                            className="rounded-md bg-amber-600 px-3 py-1 text-xs font-semibold text-white hover:bg-amber-700"
+                          >
+                            {u.isEnabled ? "Desativar" : "Ativar"}
+                          </button>
+                          <button
+                            onClick={() => del(u.id)}
+                            className="rounded-md bg-red-600 px-3 py-1 text-xs font-semibold text-white hover:bg-red-700"
+                          >
+                            Excluir
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </div>
