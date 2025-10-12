@@ -37,11 +37,17 @@ export default function UserManager() {
     setLoading(true);
     try {
       const res = await api.get("/user");
-      setUsers(Array.isArray(res.data) ? res.data : []);
+      const d = res?.data;
+      const list =
+        Array.isArray(d) ? d :
+        Array.isArray(d?.items) ? d.items :
+        Array.isArray(d?.users) ? d.users : [];
+      setUsers(list);
     } catch (e) {
       console.error("GET /user failed:", e?.response?.status, e?.response?.data);
       setUsers([]);
-    } finally {
+    }
+     finally {
       setLoading(false);
     }
   };
