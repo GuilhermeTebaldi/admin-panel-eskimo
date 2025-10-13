@@ -1,7 +1,45 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 // App.jsx — cadastro com estoque por loja e gate admin
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import api from "@/services/api";
 import { useNavigate } from "react-router-dom";
+
+function decodeJwt(token) {
+  try {
+    const part = (token.split(".")[1] || "");
+    const base64 = part.replace(/-/g, "+").replace(/_/g, "/");
+    const json = decodeURIComponent(
+      atob(base64).split("").map(c => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)).join("")
+    );
+    return JSON.parse(json || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function getDisplayName() {
+  const cached = localStorage.getItem("username");
+  if (cached && cached.trim()) return cached.trim();
+
+  const token = localStorage.getItem("token") || "";
+  const payload = decodeJwt(token);
+
+  const name =
+    payload.name ||
+    payload.unique_name ||
+    payload.username ||
+    payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"] ||
+    "";
+
+  const email =
+    payload.email ||
+    payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"] ||
+    "";
+
+  const chosen = String(name || email || "").trim();
+  if (chosen) localStorage.setItem("username", chosen);
+  return chosen || "Usuário";
+}
 
 export default function AdminPanel() {
   const navigate = useNavigate();
@@ -10,7 +48,9 @@ export default function AdminPanel() {
   const role = localStorage.getItem("role");
   if (role !== "admin") return <div className="p-8">Acesso restrito ao administrador.</div>;
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
+   
+  const displayName = useMemo(() => getDisplayName(), []);
+
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -19,18 +59,12 @@ export default function AdminPanel() {
     categoryId: ""
   });
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   const [categories, setCategories] = useState([]);
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   const [subcategories, setSubcategories] = useState([]);
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   const [filteredSubcategories, setFilteredSubcategories] = useState([]);
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   const [subcategoryId, setSubcategoryId] = useState("");
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   const [estoques, setEstoques] = useState({ efapi: 1, palmital: 1, passo: 1 });
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     const checkSync = async () => {
       const precisaAtualizar = localStorage.getItem("categoriasAtualizadas");
@@ -62,7 +96,6 @@ export default function AdminPanel() {
     }
   };
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     const cid = Number.parseInt(form.categoryId);
     const filtered = subcategories.filter((s) => s.categoryId === cid);
@@ -116,13 +149,18 @@ export default function AdminPanel() {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
     localStorage.removeItem("permissions");
+    localStorage.removeItem("username");
     navigate("/");
   };
 
   return (
     <div style={containerStyle}>
       <div style={cardStyle}>
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem", alignItems: "center" }}>
+          <div className="text-left">
+            <div style={{ fontSize: "0.9rem", color: "#4b5563" }}>Logado como:</div>
+            <div style={{ fontWeight: 700, fontSize: "1.1rem", color: "#065f46" }}>{displayName}</div>
+          </div>
           <button onClick={handleLogout} style={btnDanger}>🚪 Sair</button>
         </div>
 
@@ -151,10 +189,10 @@ export default function AdminPanel() {
             value={subcategoryId}
             onChange={(e) => setSubcategoryId(e.target.value)}
             options={filteredSubcategories}
-            required={false} // opcional
+            required={false}
           />
 
-          <div className="w-full px-6 py-4">
+          <div className="w-full px-6 py-4" style={{ gridColumn: "span 2" }}>
             <label className="block mb-2 text-lg font-semibold text-gray-700">Estoque por loja:</label>
             <div className="grid grid-cols-3 gap-4">
               {Object.keys(estoques).map((store) => (
@@ -183,7 +221,6 @@ export default function AdminPanel() {
             <button type="button" onClick={() => navigate("/categorias")} style={btnOutline}>⚙️ Categorias</button>
             <button type="button" onClick={() => navigate("/pagamentos#whatsapp")} style={btnOutline}>📲 Pagamentos e 📞 WhatsApp da Loja</button>
             <button type="button" onClick={() => navigate("/users")} style={btnOutline}>👤 Cadastro de Pessoa</button>
-
           </div>
         </form>
       </div>

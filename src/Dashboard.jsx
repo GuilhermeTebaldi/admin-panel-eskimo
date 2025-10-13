@@ -1,10 +1,54 @@
 import { useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
+function decodeJwt(token) {
+  try {
+    const part = (token.split(".")[1] || "");
+    const base64 = part.replace(/-/g, "+").replace(/_/g, "/");
+    const json = decodeURIComponent(
+      atob(base64).split("").map(c => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)).join("")
+    );
+    return JSON.parse(json || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function getDisplayName() {
+  // 1) preferir cache local
+  const cached = localStorage.getItem("username");
+  if (cached && cached.trim()) return cached.trim();
+
+  // 2) decodificar token e extrair nome ou email
+  const token = localStorage.getItem("token") || "";
+  const payload = decodeJwt(token);
+
+  // Tentativas comuns
+  const name =
+    payload.name ||
+    payload.unique_name ||
+    payload.username ||
+    payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"] ||
+    "";
+
+  const email =
+    payload.email ||
+    payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"] ||
+    "";
+
+  // 3) se achar, salvar em cache para reuso
+  const chosen = String(name || email || "").trim();
+  if (chosen) localStorage.setItem("username", chosen);
+
+  // 4) fallback
+  return chosen || "Usuário";
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
 
   const role = (localStorage.getItem("role") || "operator").toLowerCase();
+  const displayName = useMemo(() => getDisplayName(), []);
 
   const permissions = useMemo(() => {
     try {
@@ -32,6 +76,7 @@ export default function Dashboard() {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
     localStorage.removeItem("permissions");
+    localStorage.removeItem("username");
     navigate("/", { replace: true });
   };
 
@@ -39,7 +84,10 @@ export default function Dashboard() {
     <div className="min-h-screen w-full bg-gradient-to-br from-white to-gray-50 py-10 px-4 text-gray-800">
       <div className="mx-auto max-w-5xl">
         <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="text-3xl font-extrabold text-gray-900">Painel Administrativo</h1>
+          <div>
+            <h1 className="text-3xl font-extrabold text-gray-900">Painel Administrativo</h1>
+            <p className="mt-1 text-sm text-gray-600">Bem-vindo, <span className="font-semibold">{displayName}</span></p>
+          </div>
           <div className="flex gap-2">
             <button
               onClick={goBack}
