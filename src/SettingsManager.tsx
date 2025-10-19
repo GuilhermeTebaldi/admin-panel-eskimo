@@ -9,10 +9,13 @@ export default function SettingsManager() {
   const [minDelivery, setMinDelivery] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [keepAliveStatus, setKeepAliveStatus] = useState<string>("Carregando...");
+  const [keepAliveLastPing, setKeepAliveLastPing] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchSettings();
+    fetchKeepAliveStatus();
   }, []);
 
   const fetchSettings = async () => {
@@ -42,6 +45,35 @@ export default function SettingsManager() {
       alert("❌ Erro ao salvar configuração.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const fetchKeepAliveStatus = async () => {
+    try {
+      const res = await fetch(`${API_URL}/keepalive/status`);
+      if (!res.ok) throw new Error("Erro ao buscar status");
+      const data = await res.json();
+      setKeepAliveStatus(data.enabled ? "Ativo" : "Inativo");
+      setKeepAliveLastPing(data.lastPing ?? null);
+    } catch (err) {
+      console.error("Erro ao buscar status do KeepAlive:", err);
+      setKeepAliveStatus("Indisponível");
+      setKeepAliveLastPing(null);
+    }
+  };
+
+  const handleKeepAliveToggle = async (action: "enable" | "disable") => {
+    try {
+      await fetch(`${API_URL}/keepalive/${action}`, { method: "POST" });
+      await fetchKeepAliveStatus();
+      alert(
+        action === "enable"
+          ? "✅ KeepAlive ativado."
+          : "✅ KeepAlive desativado.",
+      );
+    } catch (err) {
+      console.error(`Erro ao ${action} KeepAlive:`, err);
+      alert("❌ Não foi possível atualizar o KeepAlive.");
     }
   };
 
@@ -96,10 +128,47 @@ export default function SettingsManager() {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="w-full rounded bg-green-600 px-4 py-2 font-semibold text-white shadow hover:bg-green-700 disabled:opacity-60"
+              className="mb-6 w-full rounded bg-green-600 px-4 py-2 font-semibold text-white shadow hover:bg-green-700 disabled:opacity-60"
             >
               {saving ? "Salvando..." : "💾 Salvar Configuração"}
             </button>
+
+            <div className="rounded-lg border border-gray-200 p-4 shadow-sm">
+              <h2 className="mb-2 text-lg font-semibold text-gray-700">
+                🌐 KeepAlive do Banco
+              </h2>
+              <p className="mb-4 text-sm text-gray-600">
+                Status:{" "}
+                <span
+                  className={
+                    keepAliveStatus === "Ativo" ? "text-green-600" : "text-red-600"
+                  }
+                >
+                  {keepAliveStatus}
+                </span>
+                {keepAliveLastPing && (
+                  <>
+                    {" "}
+                    · Último ping:{" "}
+                    {new Date(keepAliveLastPing).toLocaleString("pt-BR")}
+                  </>
+                )}
+              </p>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                  onClick={() => handleKeepAliveToggle("enable")}
+                  className="w-full rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-blue-700"
+                >
+                  Ativar Manter Acordado
+                </button>
+                <button
+                  onClick={() => handleKeepAliveToggle("disable")}
+                  className="w-full rounded bg-gray-500 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-gray-600"
+                >
+                  Desativar Manter Acordado
+                </button>
+              </div>
+            </div>
           </>
         )}
       </div>
