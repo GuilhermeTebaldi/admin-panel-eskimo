@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useCallback, useState } from "react";
 import api from "@/services/api";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { toast } from "react-toastify";
 
 const pageSize = 1000;
 
@@ -90,17 +91,22 @@ export default function ProductList() {
   };
 
   const savePrice = async (id) => {
-    try {
-      const raw = priceEdits[id];
-      const price = parseFloat(String(raw).replace(",", ".")) || 0;
-      const p = (products || []).find((x) => x?.id === id);
-      if (!p) return alert("Produto não encontrado na lista atual.");
+    const raw = priceEdits[id];
+    const price = parseFloat(String(raw).replace(",", ".")) || 0;
+    const p = (products || []).find((x) => x?.id === id);
+    if (!p) {
+      toast.error("Produto não encontrado na lista atual.");
+      return;
+    }
+    const previousPrice = p?.price ?? 0;
 
+    try {
       // UI otimista
       setProducts((prev) =>
         (prev ?? []).map((it) => (it?.id === id ? { ...it, price } : it))
       );
       setPriceEdits((prev) => ({ ...prev, [id]: price.toString() }));
+      toast.success("Preço atualizado!");
 
       const body = {
         name: p?.name ?? "",
@@ -109,13 +115,19 @@ export default function ProductList() {
         imageUrl: p?.imageUrl ?? "",
         categoryId: p?.categoryId ?? null,
         subcategoryId: p?.subcategoryId ?? null,
+        sortRank: p?.sortRank ?? 0,
+        pinnedTop: p?.pinnedTop ?? false,
       };
       await api.put(`/products/${id}`, body);
       await fetchProducts();
       if (showPricePanel) openPricePanel();
     } catch (e) {
+      setProducts((prev) =>
+        (prev ?? []).map((it) => (it?.id === id ? { ...it, price: previousPrice } : it))
+      );
+      setPriceEdits((prev) => ({ ...prev, [id]: previousPrice.toString() }));
       console.error(e);
-      alert("❌ Erro ao salvar preço.");
+      toast.error("❌ Erro ao salvar preço.");
     }
   };
 
@@ -227,6 +239,8 @@ export default function ProductList() {
         imageUrl: form.imageUrl,
         categoryId: parseInt(form.categoryId) || null,
         subcategoryId: form.subcategoryId ? parseInt(form.subcategoryId) : null,
+        sortRank: editingProduct?.sortRank ?? 0,
+        pinnedTop: editingProduct?.pinnedTop ?? false,
       };
       await api.put(`/products/${form.id}`, body);
       await api.post(`/stock/${form.id}`, form.stock);
