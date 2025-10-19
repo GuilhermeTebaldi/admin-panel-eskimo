@@ -68,6 +68,7 @@ export default function UserManager() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [preset, setPreset] = useState("");
+  const [toast, setToast] = useState("");
 
   const [form, setForm] = useState({
     id: null,
@@ -109,6 +110,13 @@ export default function UserManager() {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  useEffect(() => {
+    if (toast) {
+      const t = setTimeout(() => setToast(""), 2500);
+      return () => clearTimeout(t);
+    }
+  }, [toast]);
 
   const resetForm = () => {
     setForm({
@@ -160,6 +168,7 @@ export default function UserManager() {
     try {
       await api.delete(`/user/${id}`);
       await fetchUsers();
+      setToast("Usuário excluído!");
     } catch (e) {
       console.error(
         "DELETE /user/{id} failed:",
@@ -233,8 +242,13 @@ export default function UserManager() {
         await api.post("/user", { ...payload, password: form.password.trim() });
       }
       await fetchUsers();
+      setToast(
+        editing
+          ? "Usuário atualizado com sucesso!"
+          : "Usuário criado com sucesso!"
+      );
       resetForm();
-      navigate("/cadastro");
+      // permanece na mesma página
     } catch (e) {
       console.error("SAVE user failed:", e?.response?.status, e?.response?.data);
       alert("Erro ao salvar usuário.");
@@ -265,17 +279,23 @@ export default function UserManager() {
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-white to-gray-50 py-10 px-4 text-gray-800">
       <div className="mx-auto max-w-5xl">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-extrabold text-gray-900">
-            👥 Usuários e Permissões
-          </h1>
-          <button
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-extrabold text-gray-900">
+          👥 Usuários e Permissões
+        </h1>
+        <button
             onClick={() => navigate(-1)}
             className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
           >
             Voltar
           </button>
         </div>
+
+        {toast && (
+          <div className="mb-4 rounded-md bg-green-600 px-4 py-2 text-sm text-white shadow">
+            {toast}
+          </div>
+        )}
 
         {/* Formulário */}
         <div className="mb-8 rounded-xl border border-gray-200 bg-white p-6 shadow">
@@ -369,38 +389,128 @@ export default function UserManager() {
           </div>
 
           {/* Presets */}
-          <div className="mt-4">
-            <label className="text-sm font-medium text-gray-700">
+          <div className="mt-6">
+            <label className="text-sm font-semibold text-gray-700">
               Modelos de permissão
             </label>
-            <div className="mt-2 flex flex-wrap gap-2">
+            <div className="mt-3 grid gap-3 sm:grid-cols-3">
               {Object.entries(PERMISSION_PRESETS).map(([k, v]) => (
-                <button
+                <div
                   key={k}
                   onClick={() => applyPreset(k)}
-                  className={`rounded-md px-3 py-2 text-sm font-semibold border ${
+                  className={`cursor-pointer rounded-xl border p-4 text-center shadow-sm transition-transform hover:scale-[1.02] ${
                     preset === k
-                      ? "bg-green-600 text-white border-green-600"
-                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
+                      ? "bg-green-50 border-green-600"
+                      : "bg-white border-gray-200 hover:border-green-400"
                   }`}
                 >
-                  {v.name}
-                </button>
+                  <div className="text-lg font-semibold text-gray-800">
+                    {v.name}
+                  </div>
+                  <div className="mt-1 text-xs text-gray-500">{v.desc}</div>
+                  {preset === k && (
+                    <div className="mt-2 text-xs font-semibold text-green-600">
+                      ✅ Selecionado
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
-            {preset && (
-              <p className="mt-1 text-xs text-gray-500">
-                {PERMISSION_PRESETS[preset].desc}
-              </p>
-            )}
           </div>
 
-          <div className="mt-4">
+          {/* Permissões detalhadas */}
+          <div className="mt-6">
             <label className="text-sm font-medium text-gray-700">
-              Permissões (JSON)
+              Permissões por loja
+            </label>
+
+            {["efapi", "palmital", "passo"].map((loja) => {
+              const perms = safeJsonParse(form.permissionsJson || "{}");
+              const lojaPerms = perms.stores?.[loja] || {
+                orders: false,
+                edit_stock: false,
+              };
+              const updatePerm = (field, value) => {
+                const copy = safeJsonParse(form.permissionsJson || "{}");
+                copy.stores = copy.stores || {};
+                copy.stores[loja] = { ...lojaPerms, [field]: value };
+                setForm((f) => ({ ...f, permissionsJson: json(copy) }));
+              };
+              return (
+                <div
+                  key={loja}
+                  className="mt-2 rounded-md border bg-gray-50 p-3"
+                >
+                  <div className="mb-2 capitalize text-gray-800 font-semibold">
+                    {loja}
+                  </div>
+                  <div className="flex gap-4 text-sm">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={!!lojaPerms.orders}
+                        onChange={(e) => updatePerm("orders", e.target.checked)}
+                      />
+                      Pedidos
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={!!lojaPerms.edit_stock}
+                        onChange={(e) =>
+                          updatePerm("edit_stock", e.target.checked)
+                        }
+                      />
+                      Estoque
+                    </label>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Permissões gerais */}
+            <div className="mt-4">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={
+                    safeJsonParse(form.permissionsJson || "{}")
+                      .can_manage_products || false
+                  }
+                  onChange={(e) => {
+                    const copy = safeJsonParse(form.permissionsJson || "{}");
+                    copy.can_manage_products = e.target.checked;
+                    setForm((f) => ({ ...f, permissionsJson: json(copy) }));
+                  }}
+                />
+                Pode gerenciar produtos
+              </label>
+
+              <label className="mt-2 flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={
+                    safeJsonParse(form.permissionsJson || "{}")
+                      .can_delete_products || false
+                  }
+                  onChange={(e) => {
+                    const copy = safeJsonParse(form.permissionsJson || "{}");
+                    copy.can_delete_products = e.target.checked;
+                    setForm((f) => ({ ...f, permissionsJson: json(copy) }));
+                  }}
+                />
+                Pode excluir produtos
+              </label>
+            </div>
+          </div>
+
+          {/* Campo JSON original, só para debug avançado */}
+          <div className="mt-6">
+            <label className="text-xs font-medium text-gray-500">
+              Permissões (JSON bruto)
             </label>
             <textarea
-              className="mt-1 h-40 w-full rounded-md border border-gray-300 p-2 text-sm font-mono"
+              className="mt-1 h-24 w-full rounded-md border border-gray-300 bg-gray-50 p-2 text-xs font-mono"
               value={form.permissionsJson}
               onChange={(e) =>
                 setForm((f) => ({ ...f, permissionsJson: e.target.value }))
@@ -462,24 +572,43 @@ export default function UserManager() {
                     const perms = safeJsonParse(
                       u.permissions || u.permissionsJson || "{}"
                     );
+                    const isEditing = editing && form.id === u.id;
                     return (
-                      <tr key={u.id} className="border-t">
-                        <td className="px-3 py-2">{u.id}</td>
+                      <tr
+                        key={u.id}
+                        className={`border-t transition-colors ${
+                          isEditing ? "bg-yellow-50" : "hover:bg-gray-50"
+                        }`}
+                      >
+                        <td className="px-3 py-2 font-semibold">{u.id}</td>
                         <td className="px-3 py-2">{u.username}</td>
                         <td className="px-3 py-2">{u.email}</td>
+                        <td className="px-3 py-2 capitalize">{u.role}</td>
                         <td className="px-3 py-2">
-                          {(u.role || "").toLowerCase()}
-                        </td>
-                        <td className="px-3 py-2">
-                          {u.isEnabled ? "Sim" : "Não"}
+                          <span
+                            className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${
+                              u.isEnabled
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-700"
+                            }`}
+                          >
+                            {u.isEnabled ? "Ativo" : "Inativo"}
+                          </span>
                         </td>
                         <td className="px-3 py-2 text-xs text-gray-700">
                           {describePermissions(u)}
                         </td>
-                        <td className="px-3 py-2 font-mono text-xs whitespace-pre-wrap">
-                          {json(perms)}
+                        <td className="px-3 py-2 text-xs text-gray-500">
+                          <details>
+                            <summary className="cursor-pointer select-none text-blue-600">
+                              Ver JSON
+                            </summary>
+                            <pre className="mt-1 whitespace-pre-wrap font-mono text-[11px]">
+                              {json(perms)}
+                            </pre>
+                          </details>
                         </td>
-                        <td className="px-3 py-2 flex gap-2">
+                        <td className="flex gap-2 px-3 py-2">
                           <button
                             onClick={() => edit(u)}
                             className="rounded-md bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-700"
@@ -488,7 +617,11 @@ export default function UserManager() {
                           </button>
                           <button
                             onClick={() => toggleEnabled(u)}
-                            className="rounded-md bg-amber-600 px-3 py-1 text-xs font-semibold text-white hover:bg-amber-700"
+                            className={`rounded-md px-3 py-1 text-xs font-semibold text-white ${
+                              u.isEnabled
+                                ? "bg-amber-600 hover:bg-amber-700"
+                                : "bg-green-600 hover:bg-green-700"
+                            }`}
                           >
                             {u.isEnabled ? "Desativar" : "Ativar"}
                           </button>
