@@ -1,3 +1,344 @@
+src/PrivateRoute.jsx
+import React, { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
+
+function parseJwtEnabled(t) {
+  try {
+    const part = (t.split(".")[1] || "");
+    const base64 = part.replace(/-/g, "+").replace(/_/g, "/");
+    const json = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    const payload = JSON.parse(json);
+    const enabledClaim = String(
+      payload.isEnabled || payload.IsEnabled || "true"
+    ).toLowerCase();
+    return enabledClaim !== "false";
+  } catch {
+    return true;
+  }
+}
+
+export default function PrivateRoute({ children }) {
+  const [tokenExists, setTokenExists] = useState(!!localStorage.getItem("token"));
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const token = localStorage.getItem("token");
+      setTokenExists(!!token);
+    }, 300);
+    return () => clearInterval(interval);
+  }, []);
+
+  const enabled = tokenExists
+    ? parseJwtEnabled(localStorage.getItem("token") || "")
+    : false;
+
+  if (!tokenExists || !enabled) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+}
+src/components/ui/ProductList.jsx
+import { useEffect, useState } from "react";
+import axios from "axios";
+
+export default function ProductList() {
+  const [products, setProducts] = useState([]);
+
+  useEffect(() => {
+    axios
+      .get("http://localhost:8080/api/products/list?page=1&pageSize=10")
+      .then((res) => setProducts(res.data))
+      .catch((err) => console.error("Erro ao buscar produtos:", err));
+  }, []);
+
+  return (
+    <div className="p-6">
+      <h2 className="text-xl font-bold mb-4">🛒 Produtos Cadastrados</h2>
+      <table className="w-full table-auto border rounded shadow">
+        <thead className="bg-gray-100">
+          <tr>
+            <th className="px-4 py-2">Nome</th>
+            <th className="px-4 py-2">Preço</th>
+            <th className="px-4 py-2">Estoque</th>
+            <th className="px-4 py-2">Categoria</th>
+            <th className="px-4 py-2">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {products.map((p) => (
+            <tr key={p.id} className="border-t">
+              <td className="px-4 py-2">{p.name}</td>
+              <td className="px-4 py-2">R$ {p.price.toFixed(2)}</td>
+              <td className="px-4 py-2">{p.stock}</td>
+              <td className="px-4 py-2">{p.categoryName}</td>
+              <td className="px-4 py-2">
+                <button className="mr-2 text-blue-500 hover:underline">Editar</button>
+                <button className="text-red-500 hover:underline">Excluir</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+src/Login.jsx
+import React, { useState } from "react";
+import axios from "axios";
+import { toast } from "react-toastify";
+import Loading from 'react-loading';
+
+const API_URL = "https://backend-eskimo.onrender.com/api";
+
+export default function LoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!email || !password) {
+      toast.warn("⚠️ Preencha todos os campos.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await axios.post(`${API_URL}/auth/login`, { email, password });
+      const token = res.data.token || "";
+      localStorage.setItem("token", token);
+      
+      // 1) Preferir dados retornados pelo backend (patch já aplicado no /auth/login)
+      let role = String(res.data?.role || "operator").toLowerCase();
+      let permissions = res.data?.permissions ?? "{}";
+      
+      // 2) Fallback: decodificar JWT de forma robusta (base64url)
+      if (!res.data?.role || !res.data?.permissions) {
+        try {
+          const part = (token.split(".")[1] || "");
+          const base64 = part.replace(/-/g, "+").replace(/_/g, "/");
+          const json = decodeURIComponent(
+            atob(base64).split("").map(c => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)).join("")
+          );
+          const payload = JSON.parse(json);
+          role = String(payload.role || payload.Role || role || "operator").toLowerCase();
+          permissions = payload.permissions ?? permissions ?? "{}";
+        } catch { /* noop */ }
+      }
+      
+      // 3) Forçar admin para o e-mail raiz
+      if (String(email).toLowerCase() === "admin@eskimo.com") {
+        role = "admin";
+      }
+      
+      // 4) Persistência
+      localStorage.setItem("role", role);
+      localStorage.setItem("permissions", typeof permissions === "string" ? permissions : JSON.stringify(permissions));
+      
+      toast.success("✅ Login realizado com sucesso!");
+
+      setTimeout(() => {
+        // admin direto em cadastro. outros ao painel inicial
+        if (role === "admin") {
+          window.location.href = "/cadastro";
+        } else {
+          window.location.href = "/inicio";
+        }
+      }, 1200);
+    } catch (err) {
+      console.error("Erro ao logar:", err.response?.data || err.message);
+      toast.error("❌ Email ou senha inválidos.");
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ minHeight: "100vh", background: "linear-gradient(to bottom right, #e0f2f1, #f0fdf4)", display: "flex", justifyContent: "center", alignItems: "center", padding: "2rem", animation: "fadeIn 0.8s ease-in-out" }}>
+      <div style={{ width: "100%", maxWidth: "420px", background: "white", padding: "2.5rem", borderRadius: "1.5rem", boxShadow: "0 10px 25px rgba(0,0,0,0.1)", textAlign: "center" }}>
+        <h1 style={{ fontSize: "2.5rem", color: "#065f46", fontWeight: "bold", marginBottom: "1rem" }}>🔒 Acesso Eskimó</h1>
+        <p style={{ color: "#6b7280", fontSize: "1rem", marginBottom: "2rem" }}>Entre com seu e-mail e senha para continuar</p>
+
+        {loading ? (
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", flexDirection: "column", gap: "1rem", height: "150px" }}>
+            <Loading type="spin" color="#059669" height={50} width={50} />
+            <p style={{ color: "#065f46", fontWeight: "bold" }}>Carregando...</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+            <div style={{ textAlign: "left" }}>
+              <label htmlFor="email" style={labelStyle}>Email</label>
+              <input
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Digite seu email"
+                required
+                style={inputStyle}
+              />
+            </div>
+
+            <div style={{ textAlign: "left" }}>
+              <label htmlFor="password" style={labelStyle}>Senha</label>
+              <input
+                type="password"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Digite sua senha"
+                required
+                style={inputStyle}
+              />
+            </div>
+
+            <button type="submit" style={btnPrimary}>Entrar</button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const labelStyle = {
+  fontSize: "0.875rem",
+  color: "#374151",
+  marginBottom: "0.5rem",
+  display: "block"
+};
+
+const inputStyle = {
+  width: "100%",
+  padding: "0.75rem",
+  borderRadius: "0.75rem",
+  border: "1px solid #cbd5e1",
+  background: "#f9fdfb",
+  fontSize: "1rem",
+  boxSizing: "border-box"
+};
+
+const btnPrimary = {
+  backgroundColor: "#059669",
+  color: "white",
+  fontWeight: "bold",
+  fontSize: "1rem",
+  padding: "0.75rem",
+  borderRadius: "0.75rem",
+  border: "none",
+  cursor: "pointer",
+  transition: "all 0.3s",
+  boxSizing: "border-box",
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center"
+};
+src/main.jsx
+import { StrictMode, useState, useEffect } from "react";
+import { createRoot } from "react-dom/client";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import "./index.css";
+
+import SettingsManager from "./SettingsManager";
+import Pedidos from "./Pedidos";
+import App from "./App.jsx";
+import ProductList from "./ProductList.jsx";
+import Login from "./Login.jsx";
+import PrivateRoute from "./PrivateRoute.jsx";
+import HomePublic from "./HomePublic";
+import CategoryManager from "./pages/CategoryManager";
+import EstoquePorLoja from "./pages/EstoquePorLoja";
+import PaymentSettings from "./PaymentSettings.jsx";
+import UserManager from "./pages/UserManager";
+import Dashboard from "./Dashboard.jsx";
+
+// 🦊 Splash screen para carregamento inicial
+// eslint-disable-next-line react-refresh/only-export-components
+function SplashScreen() {
+  return (
+    <div style={{
+      minHeight: "100vh",
+      background: "linear-gradient(to bottom right, #e0f2f1, #f0fdf4)",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center",
+      alignItems: "center",
+      animation: "fadeIn 0.8s ease-in-out"
+    }}>
+      <h1 style={{ fontSize: "2.5rem", color: "#065f46", fontWeight: "bold" }}>
+        ESKIMÓ CHAPECÓ
+      </h1>
+      <p style={{ fontSize: "1.2rem", color: "#065f46", marginTop: "1rem" }}>
+        Carregando...
+      </p>
+    </div>
+  );
+}
+
+// 🌐 App principal com rotas
+// eslint-disable-next-line react-refresh/only-export-components
+function MainApp() {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) return <SplashScreen />;
+
+  return (
+    <>
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/efapi" element={<HomePublic />} />
+
+        {/* Painel inicial por papel/permissão */}
+        <Route path="/inicio" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+
+        {/* Admin-only e telas com gate interno */}
+        <Route path="/cadastro" element={<PrivateRoute><App /></PrivateRoute>} />
+        <Route path="/produtos" element={<PrivateRoute><ProductList /></PrivateRoute>} />
+        <Route path="/categorias" element={<PrivateRoute><CategoryManager /></PrivateRoute>} />
+        <Route path="/configuracoes" element={<PrivateRoute><SettingsManager /></PrivateRoute>} />
+        <Route path="/pedidos" element={<PrivateRoute><Pedidos /></PrivateRoute>} />
+        <Route path="/estoque" element={<PrivateRoute><EstoquePorLoja /></PrivateRoute>} />
+        <Route path="/pagamentos" element={<PrivateRoute><PaymentSettings /></PrivateRoute>} />
+<Route path="/users" element={<PrivateRoute><UserManager /></PrivateRoute>} />
+
+      </Routes>
+
+      <ToastContainer
+        position="top-center"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
+    </>
+  );
+}
+
+// 🧠 Renderização do app
+createRoot(document.getElementById("root")).render(
+  <StrictMode>
+    <BrowserRouter>
+      <MainApp />
+    </BrowserRouter>
+  </StrictMode>
+);
+src/ProductList.jsx
 // ProductList.jsx — DnD + Preços rápidos + salvar layout robusto
 import React, { useEffect, useMemo, useCallback, useState } from "react";
 import api from "@/services/api";
@@ -302,28 +643,9 @@ export default function ProductList() {
     const n = Number(v);
     return Number.isFinite(n) ? n.toFixed(2) : "0.00";
   };
-  // --- Controle de acesso baseado em permissões ---
-  const role = (localStorage.getItem("role") || "").toLowerCase();
-  const permissions = (() => {
-    try {
-      return JSON.parse(localStorage.getItem("permissions") || "{}");
-    } catch {
-      return {};
-    }
-  })();
-
-  const canAccess =
-    role === "admin" ||
-    permissions.can_manage_products === true ||
-    permissions.can_delete_products === true;
-
-  if (!canAccess) {
-    return (
-      <div className="p-8 text-lg font-semibold text-red-600">
-        🚫 Acesso restrito.
-      </div>
-    );
-  }
+  const role = localStorage.getItem("role");
+  const isAdmin = role === "admin";
+  if (!isAdmin) return <div className="p-8">Acesso restrito ao administrador.</div>;
   
   return (
     <div className="p-8 bg-gray-50 min-h-screen text-gray-800">
@@ -594,3 +916,21 @@ export default function ProductList() {
     </div>
   );
 }
+src/services/api.js
+import axios from "axios";
+
+const API_URL = "https://backend-eskimo.onrender.com/api";
+
+const api = axios.create({
+  baseURL: API_URL,
+});
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+export default api;
