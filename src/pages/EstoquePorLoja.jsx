@@ -1,5 +1,7 @@
+//admin-panel/src/pages/EstoquePorLoja.jsx
 import React, { useEffect, useState } from "react";
 import api from "@/services/api";
+import { toast } from "react-toastify";
 
 export default function EstoquePorLoja() {
   const [produtos, setProdutos] = useState([]);
@@ -23,6 +25,16 @@ export default function EstoquePorLoja() {
     if (isAdmin) return true;
     const s = perms?.stores?.[slug];
     return !!(s && s.edit_stock === true);
+  };
+
+  // sempre que o estoque mudar, reorganiza automaticamente as abas
+  useEffect(() => {
+    setProdutos((prev) => [...prev]);
+  }, [estoques]);
+
+  const prevEstoque = (productId, loja) => {
+    const key = `${productId}-${loja}`;
+    return estoques[key] ?? 0;
   };
 
 
@@ -57,9 +69,23 @@ export default function EstoquePorLoja() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleChange = (productId, loja, value) => {
+  const handleChange = async (productId, loja, value) => {
     const key = `${productId}-${loja}`;
-    setEstoques((prev) => ({ ...prev, [key]: value }));
+    const novoValor = parseInt(value) || 0;
+
+    setEstoques((prev) => ({ ...prev, [key]: novoValor }));
+
+    try {
+      const payload = {};
+      lojas.forEach((l) => {
+        payload[l] =
+          parseInt(l === loja ? novoValor : prevEstoque(productId, l)) || 0;
+      });
+      await api.post(`/stock/${productId}`, payload);
+      toast.success("Estoque atualizado!");
+    } catch (e) {
+      console.error("Erro ao salvar estoque:", e);
+    }
   };
 
   const salvarEstoque = async (productId, silent = false) => {
@@ -113,9 +139,12 @@ export default function EstoquePorLoja() {
   const produtosAtivosFiltrados = produtosAtivos;
 
   // itens com estoque 0 em qualquer loja (apenas ativos)
-  const produtosZeroEstoque = produtosAtivosFiltrados.filter((produto) =>
-    lojas.some((loja) => (estoques[`${produto.id}-${loja}`] ?? 0) === 0)
-  );
+  const produtosZeroEstoque = produtosAtivosFiltrados.filter((produto) => {
+    return lojas.some((loja) => {
+      const valor = estoques[`${produto.id}-${loja}`];
+      return valor === 0 || valor === "0" || valor === "" || isNaN(valor);
+    });
+  });
 
   // alvo para ações em massa conforme a aba
   const getProdutosAlvo = () => {
