@@ -59,10 +59,23 @@ function json(v) {
 export default function UserManager() {
   const navigate = useNavigate();
 
-  // Gate admin-only
+  // Gate baseado em role e permissões
   const role = (localStorage.getItem("role") || "operator").toLowerCase();
-  if (role !== "admin")
-    return <div className="p-8">Acesso restrito ao administrador.</div>;
+  const permissions = safeJsonParse(
+    localStorage.getItem("permissions") || "{}"
+  );
+  const canAccess =
+    role === "admin" ||
+    permissions.can_manage_products === true ||
+    permissions.can_delete_products === true;
+
+  if (!canAccess) {
+    return (
+      <div className="p-8 text-lg font-semibold text-red-600">
+        Acesso restrito.
+      </div>
+    );
+  }
 
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
