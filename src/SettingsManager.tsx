@@ -1,11 +1,9 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { SettingsAPI, StatusAPI, StoreSettingsAPI } from "./services/api";
 
 type TimeRange = { start: string; end: string };
 type WeekMap = Record<string, TimeRange[]>;
 type ExceptionDay = { date: string; closed?: boolean; ranges?: TimeRange[] };
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
 
 const DAY_KEYS = [
   "sunday",
@@ -30,13 +28,10 @@ const DAY_LABELS: Record<string, string> = {
 const STORE_OPTIONS = ["efapi", "palmital", "passo"] as const;
 
 export default function SettingsManager() {
-  const [scope, setScope] = useState<string>("global");
-  const isGlobalScope = scope === "global";
-  const activeStore = isGlobalScope ? null : scope;
-  const [deliveryRate, setDeliveryRate] = useState<number | null>(null);
-  const [minDelivery, setMinDelivery] = useState<number | null>(null);
-  const [keepAliveStatus, setKeepAliveStatus] = useState("Carregando...");
-  const [keepAliveLastPing, setKeepAliveLastPing] = useState<string | null>(null);
+  const [scope, setScope] = useState<string>(() => {
+    return localStorage.getItem("eskimo_store")?.trim() || "efapi";
+  });
+  const activeStore = scope;
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -56,6 +51,37 @@ export default function SettingsManager() {
   const [nextOpening, setNextOpening] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
+  const [globalDeliveryRate, setGlobalDeliveryRate] = useState<number | null>(null);
+  const [globalMinDelivery, setGlobalMinDelivery] = useState<number | null>(null);
+  const [globalConfig, setGlobalConfig] = useState<any>(null);
+  const [isSavingDelivery, setIsSavingDelivery] = useState(false);
+  const [ratesMessage, setRatesMessage] = useState<string | null>(null);
+  const safeNumber = (value: number | null) =>
+    typeof value === "number" && !Number.isNaN(value) ? value : 0;
+
+  useEffect(() => {
+    if (scope) {
+      localStorage.setItem("eskimo_store", scope);
+    }
+  }, [scope]);
+
+  useEffect(() => {
+    const loadGlobal = async () => {
+      try {
+        const cfg = await SettingsAPI.get().catch(async () => SettingsAPI.template());
+        setGlobalConfig(cfg);
+        setGlobalDeliveryRate(
+          typeof cfg?.deliveryRate === "number" ? cfg.deliveryRate : null,
+        );
+        setGlobalMinDelivery(
+          typeof cfg?.minDelivery === "number" ? cfg.minDelivery : null,
+        );
+      } catch (err) {
+        console.error("Falha ao carregar configuração global:", err);
+      }
+    };
+    void loadGlobal();
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -66,57 +92,31 @@ export default function SettingsManager() {
         setError("");
         setOk("");
 
-        if (isGlobalScope) {
-          const [cfg, st] = await Promise.all([
-            SettingsAPI.get().catch(async () => SettingsAPI.template()),
-            StatusAPI.isOpen().catch(() => null),
-          ]);
+        if (!activeStore) {
+          setLoading(false);
+          return;
+        }
 
-          if (!active) return;
+        const cfg = await StoreSettingsAPI.get(activeStore).catch((err) => {
+          if (err?.response?.status === 404) return null;
+          throw err;
+        });
+        const st = await StatusAPI.isOpen(activeStore).catch(() => null);
 
-          setDeliveryRate(
-            typeof cfg?.deliveryRate === "number" ? cfg.deliveryRate : null,
-          );
-          setMinDelivery(
-            typeof cfg?.minDelivery === "number" ? cfg.minDelivery : null,
-          );
-          setTimeZone(cfg?.timeZone || "America/Sao_Paulo");
-          setWeek(parseWeek(cfg?.openingHoursJson));
-          setExceptions(parseExceptions(cfg?.exceptionsJson));
+        if (!active) return;
 
-          if (st) {
-            setIsOpen(!!st.isOpen);
-            setStatusMsg(st.message || "");
-            setNextOpening(st.nextOpening || null);
-          } else {
-            setIsOpen(null);
-            setStatusMsg("");
-            setNextOpening(null);
-          }
-        } else if (activeStore) {
-          const cfg = await StoreSettingsAPI.get(activeStore).catch((err) => {
-            if (err?.response?.status === 404) return null;
-            throw err;
-          });
-          const st = await StatusAPI.isOpen(activeStore).catch(() => null);
+        setTimeZone(cfg?.timeZone || "America/Sao_Paulo");
+        setWeek(parseWeek(cfg?.openingHoursJson));
+        setExceptions(parseExceptions(cfg?.exceptionsJson));
 
-          if (!active) return;
-
-          setDeliveryRate(null);
-          setMinDelivery(null);
-          setTimeZone(cfg?.timeZone || "America/Sao_Paulo");
-          setWeek(parseWeek(cfg?.openingHoursJson));
-          setExceptions(parseExceptions(cfg?.exceptionsJson));
-
-          if (st) {
-            setIsOpen(!!st.isOpen);
-            setStatusMsg(st.message || "");
-            setNextOpening(st.nextOpening || null);
-          } else {
-            setIsOpen(null);
-            setStatusMsg("");
-            setNextOpening(null);
-          }
+        if (st) {
+          setIsOpen(!!st.isOpen);
+          setStatusMsg(st.message || "");
+          setNextOpening(st.nextOpening || null);
+        } else {
+          setIsOpen(null);
+          setStatusMsg("");
+          setNextOpening(null);
         }
       } catch (e: any) {
         if (!active) return;
@@ -131,55 +131,17 @@ export default function SettingsManager() {
     return () => {
       active = false;
     };
-  }, [isGlobalScope, activeStore]);
-
-  useEffect(() => {
-    void fetchKeepAliveStatus();
-  }, []);
+  }, [activeStore]);
 
   const sortedExceptions = useMemo(
     () => [...exceptions].sort((a, b) => a.date.localeCompare(b.date)),
     [exceptions],
   );
 
-  async function fetchKeepAliveStatus() {
-    try {
-      const res = await fetch(`${API_URL}/keepalive/status`);
-      if (!res.ok) {
-        throw new Error("Erro ao buscar status do KeepAlive");
-      }
-      const data = await res.json();
-      setKeepAliveStatus(data.enabled ? "Ativo" : "Inativo");
-      setKeepAliveLastPing(data.lastPing ?? null);
-    } catch (err) {
-      console.error("Erro ao buscar status do KeepAlive:", err);
-      setKeepAliveStatus("Indisponível");
-      setKeepAliveLastPing(null);
-    }
-  }
-
-  async function handleKeepAliveToggle(action: "enable" | "disable") {
-    try {
-      const res = await fetch(`${API_URL}/keepalive/${action}`, { method: "POST" });
-      if (!res.ok) throw new Error(`Erro ao ${action} KeepAlive`);
-      await fetchKeepAliveStatus();
-      alert(
-        action === "enable"
-          ? "✅ KeepAlive ativado."
-          : "✅ KeepAlive desativado.",
-      );
-    } catch (err) {
-      console.error(`Erro ao ${action} KeepAlive:`, err);
-      alert("❌ Não foi possível atualizar o KeepAlive.");
-    }
-  }
-
-  const safeNumber = (value: number | null) =>
-    typeof value === "number" && !Number.isNaN(value) ? value : 0;
-
   async function refreshStatus() {
     try {
-      const st = await StatusAPI.isOpen(activeStore ?? undefined);
+      if (!activeStore) return;
+      const st = await StatusAPI.isOpen(activeStore);
       setIsOpen(!!st.isOpen);
       setStatusMsg(st.message || "");
       setNextOpening(st.nextOpening || null);
@@ -188,22 +150,41 @@ export default function SettingsManager() {
     }
   }
 
+  const handleSaveDelivery = useCallback(async () => {
+    try {
+      setIsSavingDelivery(true);
+      setRatesMessage(null);
+      const payload = {
+        deliveryRate: safeNumber(globalDeliveryRate),
+        minDelivery: safeNumber(globalMinDelivery),
+        timeZone: globalConfig?.timeZone || "America/Sao_Paulo",
+        openingHoursJson: globalConfig?.openingHoursJson || "{}",
+        exceptionsJson: globalConfig?.exceptionsJson || "[]",
+      };
+      await SettingsAPI.save(payload);
+      setRatesMessage("Valores de entrega atualizados com sucesso.");
+    } catch (e: any) {
+      setRatesMessage(
+        e?.response?.data?.error || e?.message || "Erro ao salvar valores.",
+      );
+    } finally {
+      setIsSavingDelivery(false);
+    }
+  }, [
+    globalConfig?.exceptionsJson,
+    globalConfig?.openingHoursJson,
+    globalConfig?.timeZone,
+    globalDeliveryRate,
+    globalMinDelivery,
+  ]);
+
   async function handleSave() {
     try {
       setSaving(true);
       setError("");
       setOk("");
 
-      if (isGlobalScope) {
-        await SettingsAPI.save({
-          deliveryRate: safeNumber(deliveryRate),
-          minDelivery: safeNumber(minDelivery),
-          timeZone,
-          openingHoursJson: JSON.stringify(week),
-          exceptionsJson: JSON.stringify(exceptions),
-        });
-        setOk("Configuração salva.");
-      } else if (activeStore) {
+      if (activeStore) {
         await StoreSettingsAPI.save(activeStore, {
           timeZone,
           openingHoursJson: JSON.stringify(week),
@@ -237,16 +218,7 @@ export default function SettingsManager() {
 
       setExceptions(updated);
 
-      if (isGlobalScope) {
-        await SettingsAPI.save({
-          deliveryRate: safeNumber(deliveryRate),
-          minDelivery: safeNumber(minDelivery),
-          timeZone,
-          openingHoursJson: JSON.stringify(week),
-          exceptionsJson: JSON.stringify(updated),
-        });
-        setOk("Exceção adicionada para hoje.");
-      } else if (activeStore) {
+      if (activeStore) {
         await StoreSettingsAPI.save(activeStore, {
           timeZone,
           openingHoursJson: JSON.stringify(week),
@@ -332,7 +304,6 @@ export default function SettingsManager() {
                 onChange={(e) => setScope(e.target.value)}
                 className="rounded border border-gray-300 px-2 py-1 text-sm text-gray-700"
               >
-                <option value="global">Global</option>
                 {STORE_OPTIONS.map((opt) => (
                   <option key={opt} value={opt}>
                     {opt.toUpperCase()}
@@ -358,52 +329,13 @@ export default function SettingsManager() {
         <section className="rounded-2xl bg-white p-6 shadow-sm space-y-6">
           <div className="space-y-4">
             <h2 className="text-2xl font-bold text-green-700">
-              {isGlobalScope
-                ? "⚙️ Configuração de Entrega"
-                : `🛍️ Loja ${scope?.toUpperCase()}`}
+              🛍️ Loja {scope?.toUpperCase()}
             </h2>
-
-            {isGlobalScope ? (
-              <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-700">
-                  Valor por quilômetro (R$):
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    value={deliveryRate ?? ""}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setDeliveryRate(value === "" ? null : Number(value));
-                    }}
-                    className="mt-1 w-full rounded border px-4 py-2 text-gray-800 shadow"
-                    placeholder="Ex: 2.5"
-                  />
-                </label>
-
-                <label className="block text-sm font-medium text-gray-700">
-                  Valor mínimo de entrega (R$):
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    value={minDelivery ?? ""}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setMinDelivery(value === "" ? null : Number(value));
-                    }}
-                    className="mt-1 w-full rounded border px-4 py-2 text-gray-800 shadow"
-                    placeholder="Ex: 8.0"
-                  />
-                </label>
-              </div>
-            ) : (
-              <p className="text-sm text-gray-600">
-                Edite os horários e exceções abaixo para a unidade{" "}
-                {scope?.toUpperCase()}. As tarifas e o KeepAlive permanecem
-                centralizados na configuração global.
-              </p>
-            )}
+            <p className="text-sm text-gray-600">
+              Edite os horários e exceções abaixo para a unidade selecionada.
+              Tarifas e outros ajustes globais permanecem centralizados em outro
+              painel.
+            </p>
           </div>
 
           <button
@@ -414,46 +346,64 @@ export default function SettingsManager() {
             {saving ? "Salvando…" : "💾 Salvar Configuração"}
           </button>
 
-          {isGlobalScope && (
-            <div className="rounded-lg border border-gray-200 p-4 shadow-sm">
-              <h3 className="mb-2 text-lg font-semibold text-gray-700">
-                🌐 KeepAlive do Banco
-              </h3>
-              <p className="mb-4 text-sm text-gray-600">
-                Status:{" "}
-                <span
-                  className={
-                    keepAliveStatus === "Ativo"
-                      ? "text-green-600"
-                      : "text-red-600"
-                  }
-                >
-                  {keepAliveStatus}
-                </span>
-                {keepAliveLastPing && (
-                  <>
-                    {" "}
-                    · Último ping:{" "}
-                    {new Date(keepAliveLastPing).toLocaleString("pt-BR")}
-                  </>
-                )}
-              </p>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <button
-                  onClick={() => handleKeepAliveToggle("enable")}
-                  className="w-full rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-blue-700"
-                >
-                  Ativar Manter Acordado
-                </button>
-                <button
-                  onClick={() => handleKeepAliveToggle("disable")}
-                  className="w-full rounded bg-gray-500 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-gray-600"
-                >
-                  Desativar Manter Acordado
-                </button>
-              </div>
-            </div>
-          )}
+          {/* Configuração global de entrega/KeepAlive ocultada temporariamente */}
+        </section>
+
+        <section className="rounded-2xl bg-white p-6 shadow-sm space-y-4">
+          <div className="flex flex-col gap-1">
+            <h2 className="text-2xl font-bold text-emerald-700">
+              🚚 Configuração de Entrega (global)
+            </h2>
+            <p className="text-sm text-gray-600">
+              Campos usados para calcular o valor do motoboy em todas as lojas.
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="text-sm font-medium text-gray-700">
+              Valor por quilômetro (R$)
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                value={globalDeliveryRate ?? ""}
+                onChange={(e) =>
+                  setGlobalDeliveryRate(
+                    e.target.value === "" ? null : Number(e.target.value),
+                  )
+                }
+                className="mt-1 w-full rounded border px-4 py-2 text-gray-800 shadow focus:border-emerald-400 focus:outline-none"
+                placeholder="Ex.: 2.5"
+              />
+            </label>
+            <label className="text-sm font-medium text-gray-700">
+              Valor mínimo de entrega (R$)
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                value={globalMinDelivery ?? ""}
+                onChange={(e) =>
+                  setGlobalMinDelivery(
+                    e.target.value === "" ? null : Number(e.target.value),
+                  )
+                }
+                className="mt-1 w-full rounded border px-4 py-2 text-gray-800 shadow focus:border-emerald-400 focus:outline-none"
+                placeholder="Ex.: 8.0"
+              />
+            </label>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <button
+              onClick={handleSaveDelivery}
+              disabled={isSavingDelivery}
+              className="rounded bg-emerald-600 px-4 py-2 font-semibold text-white shadow hover:bg-emerald-700 disabled:opacity-60"
+            >
+              {isSavingDelivery ? "Salvando…" : "Salvar valores"}
+            </button>
+            {ratesMessage && (
+              <span className="text-sm text-gray-600">{ratesMessage}</span>
+            )}
+          </div>
         </section>
 
         <section className="rounded-xl bg-white p-6 shadow-sm space-y-3">
