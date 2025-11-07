@@ -60,9 +60,26 @@ export const SettingsAPI = {
 };
 
 export const StatusAPI = {
-  async isOpen() {
-    const { data } = await api.get("/status/isOpen");
+  async isOpen(store) {
+    const endpoint = store
+      ? `/status/isOpen/${encodeURIComponent(store)}`
+      : "/status/isOpen";
+    const { data } = await api.get(endpoint);
     return data; // { isOpen, message, now, nextOpening? }
+  },
+};
+
+export const StoreSettingsAPI = {
+  async get(store) {
+    const { data } = await api.get(`/store-settings/${encodeURIComponent(store)}`);
+    return data;
+  },
+  async save(store, payload) {
+    const { data } = await api.put(
+      `/store-settings/${encodeURIComponent(store)}`,
+      payload,
+    );
+    return data;
   },
 };
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { SettingsAPI, StatusAPI } from "./services/api";
+import { SettingsAPI, StatusAPI, StoreSettingsAPI } from "./services/api";
 
 type TimeRange = { start: string; end: string };
 type WeekMap = Record<string, TimeRange[]>;
@@ -27,7 +27,12 @@ const DAY_LABELS: Record<string, string> = {
   saturday: "Sábado",
 };
 
+const STORE_OPTIONS = ["efapi", "palmital", "passo"] as const;
+
 export default function SettingsManager() {
+  const [scope, setScope] = useState<string>("global");
+  const isGlobalScope = scope === "global";
+  const activeStore = isGlobalScope ? null : scope;
   const [deliveryRate, setDeliveryRate] = useState<number | null>(null);
   const [minDelivery, setMinDelivery] = useState<number | null>(null);
   const [keepAliveStatus, setKeepAliveStatus] = useState("Carregando...");
@@ -55,36 +60,63 @@ export default function SettingsManager() {
   useEffect(() => {
     let active = true;
 
-    const loadInitial = async () => {
+    const load = async () => {
       try {
         setLoading(true);
-        const [cfg, st] = await Promise.all([
-          SettingsAPI.get().catch(async () => SettingsAPI.template()),
-          StatusAPI.isOpen().catch(() => null),
-        ]);
+        setError("");
+        setOk("");
 
-        if (!active) {
-          return;
-        }
+        if (isGlobalScope) {
+          const [cfg, st] = await Promise.all([
+            SettingsAPI.get().catch(async () => SettingsAPI.template()),
+            StatusAPI.isOpen().catch(() => null),
+          ]);
 
-        setDeliveryRate(
-          typeof cfg?.deliveryRate === "number" ? cfg.deliveryRate : null,
-        );
-        setMinDelivery(
-          typeof cfg?.minDelivery === "number" ? cfg.minDelivery : null,
-        );
-        setTimeZone(cfg?.timeZone || "America/Sao_Paulo");
-        setWeek(parseWeek(cfg?.openingHoursJson));
-        setExceptions(parseExceptions(cfg?.exceptionsJson));
+          if (!active) return;
 
-        if (st) {
-          setIsOpen(!!st.isOpen);
-          setStatusMsg(st.message || "");
-          setNextOpening(st.nextOpening || null);
-        } else {
-          setIsOpen(null);
-          setStatusMsg("");
-          setNextOpening(null);
+          setDeliveryRate(
+            typeof cfg?.deliveryRate === "number" ? cfg.deliveryRate : null,
+          );
+          setMinDelivery(
+            typeof cfg?.minDelivery === "number" ? cfg.minDelivery : null,
+          );
+          setTimeZone(cfg?.timeZone || "America/Sao_Paulo");
+          setWeek(parseWeek(cfg?.openingHoursJson));
+          setExceptions(parseExceptions(cfg?.exceptionsJson));
+
+          if (st) {
+            setIsOpen(!!st.isOpen);
+            setStatusMsg(st.message || "");
+            setNextOpening(st.nextOpening || null);
+          } else {
+            setIsOpen(null);
+            setStatusMsg("");
+            setNextOpening(null);
+          }
+        } else if (activeStore) {
+          const cfg = await StoreSettingsAPI.get(activeStore).catch((err) => {
+            if (err?.response?.status === 404) return null;
+            throw err;
+          });
+          const st = await StatusAPI.isOpen(activeStore).catch(() => null);
+
+          if (!active) return;
+
+          setDeliveryRate(null);
+          setMinDelivery(null);
+          setTimeZone(cfg?.timeZone || "America/Sao_Paulo");
+          setWeek(parseWeek(cfg?.openingHoursJson));
+          setExceptions(parseExceptions(cfg?.exceptionsJson));
+
+          if (st) {
+            setIsOpen(!!st.isOpen);
+            setStatusMsg(st.message || "");
+            setNextOpening(st.nextOpening || null);
+          } else {
+            setIsOpen(null);
+            setStatusMsg("");
+            setNextOpening(null);
+          }
         }
       } catch (e: any) {
         if (!active) return;
@@ -94,12 +126,15 @@ export default function SettingsManager() {
       }
     };
 
-    loadInitial();
-    fetchKeepAliveStatus();
+    void load();
 
     return () => {
       active = false;
     };
+  }, [isGlobalScope, activeStore]);
+
+  useEffect(() => {
+    void fetchKeepAliveStatus();
   }, []);
 
   const sortedExceptions = useMemo(
@@ -144,7 +179,7 @@ export default function SettingsManager() {
 
   async function refreshStatus() {
     try {
-      const st = await StatusAPI.isOpen();
+      const st = await StatusAPI.isOpen(activeStore ?? undefined);
       setIsOpen(!!st.isOpen);
       setStatusMsg(st.message || "");
       setNextOpening(st.nextOpening || null);
@@ -159,15 +194,24 @@ export default function SettingsManager() {
       setError("");
       setOk("");
 
-      await SettingsAPI.save({
-        deliveryRate: safeNumber(deliveryRate),
-        minDelivery: safeNumber(minDelivery),
-        timeZone,
-        openingHoursJson: JSON.stringify(week),
-        exceptionsJson: JSON.stringify(exceptions),
-      });
+      if (isGlobalScope) {
+        await SettingsAPI.save({
+          deliveryRate: safeNumber(deliveryRate),
+          minDelivery: safeNumber(minDelivery),
+          timeZone,
+          openingHoursJson: JSON.stringify(week),
+          exceptionsJson: JSON.stringify(exceptions),
+        });
+        setOk("Configuração salva.");
+      } else if (activeStore) {
+        await StoreSettingsAPI.save(activeStore, {
+          timeZone,
+          openingHoursJson: JSON.stringify(week),
+          exceptionsJson: JSON.stringify(exceptions),
+        });
+        setOk("Configuração da loja salva.");
+      }
 
-      setOk("Configuração salva.");
       await refreshStatus();
     } catch (e: any) {
       setError(e?.response?.data?.error || e?.message || "Erro ao salvar");
@@ -193,15 +237,24 @@ export default function SettingsManager() {
 
       setExceptions(updated);
 
-      await SettingsAPI.save({
-        deliveryRate: safeNumber(deliveryRate),
-        minDelivery: safeNumber(minDelivery),
-        timeZone,
-        openingHoursJson: JSON.stringify(week),
-        exceptionsJson: JSON.stringify(updated),
-      });
+      if (isGlobalScope) {
+        await SettingsAPI.save({
+          deliveryRate: safeNumber(deliveryRate),
+          minDelivery: safeNumber(minDelivery),
+          timeZone,
+          openingHoursJson: JSON.stringify(week),
+          exceptionsJson: JSON.stringify(updated),
+        });
+        setOk("Exceção adicionada para hoje.");
+      } else if (activeStore) {
+        await StoreSettingsAPI.save(activeStore, {
+          timeZone,
+          openingHoursJson: JSON.stringify(week),
+          exceptionsJson: JSON.stringify(updated),
+        });
+        setOk("Exceção adicionada para hoje na loja.");
+      }
 
-      setOk("Exceção adicionada para hoje.");
       await refreshStatus();
     } catch (e: any) {
       setError(e?.response?.data?.error || e?.message || "Erro ao fechar hoje");
@@ -271,7 +324,24 @@ export default function SettingsManager() {
           >
             ← Voltar
           </button>
-          <StatusPill isOpen={isOpen} msg={statusMsg} next={nextOpening} />
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="flex items-center gap-2 text-sm text-gray-600">
+              <span className="font-semibold text-gray-700">Escopo:</span>
+              <select
+                value={scope}
+                onChange={(e) => setScope(e.target.value)}
+                className="rounded border border-gray-300 px-2 py-1 text-sm text-gray-700"
+              >
+                <option value="global">Global</option>
+                {STORE_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt.toUpperCase()}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <StatusPill isOpen={isOpen} msg={statusMsg} next={nextOpening} />
+          </div>
         </div>
 
         {error && (
@@ -286,41 +356,54 @@ export default function SettingsManager() {
         )}
 
         <section className="rounded-2xl bg-white p-6 shadow-sm space-y-6">
-          <h2 className="text-2xl font-bold text-green-700">
-            ⚙️ Configuração de Entrega
-          </h2>
           <div className="space-y-4">
-            <label className="block text-sm font-medium text-gray-700">
-              Valor por quilômetro (R$):
-              <input
-                type="number"
-                min="0"
-                step="0.1"
-                value={deliveryRate ?? ""}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setDeliveryRate(value === "" ? null : Number(value));
-                }}
-                className="mt-1 w-full rounded border px-4 py-2 text-gray-800 shadow"
-                placeholder="Ex: 2.5"
-              />
-            </label>
+            <h2 className="text-2xl font-bold text-green-700">
+              {isGlobalScope
+                ? "⚙️ Configuração de Entrega"
+                : `🛍️ Loja ${scope?.toUpperCase()}`}
+            </h2>
 
-            <label className="block text-sm font-medium text-gray-700">
-              Valor mínimo de entrega (R$):
-              <input
-                type="number"
-                min="0"
-                step="0.1"
-                value={minDelivery ?? ""}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setMinDelivery(value === "" ? null : Number(value));
-                }}
-                className="mt-1 w-full rounded border px-4 py-2 text-gray-800 shadow"
-                placeholder="Ex: 8.0"
-              />
-            </label>
+            {isGlobalScope ? (
+              <div className="space-y-4">
+                <label className="block text-sm font-medium text-gray-700">
+                  Valor por quilômetro (R$):
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={deliveryRate ?? ""}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setDeliveryRate(value === "" ? null : Number(value));
+                    }}
+                    className="mt-1 w-full rounded border px-4 py-2 text-gray-800 shadow"
+                    placeholder="Ex: 2.5"
+                  />
+                </label>
+
+                <label className="block text-sm font-medium text-gray-700">
+                  Valor mínimo de entrega (R$):
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={minDelivery ?? ""}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setMinDelivery(value === "" ? null : Number(value));
+                    }}
+                    className="mt-1 w-full rounded border px-4 py-2 text-gray-800 shadow"
+                    placeholder="Ex: 8.0"
+                  />
+                </label>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-600">
+                Edite os horários e exceções abaixo para a unidade{" "}
+                {scope?.toUpperCase()}. As tarifas e o KeepAlive permanecem
+                centralizados na configuração global.
+              </p>
+            )}
           </div>
 
           <button
@@ -331,42 +414,46 @@ export default function SettingsManager() {
             {saving ? "Salvando…" : "💾 Salvar Configuração"}
           </button>
 
-          <div className="rounded-lg border border-gray-200 p-4 shadow-sm">
-            <h3 className="mb-2 text-lg font-semibold text-gray-700">
-              🌐 KeepAlive do Banco
-            </h3>
-            <p className="mb-4 text-sm text-gray-600">
-              Status:{" "}
-              <span
-                className={
-                  keepAliveStatus === "Ativo" ? "text-green-600" : "text-red-600"
-                }
-              >
-                {keepAliveStatus}
-              </span>
-              {keepAliveLastPing && (
-                <>
-                  {" "}
-                  · Último ping:{" "}
-                  {new Date(keepAliveLastPing).toLocaleString("pt-BR")}
-                </>
-              )}
-            </p>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <button
-                onClick={() => handleKeepAliveToggle("enable")}
-                className="w-full rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-blue-700"
-              >
-                Ativar Manter Acordado
-              </button>
-              <button
-                onClick={() => handleKeepAliveToggle("disable")}
-                className="w-full rounded bg-gray-500 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-gray-600"
-              >
-                Desativar Manter Acordado
-              </button>
+          {isGlobalScope && (
+            <div className="rounded-lg border border-gray-200 p-4 shadow-sm">
+              <h3 className="mb-2 text-lg font-semibold text-gray-700">
+                🌐 KeepAlive do Banco
+              </h3>
+              <p className="mb-4 text-sm text-gray-600">
+                Status:{" "}
+                <span
+                  className={
+                    keepAliveStatus === "Ativo"
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }
+                >
+                  {keepAliveStatus}
+                </span>
+                {keepAliveLastPing && (
+                  <>
+                    {" "}
+                    · Último ping:{" "}
+                    {new Date(keepAliveLastPing).toLocaleString("pt-BR")}
+                  </>
+                )}
+              </p>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                  onClick={() => handleKeepAliveToggle("enable")}
+                  className="w-full rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-blue-700"
+                >
+                  Ativar Manter Acordado
+                </button>
+                <button
+                  onClick={() => handleKeepAliveToggle("disable")}
+                  className="w-full rounded bg-gray-500 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-gray-600"
+                >
+                  Desativar Manter Acordado
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </section>
 
         <section className="rounded-xl bg-white p-6 shadow-sm space-y-3">
@@ -721,4 +808,4 @@ function removeExceptionRange(
     arr[idx] = cur;
     return arr;
   });
-SettingsManager.tsx:112  GET }
+}
