@@ -6,6 +6,13 @@ import { toast } from "react-toastify";
 
 const pageSize = 1000;
 
+const createEmptyPromoForm = () => ({
+  productId: "",
+  previousPrice: "",
+  currentPrice: "",
+  highlightText: "",
+});
+
 export default function ProductList() {
   
 
@@ -27,6 +34,11 @@ export default function ProductList() {
     stock: { efapi: 0, palmital: 0, passo: 0 },
   });
   const lojas = ["efapi", "palmital", "passo"];
+  const [activeTab, setActiveTab] = useState("products");
+  const [promotion, setPromotion] = useState(null);
+  const [promotionLoading, setPromotionLoading] = useState(false);
+  const [promotionSupported, setPromotionSupported] = useState(true);
+  const [promoForm, setPromoForm] = useState(createEmptyPromoForm);
 
   // —— Edição rápida de preços ——
   const [showPricePanel, setShowPricePanel] = useState(false);
@@ -171,15 +183,54 @@ export default function ProductList() {
     setSubcategories(Array.isArray(data) ? data : []);
   }, []);
 
+  const fetchPromotion = useCallback(async () => {
+    if (!promotionSupported) {
+      setPromotionLoading(false);
+      return;
+    }
+    try {
+      setPromotionLoading(true);
+      const res = await api.get("/promotions/active");
+      const promo = res?.data ?? null;
+      setPromotion(promo);
+      if (promo?.productId) {
+        setPromoForm({
+          productId: String(promo.productId),
+          previousPrice: (promo.previousPrice ?? "").toString(),
+          currentPrice: (promo.currentPrice ?? "").toString(),
+          highlightText: promo.highlightText ?? "",
+        });
+      } else {
+        setPromoForm(createEmptyPromoForm());
+      }
+    } catch (error) {
+      if (error?.response?.status === 404) {
+        console.warn("Servidor atual não possui o endpoint /promotions. Funcionalidade desativada.");
+        setPromotionSupported(false);
+        setPromotion(null);
+        setPromoForm(createEmptyPromoForm());
+      } else {
+        console.error("Erro ao carregar promoção:", error);
+      }
+    } finally {
+      setPromotionLoading(false);
+    }
+  }, [promotionSupported]);
+
   useEffect(() => {
     (async () => {
       try {
-        await Promise.all([fetchProducts(), fetchCategories(), fetchSubcategories()]);
+        await Promise.all([
+          fetchProducts(),
+          fetchCategories(),
+          fetchSubcategories(),
+          fetchPromotion(),
+        ]);
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
       }
     })();
-  }, [fetchProducts, fetchCategories, fetchSubcategories]);
+  }, [fetchProducts, fetchCategories, fetchSubcategories, fetchPromotion]);
 
   // --------- Derivados ---------
   const filteredProducts = useMemo(() => {
@@ -298,6 +349,80 @@ export default function ProductList() {
     }));
   };
 
+  const handlePromoFormChange = (field, value) => {
+    setPromoForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handlePromoProductChange = (value) => {
+    setPromoForm((prev) => {
+      if (!value) {
+        return { ...prev, productId: "", previousPrice: "", currentPrice: "" };
+      }
+      const product = (products ?? []).find((p) => String(p?.id) === value);
+      if (!product) {
+        return { ...prev, productId: value };
+      }
+      const previous = promotion?.productId === product.id && promotion?.previousPrice != null
+        ? promotion.previousPrice
+        : product.price;
+      return {
+        ...prev,
+        productId: value,
+        previousPrice: (previous ?? "").toString(),
+        currentPrice: (product.price ?? "").toString(),
+      };
+    });
+  };
+
+  const savePromotionSetup = async () => {
+    if (!promotionSupported) {
+      toast.error("Atualize o backend da API para habilitar promoções.");
+      return;
+    }
+    if (!promoForm.productId) {
+      toast.error("Selecione um produto para a promoção.");
+      return;
+    }
+    const currentPrice = parseFloat(String(promoForm.currentPrice).replace(",", "."));
+    if (!Number.isFinite(currentPrice) || currentPrice <= 0) {
+      toast.error("Informe um preço promocional válido.");
+      return;
+    }
+    const previousPrice = parseFloat(String(promoForm.previousPrice).replace(",", "."));
+    try {
+      await api.put("/promotions/active", {
+        productId: parseInt(promoForm.productId, 10),
+        currentPrice,
+        previousPrice: Number.isFinite(previousPrice) ? previousPrice : null,
+        highlightText: promoForm.highlightText?.trim() || null,
+      });
+      toast.success("Promoção publicada!");
+      await fetchPromotion();
+      await fetchProducts();
+    } catch (error) {
+      console.error("Erro ao salvar promoção:", error);
+      toast.error("❌ Erro ao salvar promoção.");
+    }
+  };
+
+  const clearPromotion = async () => {
+    if (!promotionSupported) {
+      toast.error("Backend atual não suporta a remoção de promoções.");
+      return;
+    }
+    if (!promotion) return;
+    if (!window.confirm("Remover a promoção atual?")) return;
+    try {
+      await api.delete("/promotions/active");
+      toast.info("Promoção removida.");
+      setPromoForm(createEmptyPromoForm());
+      await fetchPromotion();
+    } catch (error) {
+      console.error("Erro ao remover promoção:", error);
+      toast.error("❌ Não foi possível remover a promoção.");
+    }
+  };
+
   const money = (v) => {
     const n = Number(v);
     return Number.isFinite(n) ? n.toFixed(2) : "0.00";
@@ -347,157 +472,316 @@ export default function ProductList() {
         </button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 mt-4">
-        <button
-          onClick={() => (showPricePanel ? setShowPricePanel(false) : openPricePanel())}
-          className={`rounded-md px-4 py-2 text-sm font-semibold shadow border
-            ${showPricePanel ? "bg-yellow-200 border-yellow-300 text-gray-800" : "bg-white border-gray-300 text-gray-700 hover:bg-gray-100"}`}
-        >
-          💲 Preços
-        </button>
-        {showPricePanel && (
-          <>
+      <div className="mt-6 flex flex-wrap gap-2">
+        {[
+          { id: "products", label: "📋 Produtos" },
+          { id: "promotion", label: "🎯 Promoção" },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`rounded-md border px-4 py-2 text-sm font-semibold shadow-sm transition
+              ${
+                activeTab === tab.id
+                  ? "border-green-600 bg-green-600 text-white"
+                  : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+              }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "products" && (
+        <>
+          <div className="flex flex-wrap items-center gap-3 mt-4">
             <button
-              onClick={saveAllPrices}
-              className="rounded-md px-4 py-2 text-sm font-semibold shadow bg-green-600 text-white hover:bg-green-700"
+              onClick={() => (showPricePanel ? setShowPricePanel(false) : openPricePanel())}
+              className={`rounded-md px-4 py-2 text-sm font-semibold shadow border
+                ${showPricePanel ? "bg-yellow-200 border-yellow-300 text-gray-800" : "bg-white border-gray-300 text-gray-700 hover:bg-gray-100"}`}
             >
-              💾 Salvar todos
+              💲 Preços
             </button>
-            <span className="text-sm text-gray-600">
-              Editando {filteredProducts.length} produto(s)
-            </span>
-          </>
-        )}
-      </div>
+            {showPricePanel && (
+              <>
+                <button
+                  onClick={saveAllPrices}
+                  className="rounded-md px-4 py-2 text-sm font-semibold shadow bg-green-600 text-white hover:bg-green-700"
+                >
+                  💾 Salvar todos
+                </button>
+                <span className="text-sm text-gray-600">
+                  Editando {filteredProducts.length} produto(s)
+                </span>
+              </>
+            )}
+          </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 mt-4">
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="🔍 Buscar por nome"
-          className="p-3 border rounded"
-        />
-        <select
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
-          className="p-3 border rounded"
-        >
-          <option value="">Todas as categorias</option>
-          {categories.map((cat) => (
-            <option key={cat?.id} value={cat?.name}>
-              {cat?.name}
-            </option>
-          ))}
-        </select>
-      </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 mt-4">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="🔍 Buscar por nome"
+              className="p-3 border rounded"
+            />
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="p-3 border rounded"
+            >
+              <option value="">Todas as categorias</option>
+              {categories.map((cat) => (
+                <option key={cat?.id} value={cat?.name}>
+                  {cat?.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-      {/* Painel de preços rápidos */}
-      {showPricePanel && (
-        <div className="mb-6 rounded border border-gray-200 bg-white p-3 shadow-sm">
-          <h3 className="mb-3 text-base font-semibold text-green-700">Edição rápida de preços</h3>
+          {/* Painel de preços rápidos */}
+          {showPricePanel && (
+            <div className="mb-6 rounded border border-gray-200 bg-white p-3 shadow-sm">
+              <h3 className="mb-3 text-base font-semibold text-green-700">Edição rápida de preços</h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-            {filteredProducts.map((p) => (
-              <div key={p?.id} className="flex items-center gap-3 rounded border border-gray-200 p-2">
-                <img
-                  src={p?.imageUrl}
-                  alt={p?.name}
-                  className="h-12 w-12 rounded object-contain border"
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium text-gray-800">{p?.name ?? "—"}</div>
-                  <div className="truncate text-xs text-gray-500">
-                    {p?.categoryName ?? "—"}{p?.subcategoryName ? ` • ${p.subcategoryName}` : ""}
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                {filteredProducts.map((p) => (
+                  <div key={p?.id} className="flex items-center gap-3 rounded border border-gray-200 p-2">
+                    <img
+                      src={p?.imageUrl}
+                      alt={p?.name}
+                      className="h-12 w-12 rounded object-contain border"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium text-gray-800">{p?.name ?? "—"}</div>
+                      <div className="truncate text-xs text-gray-500">
+                        {p?.categoryName ?? "—"}{p?.subcategoryName ? ` • ${p.subcategoryName}` : ""}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500">R$</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        inputMode="decimal"
+                        value={priceEdits[p?.id] ?? (p?.price ?? "")}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setPriceEdits((prev) => ({ ...prev, [p?.id]: v }));
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") savePrice(p?.id);
+                        }}
+                        className="w-28 rounded border border-gray-300 px-2 py-1 text-right text-sm"
+                      />
+
+                      <button
+                        onClick={() => savePrice(p?.id)}
+                        className="rounded bg-green-600 px-2 py-1 text-xs font-semibold text-white hover:bg-green-700"
+                        title="Salvar este produto"
+                      >
+                        Salvar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Tabela com drag-and-drop nas linhas */}
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <table className="min-w-full bg-white rounded shadow mt-6">
+              <thead className="bg-green-100 text-green-900">
+                <tr>
+                  <th className="p-3 text-left">Imagem</th>
+                  <th className="p-3 text-left">Produto</th>
+                  <th className="p-3 text-left">Preço</th>
+                  <th className="p-3 text-left">Categoria</th>
+                  <th className="p-3 text-left">Subcategoria</th>
+                  <th className="p-3 text-left">Ações</th>
+                </tr>
+              </thead>
+
+              <Droppable droppableId="products">
+                {(provided) => (
+                  <tbody ref={provided.innerRef} {...provided.droppableProps}>
+                    {filteredProducts.map((p, index) => (
+                      <Draggable key={p?.id} draggableId={String(p?.id)} index={index}>
+                        {(prov) => (
+                          <tr
+                            ref={prov.innerRef}
+                            {...prov.draggableProps}
+                            {...prov.dragHandleProps}
+                            style={prov.draggableProps.style}
+                            className="border-t hover:bg-gray-50"
+                          >
+                            <td className="p-3">
+                              <img
+                                src={p?.imageUrl}
+                                alt={p?.name}
+                                className="h-12 w-12 rounded border object-contain bg-white"
+                                onError={(e)=>{ e.currentTarget.src="https://via.placeholder.com/48?text=No+Img"; }}
+                              />
+                            </td>
+                            <td className="p-3">{p?.name ?? "—"}</td>
+                            <td className="p-3">R$ {money(p?.price)}</td>
+                            <td className="p-3">{p?.categoryName ?? "—"}</td>
+                            <td className="p-3">{p?.subcategoryName ?? "—"}</td>
+                            <td className="p-3 flex gap-2">
+                              <button onClick={() => handleEdit(p)} className="text-blue-600 hover:underline">✏️</button>
+                              <button onClick={() => handleDelete(p?.id)} className="text-red-600 hover:underline">🗑️</button>
+                            </td>
+                          </tr>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </tbody>
+                )}
+              </Droppable>
+            </table>
+          </DragDropContext>
+        </>
+      )}
+
+      {activeTab === "promotion" && (
+        <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-semibold text-red-600">🎯 Promoção Flutuante</h2>
+              <p className="text-sm text-gray-600">
+                Selecione um produto e defina os valores que aparecerão na aba de promoções da loja.
+              </p>
+            </div>
+            {promotionSupported && promotion && (
+              <button
+                onClick={clearPromotion}
+                className="text-sm text-red-600 hover:text-red-700"
+              >
+                Remover promoção
+              </button>
+            )}
+          </div>
+
+          {!promotionSupported ? (
+            <div className="mt-4 rounded border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-900">
+              O backend em produção ainda não expõe <code>/api/promotions</code>. Atualize a API (deploy da branch recente + migração)
+              para controlar promoções reais por aqui sem gerar erros 404.
+            </div>
+          ) : (
+            <div className="mt-4 space-y-4">
+              {promotionLoading ? (
+                <div className="rounded border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-600">
+                  Carregando promoção atual...
+                </div>
+              ) : promotion && promotion?.product ? (
+                <div className="rounded-lg border border-green-100 bg-green-50 p-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <img
+                    src={promotion.product.imageUrl}
+                    alt={promotion.product.name}
+                    className="h-20 w-20 rounded object-contain border bg-white"
+                    onError={(e)=>{ e.currentTarget.src="https://via.placeholder.com/80?text=No+Img"; }}
+                  />
+                  <div className="flex-1">
+                    <p className="text-sm uppercase text-green-700">Promoção publicada</p>
+                    <p className="text-lg font-semibold text-gray-800">{promotion.product.name}</p>
+                    <p className="text-sm text-gray-600">
+                      Antes: <span className="line-through">R$ {money(promotion.previousPrice)}</span> • Agora:{" "}
+                      <span className="font-semibold text-red-600">R$ {money(promotion.currentPrice)}</span>
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Atualizado em {promotion.updatedAt ? new Date(promotion.updatedAt).toLocaleString("pt-BR") : "—"}
+                    </p>
                   </div>
                 </div>
+              ) : (
+                <div className="rounded border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-600">
+                  Nenhuma promoção ativa no momento.
+                </div>
+              )}
 
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500">R$</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="text-sm font-medium text-gray-700">Produto em promoção</label>
+                  <select
+                    value={promoForm.productId}
+                    onChange={(e) => handlePromoProductChange(e.target.value)}
+                    className="mt-1 w-full rounded border border-gray-300 p-3"
+                  >
+                    <option value="">Selecione o produto</option>
+                    {products.map((p) => (
+                      <option key={p?.id} value={p?.id}>
+                        {p?.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Valor anterior</label>
                   <input
                     type="number"
                     step="0.01"
-                    inputMode="decimal"
-                    value={priceEdits[p?.id] ?? (p?.price ?? "")}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setPriceEdits((prev) => ({ ...prev, [p?.id]: v }));
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") savePrice(p?.id);
-                    }}
-                    className="w-28 rounded border border-gray-300 px-2 py-1 text-right text-sm"
+                    value={promoForm.previousPrice}
+                    onChange={(e) => handlePromoFormChange("previousPrice", e.target.value)}
+                    className="mt-1 w-full rounded border border-gray-300 p-3"
+                    placeholder="Ex.: 12.90"
                   />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Valor promocional (novo)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={promoForm.currentPrice}
+                    onChange={(e) => handlePromoFormChange("currentPrice", e.target.value)}
+                    className="mt-1 w-full rounded border border-gray-300 p-3"
+                    placeholder="Ex.: 9.99"
+                  />
+                </div>
 
-                  <button
-                    onClick={() => savePrice(p?.id)}
-                    className="rounded bg-green-600 px-2 py-1 text-xs font-semibold text-white hover:bg-green-700"
-                    title="Salvar este produto"
-                  >
-                    Salvar
-                  </button>
+                <div className="md:col-span-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Mensagem rápida (opcional)
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={160}
+                    value={promoForm.highlightText}
+                    onChange={(e) => handlePromoFormChange("highlightText", e.target.value)}
+                    className="mt-1 w-full rounded border border-gray-300 p-3"
+                    placeholder="Ex.: Promoção especial de fim de semana!"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Este texto aparece junto ao produto na aba de promoções (máx. 160 caracteres).
+                  </p>
                 </div>
               </div>
-            ))}
-          </div>
+
+              <p className="text-xs text-gray-500">
+                Ao salvar, o preço oficial do produto também será atualizado para o valor promocional informado.
+              </p>
+
+              <div className="flex flex-wrap gap-3 pt-2">
+                <button
+                  onClick={savePromotionSetup}
+                  className="rounded-md bg-green-600 px-5 py-2 text-sm font-semibold text-white hover:bg-green-700"
+                >
+                  💾 Salvar promoção
+                </button>
+                <button
+                  onClick={() => handlePromoProductChange("")}
+                  className="rounded-md border border-gray-300 px-5 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                >
+                  Limpar campos
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
-
-      {/* Tabela com drag-and-drop nas linhas */}
-      <DragDropContext onDragEnd={handleDragEnd}>
-        <table className="min-w-full bg-white rounded shadow mt-6">
-        <thead className="bg-green-100 text-green-900">
-  <tr>
-    <th className="p-3 text-left">Imagem</th>
-    <th className="p-3 text-left">Produto</th>
-    <th className="p-3 text-left">Preço</th>
-    <th className="p-3 text-left">Categoria</th>
-    <th className="p-3 text-left">Subcategoria</th>
-    <th className="p-3 text-left">Ações</th>
-  </tr>
-</thead>
-
-
-          <Droppable droppableId="products">
-            {(provided) => (
-              <tbody ref={provided.innerRef} {...provided.droppableProps}>
-                {filteredProducts.map((p, index) => (
-                  <Draggable key={p?.id} draggableId={String(p?.id)} index={index}>
-                    {(prov) => (
-                      <tr
-                      ref={prov.innerRef}
-                      {...prov.draggableProps}
-                      {...prov.dragHandleProps}
-                      style={prov.draggableProps.style}
-                      className="border-t hover:bg-gray-50"
-                    >
-                      <td className="p-3">
-                        <img
-                          src={p?.imageUrl}
-                          alt={p?.name}
-                          className="h-12 w-12 rounded border object-contain bg-white"
-                          onError={(e)=>{ e.currentTarget.src="https://via.placeholder.com/48?text=No+Img"; }}
-                        />
-                      </td>
-                      <td className="p-3">{p?.name ?? "—"}</td>
-                      <td className="p-3">R$ {money(p?.price)}</td>
-                    
-                        <td className="p-3">{p?.categoryName ?? "—"}</td>
-                        <td className="p-3">{p?.subcategoryName ?? "—"}</td>
-                        <td className="p-3 flex gap-2">
-                          <button onClick={() => handleEdit(p)} className="text-blue-600 hover:underline">✏️</button>
-                          <button onClick={() => handleDelete(p?.id)} className="text-red-600 hover:underline">🗑️</button>
-                        </td>
-                      </tr>
-                    )}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
-              </tbody>
-            )}
-          </Droppable>
-        </table>
-      </DragDropContext>
 
       {/* Editor lateral (igual ao antigo) */}
       {editingProduct && (
