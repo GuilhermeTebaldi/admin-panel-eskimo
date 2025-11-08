@@ -43,6 +43,7 @@ export default function ProductList() {
     () => (products || []).find((p) => String(p?.id) === String(promoForm.productId)) || null,
     [products, promoForm.productId]
   );
+  const [activePromos, setActivePromos] = useState([]);
   const [promoPickerOpen, setPromoPickerOpen] = useState(false);
   const [promoSearch, setPromoSearch] = useState("");
   const promoCandidates = useMemo(() => {
@@ -229,6 +230,17 @@ export default function ProductList() {
     }
   }, [promotionSupported]);
 
+  const fetchActivePromos = useCallback(async () => {
+    try {
+      const res = await api.get("/promotions/list");
+      const arr = Array.isArray(res?.data) ? res.data : [];
+      setActivePromos(arr);
+    } catch (e) {
+      console.warn("Falha ao carregar lista de promoções:", e?.response?.status);
+      setActivePromos([]);
+    }
+  }, []);
+
   useEffect(() => {
     (async () => {
       try {
@@ -238,11 +250,12 @@ export default function ProductList() {
           fetchSubcategories(),
           fetchPromotion(),
         ]);
+        await fetchActivePromos();
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
       }
     })();
-  }, [fetchProducts, fetchCategories, fetchSubcategories, fetchPromotion]);
+  }, [fetchProducts, fetchCategories, fetchSubcategories, fetchPromotion, fetchActivePromos]);
 
   // --------- Derivados ---------
   const filteredProducts = useMemo(() => {
@@ -410,6 +423,7 @@ export default function ProductList() {
       });
       toast.success("Promoção publicada!");
       await fetchPromotion();
+      await fetchActivePromos();
       await fetchProducts();
     } catch (error) {
       console.error("Erro ao salvar promoção:", error);
@@ -429,9 +443,23 @@ export default function ProductList() {
       toast.info("Promoção removida.");
       setPromoForm(createEmptyPromoForm());
       await fetchPromotion();
+      await fetchActivePromos();
     } catch (error) {
       console.error("Erro ao remover promoção:", error);
       toast.error("❌ Não foi possível remover a promoção.");
+    }
+  };
+
+  const deletePromoById = async (id) => {
+    if (!id) return;
+    if (!window.confirm("Remover esta promoção?")) return;
+    try {
+      await api.delete(`/promotions/${id}`);
+      toast.info("Promoção removida.");
+      await fetchActivePromos();
+    } catch (e) {
+      console.error(e);
+      toast.error("Não foi possível remover a promoção.");
     }
   };
 
@@ -659,6 +687,7 @@ export default function ProductList() {
       )}
 
       {activeTab === "promotion" && (
+        <>
         <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -865,6 +894,42 @@ export default function ProductList() {
             </div>
           )}
         </div>
+        {promotionSupported && (
+          <div className="mt-6">
+            <h3 className="text-base font-semibold text-gray-800 mb-2">Promoções ativas</h3>
+            {activePromos.length === 0 ? (
+              <div className="rounded border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-600">
+                Nenhuma promoção ativa.
+              </div>
+            ) : (
+              <ul className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                {activePromos.map((pr) => (
+                  <li key={pr?.id} className="flex items-center gap-3 rounded border border-gray-200 p-3 bg-white">
+                    <img
+                      src={pr?.product?.imageUrl}
+                      alt={pr?.product?.name}
+                      className="h-12 w-12 rounded object-contain border bg-white"
+                      onError={(e)=>{ e.currentTarget.src="https://via.placeholder.com/48?text=No+Img"; }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-semibold text-gray-800">{pr?.product?.name ?? "—"}</div>
+                      <div className="text-xs text-gray-600">
+                        Antes: <span className="line-through">R$ {money(pr?.previousPrice)}</span> • Agora: <span className="font-semibold text-red-600">R$ {money(pr?.currentPrice)}</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => deletePromoById(pr?.id)}
+                      className="text-red-600 text-sm hover:underline"
+                    >
+                      Remover
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+        </>
       )}
 
       {/* Editor lateral (igual ao antigo) */}
