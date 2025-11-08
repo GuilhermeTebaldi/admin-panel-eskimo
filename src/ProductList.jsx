@@ -39,6 +39,18 @@ export default function ProductList() {
   const [promotionLoading, setPromotionLoading] = useState(false);
   const [promotionSupported, setPromotionSupported] = useState(true);
   const [promoForm, setPromoForm] = useState(createEmptyPromoForm);
+  const selectedPromoProduct = useMemo(
+    () => (products || []).find((p) => String(p?.id) === String(promoForm.productId)) || null,
+    [products, promoForm.productId]
+  );
+  const [promoPickerOpen, setPromoPickerOpen] = useState(false);
+  const [promoSearch, setPromoSearch] = useState("");
+  const promoCandidates = useMemo(() => {
+    const term = promoSearch.trim().toLowerCase();
+    const base = products || [];
+    if (!term) return base;
+    return base.filter(p => (p?.name || "").toLowerCase().includes(term));
+  }, [products, promoSearch]);
 
   // —— Edição rápida de preços ——
   const [showPricePanel, setShowPricePanel] = useState(false);
@@ -704,19 +716,91 @@ export default function ProductList() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
-                  <label className="text-sm font-medium text-gray-700">Produto em promoção</label>
-                  <select
-                    value={promoForm.productId}
-                    onChange={(e) => handlePromoProductChange(e.target.value)}
-                    className="mt-1 w-full rounded border border-gray-300 p-3"
+                <label className="text-sm font-medium text-gray-700">Produto em promoção</label>
+                <div className="mt-1 relative">
+                  <button
+                    type="button"
+                    onClick={() => setPromoPickerOpen((v) => !v)}
+                    className="w-full flex items-center justify-between rounded border border-gray-300 p-3 bg-white"
                   >
-                    <option value="">Selecione o produto</option>
-                    {products.map((p) => (
-                      <option key={p?.id} value={p?.id}>
-                        {p?.name}
-                      </option>
-                    ))}
-                  </select>
+                    <span className="truncate">
+                      {selectedPromoProduct
+                        ? `${selectedPromoProduct.name} — R$ ${money(selectedPromoProduct.price)}`
+                        : "Selecione o produto"}
+                    </span>
+                    <span className="ml-2 text-gray-500">▾</span>
+                  </button>
+
+                  {promoPickerOpen && (
+                    <div className="absolute z-20 mt-1 w-full max-h-80 overflow-auto rounded border border-gray-200 bg-white shadow-lg">
+                      <div className="p-2 border-b">
+                        <input
+                          autoFocus
+                          value={promoSearch}
+                          onChange={(e)=>setPromoSearch(e.target.value)}
+                          placeholder="Buscar produto…"
+                          className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
+                        />
+                      </div>
+                      <ul className="divide-y">
+                        <li
+                          key="none"
+                          className="p-2 hover:bg-gray-50 cursor-pointer text-sm text-gray-600"
+                          onClick={() => { handlePromoProductChange(""); setPromoPickerOpen(false); }}
+                        >
+                          — Nenhum selecionado —
+                        </li>
+                        {promoCandidates.map((p)=>(
+                          <li
+                            key={p?.id}
+                            className="p-2 hover:bg-gray-50 cursor-pointer flex items-center gap-3"
+                            onClick={() => { handlePromoProductChange(String(p?.id)); setPromoPickerOpen(false); }}
+                          >
+                            <img
+                              src={p?.imageUrl}
+                              alt={p?.name}
+                              className="h-10 w-10 rounded object-contain border bg-white"
+                              onError={(e)=>{ e.currentTarget.src="https://via.placeholder.com/40?text=No+Img"; }}
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-sm font-medium text-gray-800">{p?.name}</div>
+                              <div className="truncate text-xs text-gray-500">
+                                R$ {money(p?.price)}
+                                {p?.categoryName ? ` • ${p.categoryName}` : ""}
+                                {p?.subcategoryName ? ` • ${p.subcategoryName}` : ""}
+                              </div>
+                            </div>
+                          </li>
+                        ))}
+                        {promoCandidates.length === 0 && (
+                          <li className="p-2 text-xs text-gray-500">Sem resultados</li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+                  {selectedPromoProduct && (
+                    <div className="mt-3 flex items-center gap-3 rounded border border-gray-200 bg-white p-3">
+                      <img
+                        src={selectedPromoProduct.imageUrl}
+                        alt={selectedPromoProduct.name}
+                        className="h-16 w-16 rounded object-contain border bg-white"
+                        onError={(e)=>{ e.currentTarget.src="https://via.placeholder.com/64?text=No+Img"; }}
+                      />
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-semibold text-gray-800">
+                          {selectedPromoProduct.name}
+                        </div>
+                        <div className="truncate text-xs text-gray-500">
+                          {selectedPromoProduct.categoryName ?? "—"}
+                          {selectedPromoProduct.subcategoryName ? ` • ${selectedPromoProduct.subcategoryName}` : ""}
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          Preço atual: <span className="font-medium">R$ {money(selectedPromoProduct.price)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div>
