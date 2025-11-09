@@ -14,6 +14,7 @@ import PrivateRoute from "./PrivateRoute.jsx";
 import HomePublic from "./HomePublic";
 import CategoryManager from "./pages/CategoryManager";
 import EstoquePorLoja from "./pages/EstoquePorLoja";
+import CustomersDashboard from "./pages/CustomersDashboard.jsx";
 import PaymentSettings from "./PaymentSettings.jsx";
 import UserManager from "./pages/UserManager";
 import Dashboard from "./Dashboard.jsx";
@@ -70,7 +71,8 @@ function MainApp() {
         <Route path="/pedidos" element={<PrivateRoute><Pedidos /></PrivateRoute>} />
         <Route path="/estoque" element={<PrivateRoute><EstoquePorLoja /></PrivateRoute>} />
         <Route path="/pagamentos" element={<PrivateRoute><PaymentSettings /></PrivateRoute>} />
-<Route path="/users" element={<PrivateRoute><UserManager /></PrivateRoute>} />
+        <Route path="/users" element={<PrivateRoute><UserManager /></PrivateRoute>} />
+        <Route path="/clientes" element={<PrivateRoute><CustomersDashboard /></PrivateRoute>} />
 
       </Routes>
 

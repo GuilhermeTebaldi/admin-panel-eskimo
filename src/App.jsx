@@ -221,6 +221,7 @@ export default function AdminPanel() {
             <button type="button" onClick={() => navigate("/categorias")} style={btnOutline}>⚙️ Categorias</button>
             <button type="button" onClick={() => navigate("/pagamentos#whatsapp")} style={btnOutline}>📲 Pagamentos e 📞 WhatsApp da Loja</button>
             <button type="button" onClick={() => navigate("/users")} style={btnOutline}>👤 Cadastro de Pessoa</button>
+            <button type="button" onClick={() => navigate("/clientes")} style={btnOutline}>👥 Dashboard de Clientes</button>
           </div>
         </form>
       </div>
