@@ -30,6 +30,11 @@ export default function CustomersDashboard() {
       const { data } = await api.get("/store-customers");
       setCustomers(Array.isArray(data) ? data : []);
     } catch (err) {
+      if (err?.response?.status === 401) {
+        alert("Sessão expirada ou sem permissão. Faça login como admin.");
+        navigate("/");
+        return;
+      }
       console.error(err);
       alert("Não foi possível carregar os clientes.");
     } finally {
@@ -69,6 +74,11 @@ export default function CustomersDashboard() {
       const { data } = await api.get(`/store-customers/${customer.id}`);
       setDetail(data);
     } catch (err) {
+      if (err?.response?.status === 401) {
+        alert("Sessão expirada ou sem permissão. Faça login como admin.");
+        navigate("/");
+        return;
+      }
       console.error(err);
       alert("Não foi possível carregar os detalhes do cliente.");
     }
@@ -88,6 +98,11 @@ export default function CustomersDashboard() {
       alert("Senha atualizada com sucesso!");
       setPassword("");
     } catch (err) {
+      if (err?.response?.status === 401) {
+        alert("Sessão expirada ou sem permissão. Faça login como admin.");
+        navigate("/");
+        return;
+      }
       console.error(err);
       alert("Erro ao redefinir a senha.");
     } finally {

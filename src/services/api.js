@@ -1,15 +1,20 @@
 import axios from "axios";
 
-// Cliente axios global
+const baseURL =
+  import.meta.env.VITE_API_URL?.replace(/\/+$/, "") ||
+  "https://backend-eskimo.onrender.com/api";
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8080/api",
-  headers: { "Content-Type": "application/json" },
+  baseURL,
+  withCredentials: false,
 });
 
-// Injeta token salvo, se existir
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  const token = localStorage.getItem("token")?.trim();
+  if (token) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${token}`;
+  }
   try {
     const store = localStorage.getItem("eskimo_store");
     if (store && store.trim() !== "") {

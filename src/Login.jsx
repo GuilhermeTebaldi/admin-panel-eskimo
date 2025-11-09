@@ -23,33 +23,40 @@ export default function LoginPage() {
       const res = await axios.post(`${API_URL}/auth/login`, { email, password });
       const token = res.data.token || "";
       localStorage.setItem("token", token);
-      
-      // 1) Preferir dados retornados pelo backend (patch já aplicado no /auth/login)
-      let role = String(res.data?.role || "operator").toLowerCase();
-      let permissions = res.data?.permissions ?? "{}";
-      
-      // 2) Fallback: decodificar JWT de forma robusta (base64url)
-      if (!res.data?.role || !res.data?.permissions) {
+
+      const payload = (() => {
         try {
-          const part = (token.split(".")[1] || "");
+          const part = token.split(".")[1] || "";
           const base64 = part.replace(/-/g, "+").replace(/_/g, "/");
           const json = decodeURIComponent(
-            atob(base64).split("").map(c => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)).join("")
+            atob(base64)
+              .split("")
+              .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+              .join(""),
           );
-          const payload = JSON.parse(json);
-          role = String(payload.role || payload.Role || role || "operator").toLowerCase();
-          permissions = payload.permissions ?? permissions ?? "{}";
-        } catch { /* noop */ }
-      }
-      
-      // 3) Forçar admin para o e-mail raiz
+          return JSON.parse(json);
+        } catch {
+          return null;
+        }
+      })();
+
+      const roleFromToken =
+        payload?.role ??
+        payload?.["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ??
+        payload?.Role ??
+        "";
+      let role = String(roleFromToken || res.data?.role || "admin").toLowerCase();
+      let permissions = res.data?.permissions ?? payload?.permissions ?? "{}";
+
       if (String(email).toLowerCase() === "admin@eskimo.com") {
         role = "admin";
       }
-      
-      // 4) Persistência
+
       localStorage.setItem("role", role);
-      localStorage.setItem("permissions", typeof permissions === "string" ? permissions : JSON.stringify(permissions));
+      localStorage.setItem(
+        "permissions",
+        typeof permissions === "string" ? permissions : JSON.stringify(permissions),
+      );
       
       toast.success("✅ Login realizado com sucesso!");
 
