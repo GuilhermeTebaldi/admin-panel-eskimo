@@ -19,6 +19,7 @@ export default function CustomersDashboard() {
   const [search, setSearch] = useState("");
   const [password, setPassword] = useState("");
   const [busyReset, setBusyReset] = useState(false);
+  const [busyDelete, setBusyDelete] = useState(false);
 
   useEffect(() => {
     void fetchCustomers();
@@ -107,6 +108,33 @@ export default function CustomersDashboard() {
       alert("Erro ao redefinir a senha.");
     } finally {
       setBusyReset(false);
+    }
+  };
+
+  const handleDeleteCustomer = async () => {
+    if (!selected) return;
+    const confirmed = window.confirm(
+      `Excluir o cliente ${selected.fullName || selected.email}? Essa ação não pode ser desfeita.`,
+    );
+    if (!confirmed) return;
+    setBusyDelete(true);
+    try {
+      await api.delete(`/store-customers/${selected.id}`);
+      alert("Cliente removido com sucesso.");
+      setCustomers((prev) => prev.filter((c) => c.id !== selected.id));
+      setSelected(null);
+      setDetail(null);
+      setPassword("");
+    } catch (err) {
+      if (err?.response?.status === 401) {
+        alert("Sessão expirada ou sem permissão. Faça login como admin.");
+        navigate("/");
+        return;
+      }
+      console.error(err);
+      alert("Não foi possível remover o cliente.");
+    } finally {
+      setBusyDelete(false);
     }
   };
 
@@ -253,6 +281,22 @@ export default function CustomersDashboard() {
                     </p>
                   </div>
                 </div>
+                <button
+                  onClick={handleDeleteCustomer}
+                  disabled={busyDelete}
+                  style={{
+                    border: "none",
+                    borderRadius: "0.75rem",
+                    background: busyDelete ? "#fca5a5" : "#dc2626",
+                    color: "#fff",
+                    padding: "0.5rem 1rem",
+                    fontWeight: 600,
+                    cursor: busyDelete ? "wait" : "pointer",
+                    marginBottom: "1rem",
+                  }}
+                >
+                  {busyDelete ? "Removendo..." : "Excluir cliente"}
+                </button>
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: "0.75rem", marginBottom: "1rem" }}>
                   <div style={miniCard}>
