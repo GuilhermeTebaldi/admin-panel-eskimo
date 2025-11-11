@@ -55,6 +55,19 @@ export default function Pedidos() {
     return lower;
   };
 
+  const normalizePaymentMethod = (method) =>
+    (method || "").toString().trim().toLowerCase();
+
+  const isCashPayment = (method) => normalizePaymentMethod(method) === "cash";
+
+  const formatPaymentMethod = (method) => {
+    const normalized = normalizePaymentMethod(method);
+    if (normalized === "cash") return "Dinheiro na entrega";
+    if (normalized === "mercado_pago") return "Mercado Pago (online)";
+    if (!normalized) return "Não informado";
+    return method;
+  };
+
   const getDataPedido = (pedido) => {
     const rawDate =
       pedido.createdAt || pedido.created_at || pedido.CreatedAt || pedido.date;
@@ -338,6 +351,11 @@ export default function Pedidos() {
                             : "bg-white border-gray-100"
                         } ${isHoje ? "ring-2 ring-green-400" : ""}`}
                       >
+                        {isCashPayment(pedido.paymentMethod) && (
+                          <div className="mb-3 inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
+                            💵 Pagamento em dinheiro
+                          </div>
+                        )}
                         <div className="mb-3 space-y-1 text-sm text-gray-700">
                           <div><strong>Número do Pedido:</strong> #{pedido.id}</div>
                           <div><strong>Horário:</strong> {horario}</div>
@@ -368,7 +386,21 @@ export default function Pedidos() {
                             >
                               {pedido.status?.toUpperCase() || "PENDENTE"}
                             </span>
-                          </div>                          {pedido.whatsappNotifiedAt && (
+                          </div>
+                          <div>
+                            <strong>Pagamento:</strong>{" "}
+                            <span
+                              className={`font-semibold ${
+                                isCashPayment(pedido.paymentMethod)
+                                  ? "text-amber-700"
+                                  : "text-gray-800"
+                              }`}
+                            >
+                              {formatPaymentMethod(pedido.paymentMethod)}
+                              {isCashPayment(pedido.paymentMethod) ? " · aguarda motoboy" : ""}
+                            </span>
+                          </div>
+                          {pedido.whatsappNotifiedAt && (
                             <div><strong>WhatsApp:</strong> enviado</div>
                           )}
 
@@ -448,6 +480,11 @@ export default function Pedidos() {
             <p className="mt-2 text-sm text-gray-600">
               Deseja confirmar que o pagamento do pedido de{" "}
               <strong>{pedidoSelecionado.customerName}</strong> foi realizado?
+            </p>
+            <p className="mt-1 text-xs text-gray-500">
+              Forma de pagamento:{" "}
+              <strong>{formatPaymentMethod(pedidoSelecionado.paymentMethod)}</strong>
+              {isCashPayment(pedidoSelecionado.paymentMethod) ? " · recebido em dinheiro" : ""}
             </p>
             <div className="mt-6 flex justify-center gap-4">
               <button
