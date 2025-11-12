@@ -60,6 +60,35 @@ export default function Pedidos() {
 
   const isCashPayment = (method) => normalizePaymentMethod(method) === "cash";
 
+  const syncMercadoPagoPendentes = async (listaPedidos) => {
+    const pendentesOnline = listaPedidos
+      .filter(
+        (p) =>
+          normalizePaymentMethod(p.paymentMethod) === "mercado_pago" &&
+          (p.status || "").toString().toLowerCase() === "pendente"
+      )
+      .slice(0, 5);
+
+    if (pendentesOnline.length === 0) return [];
+
+    const resultados = await Promise.all(
+      pendentesOnline.map(async (pedido) => {
+        try {
+          const { data } = await axios.get(`${API_URL}/payments/mp/status/${pedido.id}`);
+          const normalized = (data?.status || "").toString().toLowerCase();
+          if (data?.synced || normalized === "pago" || normalized === "approved") {
+            return { id: pedido.id, status: data?.status || "pago" };
+          }
+          return null;
+        } catch {
+          return null;
+        }
+      })
+    );
+
+    return resultados.filter(Boolean);
+  };
+
   const formatPaymentMethod = (method) => {
     const normalized = normalizePaymentMethod(method);
     if (normalized === "cash") return "Dinheiro na entrega";
@@ -74,19 +103,33 @@ export default function Pedidos() {
     return rawDate ? new Date(rawDate) : null;
   };
 
-  const fetchPedidos = () => {
-    axios
-      .get(`${API_URL}/orders`, auth())
-      .then((res) => {
-        const novos = res.data.filter((p) => !lastIds.current.has(p.id));
-        if (novos.length > 0 && lastIds.current.size > 0) {
-          toast.info(`🆕 ${novos.length} novo(s) pedido(s) recebido(s)!`);
-        }
-        res.data.forEach((p) => lastIds.current.add(p.id));
-        setPedidos(res.data);
-      })
-      .catch(() => toast.error("Erro ao buscar pedidos."))
-      .finally(() => setLoading(false));
+  const fetchPedidos = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/orders`, auth());
+      const data = res.data || [];
+      const novos = data.filter((p) => !lastIds.current.has(p.id));
+      if (novos.length > 0 && lastIds.current.size > 0) {
+        toast.info(`🆕 ${novos.length} novo(s) pedido(s) recebido(s)!`);
+      }
+      data.forEach((p) => lastIds.current.add(p.id));
+      setPedidos(data);
+
+      const atualizados = await syncMercadoPagoPendentes(data);
+      if (atualizados.length > 0) {
+        const statusMap = new Map(atualizados.map((item) => [item.id, item.status]));
+        setPedidos((prev) =>
+          prev.map((pedido) =>
+            statusMap.has(pedido.id)
+              ? { ...pedido, status: statusMap.get(pedido.id) }
+              : pedido
+          )
+        );
+      }
+    } catch {
+      toast.error("Erro ao buscar pedidos.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
