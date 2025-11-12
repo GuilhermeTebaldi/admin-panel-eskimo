@@ -280,6 +280,12 @@ export default function ProductList() {
     setPriceEdits(map);
   }, [showPricePanel, filteredProducts, products]);
 
+  useEffect(() => {
+    if (activeTab !== "products" && showPricePanel) {
+      setShowPricePanel(false);
+    }
+  }, [activeTab, showPricePanel]);
+
   // --------- Handlers (editar / salvar / deletar) ---------
   const handleEdit = async (product) => {
     try {
@@ -399,6 +405,21 @@ export default function ProductList() {
     });
   };
 
+  const handleGoBack = () => window.history.back();
+  const handleSaveLayoutClick = () => saveLayout();
+  const handleShowProductsTab = () => setActiveTab("products");
+  const handleShowPromotionTab = () => setActiveTab("promotion");
+  const handleTogglePricePanel = () => {
+    if (activeTab !== "products") {
+      setActiveTab("products");
+    }
+    if (showPricePanel) {
+      setShowPricePanel(false);
+      return;
+    }
+    openPricePanel();
+  };
+
   const savePromotionSetup = async () => {
     if (!promotionSupported) {
       toast.error("Atualize o backend da API para habilitar promoções.");
@@ -495,68 +516,83 @@ export default function ProductList() {
       <h1 className="text-3xl font-bold mb-6 text-center">
         📦 Lista de Produtos ({filteredProducts.length})
       </h1>
-
-      <div className="flex gap-3 mb-4">
-        <button
-          onClick={() => window.history.back()}
-          className="rounded-md border border-gray-300 bg-white px-4 py-1 text-sm text-gray-600 hover:bg-gray-100"
-        >
-          ← Voltar
-        </button>
-        <button
-          onClick={saveLayout}
-          className="rounded-md bg-blue-600 text-white px-4 py-1 text-sm hover:bg-blue-700"
-          title="Arraste linhas para alterar a ordem e salve"
-        >
-          💾 Salvar Layout
-        </button>
-      </div>
-
-      <div className="mt-6 flex flex-wrap gap-2">
-        {[
-          { id: "products", label: "📋 Produtos" },
-          { id: "promotion", label: "🎯 Promoção" },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`rounded-md border px-4 py-2 text-sm font-semibold shadow-sm transition
-              ${
-                activeTab === tab.id
+      <div className="mb-6 rounded-2xl bg-white p-4 shadow-sm">
+        <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+          Controle rápido
+        </p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          {[
+            {
+              id: "back",
+              label: "← Voltar",
+              helper: "Sai desta tela",
+              className:
+                "border-gray-200 bg-white text-gray-700 hover:border-gray-300",
+              onClick: handleGoBack,
+            },
+            {
+              id: "layout",
+              label: "💾 Salvar Layout",
+              helper: "Depois de arrastar os itens",
+              className:
+                "border-blue-500 bg-blue-50 text-blue-700 hover:bg-blue-100",
+              onClick: handleSaveLayoutClick,
+            },
+            {
+              id: "products",
+              label: "📋 Produtos",
+              helper: "Ver e editar lista",
+              className:
+                activeTab === "products"
                   ? "border-green-600 bg-green-600 text-white"
-                  : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-              }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+                  : "border-gray-200 bg-white text-gray-700 hover:border-gray-300",
+              onClick: handleShowProductsTab,
+            },
+            {
+              id: "promotion",
+              label: "🎯 Promoção",
+              helper: "Configurar destaque",
+              className:
+                activeTab === "promotion"
+                  ? "border-pink-600 bg-pink-600 text-white"
+                  : "border-gray-200 bg-white text-gray-700 hover:border-gray-300",
+              onClick: handleShowPromotionTab,
+            },
+            {
+              id: "prices",
+              label: "💲 Preços",
+              helper: showPricePanel
+                ? "Fechar painel rápido"
+                : "Atualizar valores",
+              className: showPricePanel
+                ? "border-amber-500 bg-amber-500 text-white shadow"
+                : "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100",
+              onClick: handleTogglePricePanel,
+            },
+          ].map((action) => (
+            <button
+              key={action.id}
+              type="button"
+              onClick={action.onClick}
+              className={`flex flex-col gap-1 rounded-2xl border-2 p-3 text-left text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-200 ${action.className}`}
+            >
+              <span className="text-base">{action.label}</span>
+              <span
+                className={`text-xs ${
+                  action.className.includes("text-white")
+                    ? "text-white/80"
+                    : "text-gray-500"
+                }`}
+              >
+                {action.helper}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {activeTab === "products" && (
         <>
-          <div className="flex flex-wrap items-center gap-3 mt-4">
-            <button
-              onClick={() => (showPricePanel ? setShowPricePanel(false) : openPricePanel())}
-              className={`rounded-md px-4 py-2 text-sm font-semibold shadow border
-                ${showPricePanel ? "bg-yellow-200 border-yellow-300 text-gray-800" : "bg-white border-gray-300 text-gray-700 hover:bg-gray-100"}`}
-            >
-              💲 Preços
-            </button>
-            {showPricePanel && (
-              <>
-                <button
-                  onClick={saveAllPrices}
-                  className="rounded-md px-4 py-2 text-sm font-semibold shadow bg-green-600 text-white hover:bg-green-700"
-                >
-                  💾 Salvar todos
-                </button>
-                <span className="text-sm text-gray-600">
-                  Editando {filteredProducts.length} produto(s)
-                </span>
-              </>
-            )}
-          </div>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 mt-4">
             <input
               type="text"
@@ -578,6 +614,19 @@ export default function ProductList() {
               ))}
             </select>
           </div>
+
+          {showPricePanel && (
+            <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              <strong>Modo Preços aberto</strong>
+              <button
+                onClick={saveAllPrices}
+                className="rounded-md bg-amber-600 px-3 py-1 text-xs font-semibold text-white shadow hover:bg-amber-700"
+              >
+                💾 Salvar todos
+              </button>
+              <span>Você está editando {filteredProducts.length} produto(s).</span>
+            </div>
+          )}
 
           {/* Painel de preços rápidos */}
           {showPricePanel && (
