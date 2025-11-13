@@ -137,6 +137,7 @@ export default function Pedidos() {
     fetchPedidos();
     const interval = setInterval(fetchPedidos, 10000);
     return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const marcarComoEntregue = async (id) => {
