@@ -60,6 +60,8 @@ export default function Pedidos() {
 
   const isCashPayment = (method) => normalizePaymentMethod(method) === "cash";
 
+  const statusMapRef = useRef(new Map());
+
   const syncMercadoPagoPendentes = async (listaPedidos) => {
     const pendentesOnline = listaPedidos
       .filter(
@@ -113,6 +115,25 @@ export default function Pedidos() {
       }
       data.forEach((p) => lastIds.current.add(p.id));
       setPedidos(data);
+
+      const canceladosRecentes = [];
+      const newStatusMap = new Map(statusMapRef.current);
+      data.forEach((pedido) => {
+        const normalized = (pedido.status || "").toString().toLowerCase();
+        const prev = newStatusMap.get(pedido.id);
+        if (prev && prev !== normalized && normalized === "cancelado") {
+          canceladosRecentes.push(pedido);
+        }
+        newStatusMap.set(pedido.id, normalized);
+      });
+      const idsAtuais = new Set(data.map((p) => p.id));
+      Array.from(newStatusMap.keys()).forEach((id) => {
+        if (!idsAtuais.has(id)) newStatusMap.delete(id);
+      });
+      statusMapRef.current = newStatusMap;
+      canceladosRecentes.forEach((pedido) =>
+        toast.warn(`⚠️ Pedido #${pedido.id} foi cancelado pelo cliente.`),
+      );
 
       const atualizados = await syncMercadoPagoPendentes(data);
       if (atualizados.length > 0) {
