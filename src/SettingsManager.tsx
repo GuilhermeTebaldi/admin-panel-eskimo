@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { SettingsAPI, StatusAPI, StoreSettingsAPI } from "./services/api";
+import api, { SettingsAPI, StatusAPI, StoreSettingsAPI } from "./services/api";
 
 type TimeRange = { start: string; end: string };
 type WeekMap = Record<string, TimeRange[]>;
@@ -56,6 +56,9 @@ export default function SettingsManager() {
   const [globalConfig, setGlobalConfig] = useState<any>(null);
   const [isSavingDelivery, setIsSavingDelivery] = useState(false);
   const [ratesMessage, setRatesMessage] = useState<string | null>(null);
+  const [keepAliveStatus, setKeepAliveStatus] = useState("Carregando…");
+  const [keepAliveLastPing, setKeepAliveLastPing] = useState<string | null>(null);
+  const [keepAliveBusy, setKeepAliveBusy] = useState(false);
   const safeNumber = (value: number | null) =>
     typeof value === "number" && !Number.isNaN(value) ? value : 0;
 
@@ -138,6 +141,22 @@ export default function SettingsManager() {
     [exceptions],
   );
 
+  const fetchKeepAliveStatus = useCallback(async () => {
+    try {
+      const { data } = await api.get("/keepalive/status");
+      setKeepAliveStatus(data?.enabled ? "Ativo" : "Inativo");
+      setKeepAliveLastPing(data?.lastPing ?? null);
+    } catch (err) {
+      console.error("Erro ao buscar status do KeepAlive:", err);
+      setKeepAliveStatus("Indisponível");
+      setKeepAliveLastPing(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchKeepAliveStatus();
+  }, [fetchKeepAliveStatus]);
+
   async function refreshStatus() {
     try {
       if (!activeStore) return;
@@ -177,6 +196,27 @@ export default function SettingsManager() {
     globalDeliveryRate,
     globalMinDelivery,
   ]);
+
+  const handleKeepAliveToggle = useCallback(
+    async (action: "enable" | "disable") => {
+      try {
+        setKeepAliveBusy(true);
+        await api.post(`/keepalive/${action}`);
+        await fetchKeepAliveStatus();
+        alert(
+          action === "enable"
+            ? "✅ KeepAlive ativado."
+            : "✅ KeepAlive desativado.",
+        );
+      } catch (err) {
+        console.error(`Erro ao ${action} KeepAlive:`, err);
+        alert("❌ Não foi possível atualizar o KeepAlive.");
+      } finally {
+        setKeepAliveBusy(false);
+      }
+    },
+    [fetchKeepAliveStatus],
+  );
 
   async function handleSave() {
     try {
@@ -287,51 +327,66 @@ export default function SettingsManager() {
   }
 
   return (
-    <div className="min-h-screen bg-green-50 px-4 py-6">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <button
-            onClick={() => window.history.back()}
-            className="rounded-md border border-gray-300 bg-white px-4 py-1 text-sm text-gray-600 hover:bg-gray-100"
-          >
-            ← Voltar
-          </button>
-          <div className="flex flex-wrap items-center gap-3">
-            <label className="flex items-center gap-2 text-sm text-gray-600">
-              <span className="font-semibold text-gray-700">Escopo:</span>
-              <select
-                value={scope}
-                onChange={(e) => setScope(e.target.value)}
-                className="rounded border border-gray-300 px-2 py-1 text-sm text-gray-700"
-              >
-                {STORE_OPTIONS.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt.toUpperCase()}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <StatusPill isOpen={isOpen} msg={statusMsg} next={nextOpening} />
+    <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-emerald-50 px-4 py-8">
+      <div className="mx-auto flex max-w-6xl flex-col gap-8">
+        <div className="rounded-3xl border border-emerald-100/70 bg-white/80 p-4 shadow-lg backdrop-blur">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <button
+              onClick={() => window.history.back()}
+              className="rounded-full border border-emerald-200/80 bg-white px-4 py-1.5 text-sm font-semibold text-emerald-700 shadow hover:bg-emerald-50"
+            >
+              ← Voltar
+            </button>
+            <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <StoreScopeBadge
+                scope={scope}
+                onChange={setScope}
+                status={{ isOpen, msg: statusMsg, next: nextOpening }}
+                className="h-full"
+              />
+              <KeepAliveBadge
+                status={keepAliveStatus}
+                lastPing={keepAliveLastPing}
+                busy={keepAliveBusy}
+                onToggle={handleKeepAliveToggle}
+                className="h-full"
+              />
+              <DeliveryConfigBadge
+                deliveryRate={globalDeliveryRate}
+                minDelivery={globalMinDelivery}
+                onDeliveryChange={setGlobalDeliveryRate}
+                onMinChange={setGlobalMinDelivery}
+                saving={isSavingDelivery}
+                message={ratesMessage}
+                onSave={handleSaveDelivery}
+                className="h-full"
+              />
+              <TimezoneBadge
+                timeZone={timeZone}
+                onChange={setTimeZone}
+                className="h-full"
+              />
+            </div>
           </div>
         </div>
 
         {error && (
-          <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-800">
+          <div className="rounded-xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow">
             {error}
           </div>
         )}
         {ok && (
-          <div className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-800">
+          <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 shadow">
             {ok}
           </div>
         )}
 
-        <section className="rounded-2xl bg-white p-6 shadow-sm space-y-6">
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-green-700">
+        <section className="rounded-3xl border border-emerald-100 bg-white/90 p-6 shadow-xl space-y-6">
+          <div className="space-y-2">
+            <h2 className="text-3xl font-black text-emerald-700 drop-shadow-sm">
               🛍️ Loja {scope?.toUpperCase()}
             </h2>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-emerald-900/70">
               Edite os horários e exceções abaixo para a unidade selecionada.
               Tarifas e outros ajustes globais permanecem centralizados em outro
               painel.
@@ -341,106 +396,35 @@ export default function SettingsManager() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="w-full rounded bg-green-600 px-4 py-2 font-semibold text-white shadow hover:bg-green-700 disabled:opacity-60"
+            className="w-full rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-3 text-lg font-semibold text-white shadow-lg shadow-emerald-200 hover:from-emerald-600 hover:to-emerald-700 disabled:opacity-60"
           >
             {saving ? "Salvando…" : "💾 Salvar Configuração"}
           </button>
-
-          {/* Configuração global de entrega/KeepAlive ocultada temporariamente */}
         </section>
 
-        <section className="rounded-2xl bg-white p-6 shadow-sm space-y-4">
-          <div className="flex flex-col gap-1">
-            <h2 className="text-2xl font-bold text-emerald-700">
-              🚚 Configuração de Entrega (global)
-            </h2>
-            <p className="text-sm text-gray-600">
-              Campos usados para calcular o valor do motoboy em todas as lojas.
-            </p>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="text-sm font-medium text-gray-700">
-              Valor por quilômetro (R$)
-              <input
-                type="number"
-                min="0"
-                step="0.1"
-                value={globalDeliveryRate ?? ""}
-                onChange={(e) =>
-                  setGlobalDeliveryRate(
-                    e.target.value === "" ? null : Number(e.target.value),
-                  )
-                }
-                className="mt-1 w-full rounded border px-4 py-2 text-gray-800 shadow focus:border-emerald-400 focus:outline-none"
-                placeholder="Ex.: 2.5"
-              />
-            </label>
-            <label className="text-sm font-medium text-gray-700">
-              Valor mínimo de entrega (R$)
-              <input
-                type="number"
-                min="0"
-                step="0.1"
-                value={globalMinDelivery ?? ""}
-                onChange={(e) =>
-                  setGlobalMinDelivery(
-                    e.target.value === "" ? null : Number(e.target.value),
-                  )
-                }
-                className="mt-1 w-full rounded border px-4 py-2 text-gray-800 shadow focus:border-emerald-400 focus:outline-none"
-                placeholder="Ex.: 8.0"
-              />
-            </label>
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <button
-              onClick={handleSaveDelivery}
-              disabled={isSavingDelivery}
-              className="rounded bg-emerald-600 px-4 py-2 font-semibold text-white shadow hover:bg-emerald-700 disabled:opacity-60"
-            >
-              {isSavingDelivery ? "Salvando…" : "Salvar valores"}
-            </button>
-            {ratesMessage && (
-              <span className="text-sm text-gray-600">{ratesMessage}</span>
-            )}
-          </div>
-        </section>
-
-        <section className="rounded-xl bg-white p-6 shadow-sm space-y-3">
-          <h2 className="text-lg font-medium text-gray-800">Timezone</h2>
-          <div className="max-w-md">
-            <input
-              className="w-full rounded-lg border px-3 py-2 text-sm"
-              value={timeZone}
-              onChange={(e) => setTimeZone(e.target.value)}
-              placeholder="Ex.: America/Sao_Paulo"
-            />
-            <p className="mt-1 text-xs text-gray-500">
-              Use um ID IANA. Ex.: America/Sao_Paulo
-            </p>
-          </div>
-        </section>
-
-        <section className="rounded-xl bg-white p-6 shadow-sm space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-medium text-gray-800">Semana</h2>
+        <section className="rounded-3xl border border-emerald-100/70 bg-white/90 p-6 shadow space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-xl font-semibold text-emerald-900">Semana</h2>
             <button
               onClick={handleCloseToday}
               disabled={saving}
-              className="rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
+              className="rounded-full border border-amber-200 bg-amber-500 px-4 py-1.5 text-sm font-semibold text-white shadow hover:bg-amber-600 disabled:opacity-50"
             >
               Fechar hoje
             </button>
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {DAY_KEYS.map((k) => (
-              <div key={k} className="rounded-lg border p-3">
+              <div
+                key={k}
+                className="rounded-2xl border border-emerald-50 bg-emerald-50/40 p-4 shadow-sm"
+              >
                 <div className="mb-2 flex items-center justify-between">
-                  <div className="font-medium text-gray-700">{DAY_LABELS[k]}</div>
+                  <div className="font-semibold text-emerald-900">{DAY_LABELS[k]}</div>
                   <button
                     type="button"
                     onClick={() => addRange(k)}
-                    className="text-xs rounded-md border px-2 py-1 hover:bg-gray-50"
+                    className="text-xs rounded-full border border-emerald-200 px-3 py-1 font-semibold text-emerald-700 hover:bg-white"
                   >
                     + faixa
                   </button>
@@ -455,21 +439,21 @@ export default function SettingsManager() {
                     <div key={idx} className="flex items-center gap-2">
                       <input
                         type="time"
-                        className="rounded-md border px-2 py-1 text-sm"
+                        className="rounded-lg border border-emerald-200 px-3 py-1 text-sm"
                         value={r.start}
                         onChange={(e) => updateRange(k, idx, "start", e.target.value)}
                       />
                       <span className="text-xs text-gray-500">até</span>
                       <input
                         type="time"
-                        className="rounded-md border px-2 py-1 text-sm"
+                        className="rounded-lg border border-emerald-200 px-3 py-1 text-sm"
                         value={r.end}
                         onChange={(e) => updateRange(k, idx, "end", e.target.value)}
                       />
                       <button
                         type="button"
                         onClick={() => removeRange(k, idx)}
-                        className="ml-auto text-xs text-red-600 hover:underline"
+                        className="ml-auto text-xs font-semibold text-rose-600 hover:underline"
                       >
                         remover
                       </button>
@@ -481,13 +465,13 @@ export default function SettingsManager() {
           </div>
         </section>
 
-        <section className="rounded-xl bg-white p-6 shadow-sm space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="font-medium text-gray-800">Exceções</h2>
+        <section className="rounded-3xl border border-emerald-100/70 bg-white/90 p-6 shadow space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-xl font-semibold text-emerald-900">Exceções</h2>
             <button
               type="button"
               onClick={addException}
-              className="text-xs rounded-md border px-2 py-1 hover:bg-gray-50"
+              className="text-xs rounded-full border border-emerald-200 px-3 py-1 font-semibold text-emerald-700 hover:bg-emerald-50"
             >
               + exceção
             </button>
@@ -501,11 +485,14 @@ export default function SettingsManager() {
               const targetIdx = originalIndex === -1 ? idx : originalIndex;
 
               return (
-                <div key={`${ex.date}-${idx}`} className="rounded-lg border p-3">
+                <div
+                  key={`${ex.date}-${idx}`}
+                  className="rounded-2xl border border-emerald-50 bg-emerald-50/30 p-4 shadow-sm"
+                >
                   <div className="flex items-center gap-3">
                     <input
                       type="date"
-                      className="rounded-md border px-2 py-1 text-sm"
+                      className="rounded-lg border border-emerald-200 px-3 py-1 text-sm"
                       value={ex.date}
                       onChange={(e) =>
                         updateException(targetIdx, { date: e.target.value })
@@ -524,7 +511,7 @@ export default function SettingsManager() {
                     <button
                       type="button"
                       onClick={() => removeException(targetIdx)}
-                      className="ml-auto text-xs text-red-600 hover:underline"
+                      className="ml-auto text-xs font-semibold text-rose-600 hover:underline"
                     >
                       remover
                     </button>
@@ -535,7 +522,7 @@ export default function SettingsManager() {
                         <div key={ridx} className="flex items-center gap-2">
                           <input
                             type="time"
-                            className="rounded-md border px-2 py-1 text-sm"
+                            className="rounded-lg border border-emerald-200 px-3 py-1 text-sm"
                             value={r.start}
                             onChange={(e) =>
                               updateExceptionRange(
@@ -601,13 +588,13 @@ export default function SettingsManager() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+            className="rounded-full bg-gradient-to-r from-emerald-500 to-green-500 px-6 py-2 font-semibold text-white shadow hover:from-emerald-600 hover:to-green-600 disabled:opacity-50"
           >
             {saving ? "Salvando…" : "Salvar horários e entrega"}
           </button>
           <button
             onClick={refreshStatus}
-            className="rounded-lg border px-4 py-2 hover:bg-gray-50"
+            className="rounded-full border border-emerald-200 px-6 py-2 font-semibold text-emerald-700 hover:bg-white"
           >
             Atualizar status
           </button>
@@ -617,14 +604,231 @@ export default function SettingsManager() {
   );
 }
 
+function StoreScopeBadge({
+  scope,
+  onChange,
+  status,
+  className = "",
+}: {
+  scope: string;
+  onChange: (value: string) => void;
+  status?: { isOpen: boolean | null; msg: string; next: string | null };
+  className?: string;
+}) {
+  return (
+    <div
+      className={`rounded-2xl border border-emerald-100 bg-white/90 px-3 py-2 shadow-sm ${className}`}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 text-xs font-semibold text-emerald-800">
+          <span role="img" aria-label="Lojas">
+            🏬
+          </span>
+          Escopo
+        </div>
+        {status && (
+          <StatusPill
+            isOpen={status.isOpen}
+            msg={status.msg}
+            next={status.next}
+            className="text-[10px]"
+          />
+        )}
+      </div>
+      <div className="mt-1 text-[11px] text-gray-500">
+        Selecione a loja que deseja editar.
+      </div>
+      <select
+        value={scope}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-2 w-full rounded-full border border-emerald-200 bg-white px-2.5 py-1 text-sm font-semibold uppercase text-emerald-900 shadow focus:border-emerald-400 focus:outline-none"
+      >
+        {STORE_OPTIONS.map((opt) => (
+          <option key={opt} value={opt}>
+            {opt.toUpperCase()}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function KeepAliveBadge({
+  status,
+  lastPing,
+  busy,
+  onToggle,
+  className = "",
+}: {
+  status: string;
+  lastPing: string | null;
+  busy: boolean;
+  onToggle: (action: "enable" | "disable") => void;
+  className?: string;
+}) {
+  const normalizedStatus = status || "Indisponível";
+  const stateClass =
+    normalizedStatus === "Ativo"
+      ? "text-emerald-600"
+      : normalizedStatus === "Carregando…"
+        ? "text-gray-600"
+        : "text-rose-600";
+  const pingLabel = formatKeepAlivePing(lastPing);
+
+  return (
+    <div
+      className={`flex flex-col gap-2 rounded-2xl border border-emerald-200 bg-white/80 px-3 py-2 text-xs text-emerald-900 shadow-sm sm:flex-row sm:items-center sm:gap-3 ${className}`}
+    >
+      <div className="flex flex-col leading-tight">
+        <span className="font-semibold">KeepAlive</span>
+        <span className={`${stateClass} font-semibold`}>{normalizedStatus}</span>
+        {pingLabel && (
+          <span className="text-[11px] text-gray-500">Último ping {pingLabel}</span>
+        )}
+      </div>
+      <div className="flex flex-nowrap items-center gap-1 sm:ml-auto">
+        <button
+          type="button"
+          onClick={() => onToggle("enable")}
+          disabled={busy || normalizedStatus === "Carregando…"}
+          className="rounded-full border border-emerald-300 px-3 py-1 font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+        >
+          Ligar
+        </button>
+        <button
+          type="button"
+          onClick={() => onToggle("disable")}
+          disabled={busy || normalizedStatus === "Carregando…"}
+          className="rounded-full border border-rose-200 px-3 py-1 font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+        >
+          Desligar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function DeliveryConfigBadge({
+  deliveryRate,
+  minDelivery,
+  onDeliveryChange,
+  onMinChange,
+  saving,
+  message,
+  onSave,
+  className = "",
+}: {
+  deliveryRate: number | null;
+  minDelivery: number | null;
+  onDeliveryChange: (value: number | null) => void;
+  onMinChange: (value: number | null) => void;
+  saving: boolean;
+  message: string | null;
+  onSave: () => void;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`rounded-2xl border border-emerald-100 bg-white/90 px-3 py-2 text-xs shadow-sm ${className}`}
+    >
+      <div className="mb-1 flex items-center gap-2 text-emerald-800">
+        <span className="text-base">🚚</span>
+        <div className="flex flex-col leading-tight">
+          <span className="font-semibold">Entrega global</span>
+          <span className="text-[11px] text-gray-500">
+            Campos usados para calcular o valor do motoboy em todas as lojas.
+          </span>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <label className="flex flex-col gap-1 text-[11px] text-gray-600">
+          Valor/km
+          <input
+            type="number"
+            min="0"
+            step="0.1"
+            value={deliveryRate ?? ""}
+            onChange={(e) =>
+              onDeliveryChange(e.target.value === "" ? null : Number(e.target.value))
+            }
+            className="w-28 rounded border px-2 py-1 text-sm text-gray-800 focus:border-emerald-400 focus:outline-none"
+            placeholder="2.5"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-[11px] text-gray-600">
+          Mínimo
+          <input
+            type="number"
+            min="0"
+            step="0.1"
+            value={minDelivery ?? ""}
+            onChange={(e) =>
+              onMinChange(e.target.value === "" ? null : Number(e.target.value))
+            }
+            className="w-28 rounded border px-2 py-1 text-sm text-gray-800 focus:border-emerald-400 focus:outline-none"
+            placeholder="8.0"
+          />
+        </label>
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={saving}
+          className="ml-auto rounded-full bg-emerald-600 px-4 py-1 text-sm font-semibold text-white shadow hover:bg-emerald-700 disabled:opacity-60"
+        >
+          {saving ? "Salvando…" : "Salvar"}
+        </button>
+      </div>
+      {message && (
+        <div className="mt-2 text-[11px] text-gray-500">
+          {message}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TimezoneBadge({
+  timeZone,
+  onChange,
+  className = "",
+}: {
+  timeZone: string;
+  onChange: (value: string) => void;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`rounded-2xl border border-emerald-100 bg-white/90 px-3 py-2 text-xs shadow-sm ${className}`}
+    >
+      <div className="mb-1 flex items-center justify-between text-[11px] font-semibold text-emerald-700">
+        <span className="flex items-center gap-1">
+          <span role="img" aria-label="Tempo">
+            🕑
+          </span>
+          Timezone
+        </span>
+        <span className="text-[10px] font-normal text-gray-500">ID IANA</span>
+      </div>
+      <input
+        className="w-full rounded-full border border-emerald-200 px-3 py-1 text-sm text-gray-800 focus:border-emerald-400 focus:outline-none"
+        value={timeZone}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="America/Sao_Paulo"
+      />
+    </div>
+  );
+}
+
 function StatusPill({
   isOpen,
   msg,
   next,
+  className = "",
 }: {
   isOpen: boolean | null;
   msg: string;
   next: string | null;
+  className?: string;
 }) {
   const stateClass =
     isOpen === null
@@ -644,7 +848,7 @@ function StatusPill({
 
   return (
     <div
-      className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs ${stateClass}`}
+      className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs ${stateClass} ${className}`}
     >
       <span className={`h-2 w-2 rounded-full ${dotClass}`} />
       <span>{label}</span>
@@ -653,6 +857,18 @@ function StatusPill({
       )}
     </div>
   );
+}
+
+function formatKeepAlivePing(lastPing: string | null) {
+  if (!lastPing) return null;
+  const parsed = Date.parse(lastPing);
+  if (Number.isNaN(parsed)) return null;
+  return new Date(parsed).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function parseWeek(jsonLike: any): WeekMap {

@@ -1,6 +1,5 @@
 /* eslint-disable react-hooks/rules-of-hooks */
-// App.jsx — cadastro com estoque por loja e gate admin
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import api from "@/services/api";
 import { useNavigate } from "react-router-dom";
 
@@ -9,7 +8,10 @@ function decodeJwt(token) {
     const part = (token.split(".")[1] || "");
     const base64 = part.replace(/-/g, "+").replace(/_/g, "/");
     const json = decodeURIComponent(
-      atob(base64).split("").map(c => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)).join("")
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
     );
     return JSON.parse(json || "{}");
   } catch {
@@ -43,27 +45,39 @@ function getDisplayName() {
 
 export default function AdminPanel() {
   const navigate = useNavigate();
-
-  // gate admin
   const role = localStorage.getItem("role");
-  if (role !== "admin") return <div className="p-8">Acesso restrito ao administrador.</div>;
 
-   
+  if (role !== "admin") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 text-center text-slate-600">
+        <div className="max-w-md rounded-3xl border border-slate-200 bg-white p-8 shadow-lg">
+          <h1 className="text-2xl font-bold text-slate-900">Acesso restrito</h1>
+          <p className="mt-2 text-sm">Esta área é exclusiva para administradores.</p>
+          <button
+            onClick={() => navigate("/")}
+            className="mt-6 w-full rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-600"
+          >
+            Voltar ao login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const displayName = useMemo(() => getDisplayName(), []);
-
   const [form, setForm] = useState({
     name: "",
     description: "",
     price: "",
     imageUrl: "",
-    categoryId: ""
+    categoryId: "",
   });
-
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
   const [filteredSubcategories, setFilteredSubcategories] = useState([]);
   const [subcategoryId, setSubcategoryId] = useState("");
   const [estoques, setEstoques] = useState({ efapi: 1, palmital: 1, passo: 1 });
+  const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
     const checkSync = async () => {
@@ -110,13 +124,12 @@ export default function AdminPanel() {
   const handleEstoqueChange = (store, value) => {
     setEstoques((prev) => ({
       ...prev,
-      [store]: Number.parseInt(value) || 0
+      [store]: Number.parseInt(value) || 0,
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const price = Number.parseFloat(String(form.price).replace(",", ".")) || 0;
     const categoryId = Number.parseInt(form.categoryId) || null;
     const subId = subcategoryId ? Number.parseInt(subcategoryId) : null;
@@ -127,7 +140,7 @@ export default function AdminPanel() {
       price,
       imageUrl: form.imageUrl,
       categoryId,
-      subcategoryId: subId
+      subcategoryId: subId,
     };
 
     try {
@@ -139,6 +152,7 @@ export default function AdminPanel() {
       setForm({ name: "", description: "", price: "", imageUrl: "", categoryId: "" });
       setSubcategoryId("");
       setEstoques({ efapi: 0, palmital: 0, passo: 0 });
+      setShowForm(false);
     } catch (error) {
       console.error("Erro:", error?.response?.data || error?.message);
       alert("❌ Erro ao salvar produto.");
@@ -154,208 +168,253 @@ export default function AdminPanel() {
   };
 
   return (
-    <div style={containerStyle}>
-      <div style={cardStyle}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem", alignItems: "center" }}>
-          <div className="text-left">
-            <div style={{ fontSize: "0.9rem", color: "#4b5563" }}>Logado como:</div>
-            <div style={{ fontWeight: 700, fontSize: "1.1rem", color: "#065f46" }}>{displayName}</div>
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50 px-4 py-10 text-slate-800">
+      <div className="mx-auto max-w-5xl space-y-8">
+        <header className="rounded-3xl border border-emerald-100/70 bg-white/80 p-6 shadow-lg backdrop-blur">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-emerald-500">Painel de produtos</p>
+              <h1 className="text-3xl font-black text-emerald-900">Eskimó</h1>
+              <p className="text-sm text-emerald-900/70">
+                Cadastre novos itens, defina estoque por loja e navegue para as principais ferramentas de operação.
+              </p>
+            </div>
+            <div className="flex flex-col items-end gap-2 text-right">
+              <div className="text-xs uppercase tracking-wide text-slate-400">Logado como</div>
+              <div className="text-lg font-semibold text-emerald-700">{displayName}</div>
+              <button
+                onClick={handleLogout}
+                className="rounded-full bg-rose-500 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-rose-600"
+              >
+                🚪 Sair
+              </button>
+            </div>
           </div>
-          <button onClick={handleLogout} style={btnDanger}>🚪 Sair</button>
-        </div>
+        </header>
 
-        <h1 style={titleStyle}>Eskimó</h1>
-        <h2 style={subtitleStyle}>Cadastro de Produto</h2>
-        <p style={textStyle}>Preencha os campos abaixo para adicionar um novo produto.</p>
+        <div className="rounded-3xl border border-emerald-100 bg-white/90 p-6 shadow space-y-8">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+              <p className="text-xs uppercase tracking-wide text-slate-400">Atalhos rápidos</p>
+              <h3 className="text-xl font-semibold text-slate-900">Fluxo diário</h3>
+              <p className="text-sm text-slate-500">
+                Use os botões abaixo para navegar pelas áreas mais usadas do painel.
+              </p>
+              <div className="mt-4 grid gap-2">
+                <button
+                  type="button"
+                  onClick={() => navigate("/produtos")}
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                >
+                  📦 Produtos & Ranking
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate("/estoque")}
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                >
+                  🏪 Estoque por loja
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate("/pedidos")}
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                >
+                  ✅ Ver pedidos
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate("/clientes")}
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                >
+                  👥 Dashboard de clientes
+                </button>
+              </div>
+            </div>
 
-        <form onSubmit={handleSubmit} style={formGridStyle}>
-          <Input label="Nome" name="name" value={form.name} onChange={handleChange} />
-          <Input label="Descrição" name="description" value={form.description} onChange={handleChange} />
-          <Input label="Preço" name="price" value={form.price} onChange={handleChange} />
-          <Input label="Imagem (URL)" name="imageUrl" value={form.imageUrl} onChange={handleChange} />
-
-          <Dropdown
-            label="Categoria"
-            name="categoryId"
-            value={form.categoryId}
-            onChange={handleChange}
-            options={categories}
-            required
-          />
-
-          <Dropdown
-            label="Subcategoria"
-            name="subcategoryId"
-            value={subcategoryId}
-            onChange={(e) => setSubcategoryId(e.target.value)}
-            options={filteredSubcategories}
-            required={false}
-          />
-
-          <div className="w-full px-6 py-4" style={{ gridColumn: "span 2" }}>
-            <label className="block mb-2 text-lg font-semibold text-gray-700">Estoque por loja:</label>
-            <div className="grid grid-cols-3 gap-4">
-              {Object.keys(estoques).map((store) => (
-                <div key={store} className="flex flex-col">
-                  <label className="mb-1 text-gray-600">
-                    {store.charAt(0).toUpperCase() + store.slice(1)}
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={estoques[store]}
-                    onChange={(e) => handleEstoqueChange(store, e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                  />
-                </div>
-              ))}
+            <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+              <p className="text-xs uppercase tracking-wide text-slate-400">Configurações</p>
+              <h3 className="text-xl font-semibold text-slate-900">Ajustes e ferramentas</h3>
+              <div className="mt-4 grid gap-2">
+                <button
+                  type="button"
+                  onClick={() => navigate("/configuracoes")}
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                >
+                  ⚙️ Entrega & ping
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate("/categorias")}
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                >
+                  🗂 Categorias
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate("/pagamentos#whatsapp")}
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                >
+                  📲 Pagamentos & WhatsApp
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate("/users")}
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                >
+                  👤 Usuários & permissões
+                </button>
+              </div>
             </div>
           </div>
 
-          <div style={buttonGroupStyle}>
-            <button type="submit" style={btnPrimary}>Cadastrar Produto</button>
-            <button type="button" onClick={() => navigate("/produtos")} style={btnOutline}>📦 Produtos + 📈Ranking</button>
-            <button type="button" onClick={() => navigate("/estoque")} style={btnOutline}>🏪 Estoque por Loja</button>
-            <button type="button" onClick={() => navigate("/pedidos")} style={btnOutline}>✅ Ver Pedidos</button>
-            <button type="button" onClick={() => navigate("/configuracoes")} style={btnOutline}>⚙️ Configurações de Entrega e ping</button>
-            <button type="button" onClick={() => navigate("/categorias")} style={btnOutline}>⚙️ Categorias</button>
-            <button type="button" onClick={() => navigate("/pagamentos#whatsapp")} style={btnOutline}>📲 Pagamentos e 📞 WhatsApp da Loja</button>
-            <button type="button" onClick={() => navigate("/users")} style={btnOutline}>👤 Cadastro de Pessoa</button>
-            <button type="button" onClick={() => navigate("/clientes")} style={btnOutline}>👥 Dashboard de Clientes</button>
+          <div className="rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/60 p-4 text-center">
+            <h3 className="text-lg font-semibold text-emerald-800">Cadastro de produto</h3>
+            <p className="text-sm text-emerald-700">
+              Abra o formulário quando quiser cadastrar ou editar um item.
+            </p>
+            <button
+              onClick={() => setShowForm((prev) => !prev)}
+              className="mt-4 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-2 text-sm font-semibold text-white shadow hover:from-emerald-600 hover:to-emerald-700"
+            >
+              {showForm ? "Fechar cadastro" : "Cadastrar produto"}
+            </button>
           </div>
-        </form>
+
+          <div
+            className={`overflow-hidden rounded-3xl border border-slate-100 bg-white/80 shadow-inner transition-all duration-500 ${
+              showForm ? "max-h-[4000px] opacity-100" : "max-h-0 opacity-0"
+            }`}
+          >
+            <div className={showForm ? "p-6" : "p-0"}>
+              <h2 className="text-2xl font-bold text-emerald-900">Cadastro de produto</h2>
+              <p className="text-sm text-slate-500">
+                Preencha os campos abaixo para adicionar um novo item ao catálogo.
+              </p>
+              <form onSubmit={handleSubmit} className="mt-6 grid gap-6 md:grid-cols-2">
+                <Input label="Nome" name="name" value={form.name} onChange={handleChange} />
+                <Input label="Descrição" name="description" value={form.description} onChange={handleChange} />
+                <Input label="Preço" name="price" value={form.price} onChange={handleChange} />
+                <Input label="Imagem (URL)" name="imageUrl" value={form.imageUrl} onChange={handleChange} />
+
+                <Dropdown
+                  label="Categoria"
+                  name="categoryId"
+                  value={form.categoryId}
+                  onChange={handleChange}
+                  options={categories}
+                  required
+                />
+
+                <Dropdown
+                  label="Subcategoria"
+                  name="subcategoryId"
+                  value={subcategoryId}
+                  onChange={(e) => setSubcategoryId(e.target.value)}
+                  options={filteredSubcategories}
+                  required={false}
+                />
+
+                <div className="md:col-span-2">
+                  <label className="mb-2 block text-sm font-semibold text-slate-600">
+                    Estoque por loja
+                  </label>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    {Object.keys(estoques).map((store) => (
+                      <div key={store} className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                        <label className="text-xs uppercase tracking-wide text-slate-500">
+                          {store.charAt(0).toUpperCase() + store.slice(1)}
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={estoques[store]}
+                          onChange={(e) => handleEstoqueChange(store, e.target.value)}
+                          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-emerald-400 focus:outline-none"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="md:col-span-2 grid gap-2">
+                  <button
+                    type="submit"
+                    className="rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 px-8 py-3 text-sm font-semibold text-white shadow-lg hover:from-emerald-600 hover:to-emerald-700"
+                  >
+                    Cadastrar produto
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
+const baseInputStyle = {
+  display: "flex",
+  flexDirection: "column",
+  textAlign: "left",
+};
+
 function Input({ label, name, value, onChange }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
-      <label htmlFor={name} style={labelStyle}>{label}</label>
-      <input id={name} name={name} value={value} onChange={onChange} required style={inputStyle} />
+    <div style={baseInputStyle}>
+      <label htmlFor={name} style={labelStyle}>
+        {label}
+      </label>
+      <input
+        id={name}
+        name={name}
+        value={value}
+        onChange={onChange}
+        required
+        style={inputStyle}
+      />
     </div>
   );
 }
 
 function Dropdown({ label, name, value, onChange, options, required = true }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
+    <div style={baseInputStyle}>
       <label style={labelStyle}>{label}</label>
-      <select name={name} value={value} onChange={onChange} style={inputStyle} required={required}>
+      <select
+        name={name}
+        value={value}
+        onChange={onChange}
+        style={inputStyle}
+        required={required}
+      >
         <option value="">{required ? "Selecione..." : "Opcional"}</option>
         {options.map((opt) => (
-          <option key={opt.id} value={opt.id}>{opt.name}</option>
+          <option key={opt.id} value={opt.id}>
+            {opt.name}
+          </option>
         ))}
       </select>
     </div>
   );
 }
 
-const containerStyle = {
-  minHeight: "100vh",
-  background: "#f0fdf4",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  padding: "2rem",
-  animation: "fadeIn 0.8s ease-in-out"
-};
-
-const cardStyle = {
-  width: "100%",
-  maxWidth: "1000px",
-  background: "white",
-  borderRadius: "1.5rem",
-  padding: "3rem",
-  boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
-  textAlign: "center"
-};
-
-const formGridStyle = {
-  display: "grid",
-  gridTemplateColumns: "1fr 1fr",
-  gap: "1.5rem",
-  marginBottom: "2rem"
-};
-
-const titleStyle = {
-  fontSize: "3rem",
-  color: "#065f46",
-  fontWeight: "800",
-  marginBottom: "1.5rem"
-};
-
-const subtitleStyle = {
-  fontSize: "2rem",
-  color: "#065f46",
-  fontWeight: "bold",
-  marginBottom: "1rem"
-};
-
-const textStyle = {
-  fontSize: "1rem",
-  color: "#4b5563",
-  marginBottom: "2rem"
-};
-
-const buttonGroupStyle = {
-  gridColumn: "span 2",
-  display: "flex",
-  flexDirection: "column",
-  gap: "0.75rem"
-};
-
 const labelStyle = {
   marginBottom: "0.25rem",
-  fontSize: "0.875rem",
-  color: "#374151"
+  fontSize: "0.85rem",
+  color: "#475569",
 };
 
 const inputStyle = {
   width: "100%",
-  padding: "0.75rem",
-  borderRadius: "0.75rem",
-  border: "1px solid #cbd5e1",
-  background: "#f9fdfb",
-  color: "#111827",
+  padding: "0.8rem 1rem",
+  borderRadius: "0.9rem",
+  border: "1px solid #c7d2fe",
+  background: "#f8fafc",
+  color: "#0f172a",
   fontSize: "1rem",
   boxSizing: "border-box",
   outline: "none",
-  transition: "border-color 0.3s ease"
-};
-
-const btnPrimary = {
-  background: "#059669",
-  color: "white",
-  padding: "0.75rem 1.5rem",
-  fontWeight: "bold",
-  border: "none",
-  borderRadius: "0.75rem",
-  cursor: "pointer",
-  fontSize: "1rem",
-  transition: "background-color 0.3s ease"
-};
-
-const btnDanger = {
-  background: "#dc2626",
-  color: "white",
-  padding: "0.5rem 1.25rem",
-  borderRadius: "0.75rem",
-  border: "none",
-  cursor: "pointer",
-  fontWeight: "bold",
-  transition: "background-color 0.3s ease"
-};
-
-const btnOutline = {
-  background: "transparent",
-  color: "#065f46",
-  padding: "0.75rem 1.5rem",
-  fontWeight: "bold",
-  border: "2px solid #065f46",
-  borderRadius: "0.75rem",
-  cursor: "pointer",
-  fontSize: "1rem",
-  transition: "all 0.3s ease"
+  transition: "border-color 0.2s ease",
 };
