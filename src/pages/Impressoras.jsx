@@ -298,12 +298,13 @@ export default function Impressoras() {
               A impressora térmica USB precisa estar instalada no Windows e ser selecionada no painel.
             </p>
             <div className="flex flex-wrap gap-2">
-              <a
-                href="/eskimo-print-server-placeholder.txt"
-                className="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:border-slate-400"
-              >
-                Baixar instalador Windows
-              </a>
+            <a
+              href="/eskimo-print-server/EskimoPrintServer-win-x64.zip"
+              className="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:border-slate-400"
+              download="EskimoPrintServer-win-x64.zip"
+            >
+              Baixar instalador Windows
+            </a>
               <button
                 type="button"
                 onClick={fetchStatus}
