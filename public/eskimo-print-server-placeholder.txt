@@ -1,0 +1,8 @@
+Instalador do Eskimo Print Server para Windows.
+
+1. Faça o download deste arquivo.
+2. Extraia ou mova o executável para um PC Windows.
+3. Execute o servidor e configure a loja/impressora.
+4. Use o painel de impressoras para salvar a configuração.
+
+Conteúdo provisório: em breve disponibilizaremos o instalador oficial.

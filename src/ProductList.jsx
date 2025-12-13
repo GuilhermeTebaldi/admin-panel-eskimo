@@ -1,5 +1,5 @@
 // ProductList.jsx — DnD + Preços rápidos + salvar layout robusto
-import React, { useEffect, useMemo, useCallback, useState } from "react";
+import React, { useEffect, useMemo, useCallback, useState, useRef } from "react";
 import api from "@/services/api";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { toast } from "react-toastify";
@@ -170,12 +170,19 @@ export default function ProductList() {
   };
 
   // --------- API calls ---------
+  const searchRequestId = useRef(0);
+
   const fetchProducts = useCallback(async () => {
+    const term = searchTerm.trim();
+    const requestId = ++searchRequestId.current;
     const res = await api.get("/products/list", {
-      params: { name: searchTerm, page: 1, pageSize, _t: Date.now() },
+      params: { name: term, page: 1, pageSize, _t: Date.now() },
     });
+    if (requestId !== searchRequestId.current) {
+      // Descarta respostas obsoletas
+      return;
+    }
     const data = res?.data ?? [];
-    // o servidor já ordena por PinnedTop/SortRank/Name
     const items = Array.isArray(data)
       ? data
       : Array.isArray(data.items)

@@ -45,6 +45,10 @@ export default function Pedidos() {
     passo: "Passo dos Fortes",
   };
   const lastIds = useRef(new Set());
+  const [reportDownloadState, setReportDownloadState] = useState({
+    loading: false,
+    lojaLabel: "",
+  });
 
   const mapStore = (store) => {
     if (!store) return "";
@@ -284,6 +288,8 @@ export default function Pedidos() {
       from: formatDate(startOfMonth),
       to: formatDate(endOfMonth),
     };
+    const lojaLabel = lojaLabels[lojaSlug] || lojaSlug;
+    setReportDownloadState({ loading: true, lojaLabel });
     try {
       await baixarPDFPorLoja(lojaSlug, range);
       toast.success(
@@ -291,6 +297,9 @@ export default function Pedidos() {
       );
     } catch {
       toast.error("Não foi possível baixar o relatório mensal.");
+    }
+    finally {
+      setReportDownloadState({ loading: false, lojaLabel: "" });
     }
   };
 
@@ -621,9 +630,14 @@ export default function Pedidos() {
                   <button
                     type="button"
                     onClick={() => baixarRelatorioMensal(loja)}
-                    className="rounded-full border border-emerald-200 px-3 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
+                    disabled={reportDownloadState.loading}
+                    className={`rounded-full border border-emerald-200 px-3 py-1 text-xs font-semibold text-emerald-700 transition ${
+                      reportDownloadState.loading
+                        ? "cursor-not-allowed opacity-60"
+                        : "hover:bg-emerald-50"
+                    }`}
                   >
-                    Baixar mês
+                    {reportDownloadState.loading ? "Preparando…" : "Baixar mês"}
                   </button>
                 </div>
               ))}
@@ -759,7 +773,9 @@ export default function Pedidos() {
                 </div>
                 <div
                   className={`mt-4 space-y-6 overflow-hidden transition-all duration-300 ease-in-out ${
-                    mostrarPedidosAnteriores ? "max-h-[5000px] opacity-100" : "max-h-0 opacity-0"
+                    mostrarPedidosAnteriores
+                      ? "max-h-[9999px] opacity-100"
+                      : "max-h-0 opacity-0"
                   }`}
                 >
                   {mostrarPedidosAnteriores && previousGroups.map((grupo) => renderGrupo(grupo))}
@@ -769,6 +785,22 @@ export default function Pedidos() {
           </>
         )}
       </div>
+
+      {reportDownloadState.loading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 text-center shadow-2xl">
+            <p className="text-sm font-semibold text-emerald-700">
+              🗂️ Gerando relatório de {reportDownloadState.lojaLabel}...
+            </p>
+            <div className="mt-4 h-3 overflow-hidden rounded-full bg-emerald-100">
+              <div
+                className="h-full w-full animate-[pulse_1.6s_ease-in-out_infinite] bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-500"
+                style={{ transformOrigin: "0 50%" }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal Confirmar Pagamento */}
       {pedidoSelecionado && (

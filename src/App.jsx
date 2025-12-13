@@ -206,14 +206,14 @@ export default function AdminPanel() {
                   onClick={() => navigate("/produtos")}
                   className="rounded-xl border border-slate-200 px-4 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100"
                 >
-                  📦 Produtos & Ranking
+                  📦 Produtos, Ranking & Preço
                 </button>
                 <button
                   type="button"
                   onClick={() => navigate("/estoque")}
                   className="rounded-xl border border-slate-200 px-4 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100"
                 >
-                  🏪 Estoque por loja
+                  🏪 Estoque & Arquivados
                 </button>
                 <button
                   type="button"
@@ -241,7 +241,7 @@ export default function AdminPanel() {
                   onClick={() => navigate("/configuracoes")}
                   className="rounded-xl border border-slate-200 px-4 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100"
                 >
-                  ⚙️ Entrega & ping
+                  ⚙️ Entrega, ping & horários
                 </button>
                 <button
                   type="button"
@@ -256,6 +256,13 @@ export default function AdminPanel() {
                   className="rounded-xl border border-slate-200 px-4 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100"
                 >
                   📲 Pagamentos & WhatsApp
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate("/impressoras")}
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                >
+                  🖨️ Impressoras
                 </button>
                 <button
                   type="button"

@@ -13,6 +13,12 @@ export default function EstoquePorLoja() {
   const [estoquePadrao, setEstoquePadrao] = useState("");
   const [loading, setLoading] = useState(false);
   const [aba, setAba] = useState("ativos"); // 'ativos' | 'zero' | 'arquivados'
+  const [batchState, setBatchState] = useState({
+    loading: false,
+    total: 0,
+    done: 0,
+    message: "",
+  });
 
   const lojas = ["efapi", "palmital", "passo"];
   const role = localStorage.getItem("role");
@@ -158,6 +164,52 @@ export default function EstoquePorLoja() {
     return [];
   };
 
+  const batchProgressPercent = batchState.total
+    ? Math.min(100, Math.round((batchState.done / batchState.total) * 100))
+    : 0;
+
+  const runBatchAction = async ({
+    items,
+    overlayMessage,
+    emptyMessage,
+    successMessage,
+    errorMessage,
+    action,
+    isArchivedValue,
+  }) => {
+    if (items.length === 0) {
+      toast.info(emptyMessage);
+      return;
+    }
+
+    setBatchState({
+      loading: true,
+      total: items.length,
+      done: 0,
+      message: overlayMessage,
+    });
+
+    try {
+      for (const produto of items) {
+        await action(produto);
+        setBatchState((prev) => ({ ...prev, done: prev.done + 1 }));
+      }
+      setProdutos((prev) =>
+        prev.map((produto) =>
+          items.some((item) => item.id === produto.id)
+            ? { ...produto, isArchived: isArchivedValue }
+            : produto,
+        ),
+      );
+      toast.success(successMessage);
+    } catch (err) {
+      console.error("Erro ao executar batch:", err);
+      toast.error(errorMessage);
+    } finally {
+      setBatchState({ loading: false, total: 0, done: 0, message: "" });
+    }
+  };
+
   const salvarTodos = async () => {
     setLoading(true);
     try {
@@ -171,6 +223,42 @@ export default function EstoquePorLoja() {
       setLoading(false);
     }
   };
+
+  const arquivarTodosZero = () =>
+    runBatchAction({
+      items: produtosZeroEstoque,
+      overlayMessage: "Arquivando produtos com estoque zero",
+      emptyMessage: "Nenhum produto com estoque zero para arquivar.",
+      successMessage: "📦 Produtos com estoque zero arquivados.",
+      errorMessage: "❌ Falha ao arquivar produtos com estoque zero.",
+      action: (produto) =>
+        api.patch(`/products/${produto.id}/archive`, { isArchived: true }),
+      isArchivedValue: true,
+    });
+
+  const arquivarTodosAtivos = () =>
+    runBatchAction({
+      items: produtosAtivosFiltrados,
+      overlayMessage: "Arquivando produtos ativos",
+      emptyMessage: "Nenhum produto ativo para arquivar.",
+      successMessage: "📦 Produtos ativos arquivados.",
+      errorMessage: "❌ Falha ao arquivar produtos ativos.",
+      action: (produto) =>
+        api.patch(`/products/${produto.id}/archive`, { isArchived: true }),
+      isArchivedValue: true,
+    });
+
+  const recolocarTodosArquivados = () =>
+    runBatchAction({
+      items: produtosArquivados,
+      overlayMessage: "Recolocando produtos arquivados no site",
+      emptyMessage: "Nenhum produto arquivado.",
+      successMessage: "✅ Produtos arquivados recolocados no site.",
+      errorMessage: "❌ Falha ao recolocar produtos arquivados.",
+      action: (produto) =>
+        api.patch(`/products/${produto.id}/archive`, { isArchived: false }),
+      isArchivedValue: false,
+    });
 
   const aplicarEstoquePadrao = (loja) => {
     const valor = parseInt(estoquePadrao, 10);
@@ -335,6 +423,22 @@ export default function EstoquePorLoja() {
           </div>
         )}
 
+        {batchState.loading && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6">
+            <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
+              <p className="text-center text-sm font-semibold text-emerald-700">
+                {batchState.message} ({batchState.done}/{batchState.total})
+              </p>
+              <div className="mt-4 h-3 rounded-full bg-slate-100">
+                <div
+                  className="h-full rounded-full bg-emerald-500 transition-[width]"
+                  style={{ width: `${batchProgressPercent}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
         {aba === "zero" && (
           <SectionTable
             title="❌ Produtos com estoque 0"
@@ -349,6 +453,8 @@ export default function EstoquePorLoja() {
             salvarEstoque={salvarEstoque}
             arquivarProduto={arquivarProduto}
             showArchive
+            showArchiveAll
+            onArchiveAll={arquivarTodosZero}
           />
         )}
 
@@ -366,6 +472,8 @@ export default function EstoquePorLoja() {
             salvarEstoque={salvarEstoque}
             arquivarProduto={arquivarProduto}
             showArchive
+            showArchiveAll
+            onArchiveAll={arquivarTodosAtivos}
           />
         )}
 
@@ -373,6 +481,7 @@ export default function EstoquePorLoja() {
           <ArchivedTable
             produtosArquivados={produtosArquivados}
             recolocarProduto={recolocarProduto}
+            onRecolocarAll={recolocarTodosArquivados}
           />
         )}
       </div>
@@ -393,6 +502,8 @@ function SectionTable({
   salvarEstoque,
   arquivarProduto,
   showArchive = false,
+  showArchiveAll = false,
+  onArchiveAll,
 }) {
   return (
     <section className="space-y-4 rounded-3xl bg-white p-4 shadow-sm md:p-6">
@@ -410,7 +521,20 @@ function SectionTable({
                   {loja.charAt(0).toUpperCase() + loja.slice(1)}
                 </th>
               ))}
-              <th className="p-3 text-left font-semibold">Ação</th>
+              <th className="p-3 text-left font-semibold">
+                <div className="flex items-center justify-between">
+                  <span>Ação</span>
+                  {showArchiveAll && (
+                    <button
+                      onClick={onArchiveAll}
+                      type="button"
+                      className="inline-flex items-center gap-1 rounded-full border border-emerald-300 bg-gradient-to-r from-emerald-500 via-emerald-600 to-emerald-500 px-3 py-1 text-xs font-semibold text-white shadow-lg transition hover:opacity-90"
+                    >
+                      🗄️ Arquivar tudo
+                    </button>
+                  )}
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -481,16 +605,27 @@ function SectionTable({
 
 
 
-function ArchivedTable({ produtosArquivados, recolocarProduto }) {
+function ArchivedTable({ produtosArquivados, recolocarProduto, onRecolocarAll }) {
   return (
     <section className="rounded-3xl bg-white p-4 shadow-sm md:p-6">
-      <div className="rounded-2xl bg-slate-100 p-4 text-center text-sm font-semibold text-slate-700">
-        🗄️ Produtos arquivados
+      <div className="rounded-2xl bg-slate-100 p-4 text-sm font-semibold text-slate-700">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <span>🗄️ Produtos arquivados</span>
+          <button
+            type="button"
+            onClick={onRecolocarAll}
+            disabled={produtosArquivados.length === 0}
+            className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-gradient-to-r from-amber-500 via-amber-600 to-amber-500 px-3 py-1 text-xs font-semibold text-white shadow-lg transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            ↩️ Recolocar todos no site
+          </button>
+        </div>
       </div>
       <div className="mt-4 overflow-x-auto rounded-2xl border border-gray-100">
         <table className="min-w-full divide-y divide-gray-100 text-sm">
           <thead className="bg-slate-200 text-slate-700">
             <tr>
+              <th className="p-3 text-left font-semibold">Imagem</th>
               <th className="p-3 text-left font-semibold">Produto</th>
               <th className="p-3 text-left font-semibold">Categoria</th>
               <th className="p-3 text-left font-semibold">Subcategoria</th>
@@ -500,6 +635,17 @@ function ArchivedTable({ produtosArquivados, recolocarProduto }) {
           <tbody>
             {produtosArquivados.map((p) => (
               <tr key={p.id} className="divide-y divide-gray-100">
+                <td className="p-3">
+                  <img
+                    src={p.imageUrl}
+                    alt={p.name}
+                    className="h-12 w-12 rounded border border-gray-200 bg-white object-contain"
+                    onError={(e) => {
+                      e.currentTarget.src =
+                        "https://via.placeholder.com/48?text=No+Img";
+                    }}
+                  />
+                </td>
                 <td className="p-3 font-medium text-gray-700">{p.name}</td>
                 <td className="p-3 text-gray-600">{p.categoryName || "-"}</td>
                 <td className="p-3 text-gray-600">{p.subcategoryName || "-"}</td>
@@ -516,7 +662,7 @@ function ArchivedTable({ produtosArquivados, recolocarProduto }) {
             {produtosArquivados.length === 0 && (
               <tr>
                 <td
-                  colSpan={4}
+                  colSpan={5}
                   className="p-4 text-center text-sm font-semibold text-gray-500"
                 >
                   Nenhum produto arquivado.

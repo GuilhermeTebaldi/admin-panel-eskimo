@@ -19,6 +19,7 @@ import CustomersDashboard from "./pages/CustomersDashboard.jsx";
 import PaymentSettings from "./PaymentSettings.jsx";
 import UserManager from "./pages/UserManager";
 import Dashboard from "./Dashboard.jsx";
+import Impressoras from "./pages/Impressoras";
 
 // 🦊 Splash screen para carregamento inicial
 // eslint-disable-next-line react-refresh/only-export-components
@@ -72,6 +73,7 @@ function MainApp() {
         <Route path="/pedidos" element={<PrivateRoute><Pedidos /></PrivateRoute>} />
         <Route path="/estoque" element={<PrivateRoute><EstoquePorLoja /></PrivateRoute>} />
         <Route path="/pagamentos" element={<PrivateRoute><PaymentSettings /></PrivateRoute>} />
+        <Route path="/impressoras" element={<PrivateRoute><Impressoras /></PrivateRoute>} />
         <Route path="/users" element={<PrivateRoute><UserManager /></PrivateRoute>} />
         <Route path="/clientes" element={<PrivateRoute><CustomersDashboard /></PrivateRoute>} />
 
