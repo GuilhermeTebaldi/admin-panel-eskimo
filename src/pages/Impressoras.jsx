@@ -24,6 +24,10 @@ export default function Impressoras() {
     );
   }
 
+  return <ImpressorasAdmin />;
+}
+
+function ImpressorasAdmin() {
   const [status, setStatus] = useState({
     online: false,
     message: "Verificando status...",
@@ -64,6 +68,7 @@ export default function Impressoras() {
         apiBaseUrl: data.apiBaseUrl || prev.apiBaseUrl
       }));
     } catch (error) {
+      console.error("Erro ao verificar status do Print Server", error);
       setStatus({
         online: false,
         message: "Print Server OFFLINE",
@@ -95,6 +100,7 @@ export default function Impressoras() {
       }
       setFeedback("Lista de impressoras atualizada.");
     } catch (error) {
+      console.error("Erro ao listar impressoras", error);
       setPrinters([]);
       setFeedback("Não foi possível conectar ao servidor de impressão.");
     }
@@ -304,6 +310,22 @@ export default function Impressoras() {
               download="EskimoPrintServer-win-x64.zip"
             >
               Baixar instalador Windows
+            </a>
+
+            <a
+              href="/eskimo-print-server/EskimoPrintServer-osx-arm64.zip"
+              className="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:border-slate-400"
+              download="EskimoPrintServer-osx-arm64.zip"
+            >
+              Baixar instalador macOS (Apple Silicon)
+            </a>
+
+            <a
+              href="/eskimo-print-server/EskimoPrintServer-osx-x64.zip"
+              className="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:border-slate-400"
+              download="EskimoPrintServer-osx-x64.zip"
+            >
+              Baixar instalador macOS (Intel)
             </a>
               <button
                 type="button"
