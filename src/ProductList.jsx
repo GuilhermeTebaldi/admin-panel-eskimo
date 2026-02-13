@@ -5,6 +5,7 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { toast } from "react-toastify";
 
 const pageSize = 1000;
+const lojas = ["efapi", "palmital", "passo"];
 
 const createEmptyPromoForm = () => ({
   productId: "",
@@ -33,7 +34,6 @@ export default function ProductList() {
     subcategoryId: "",
     stock: { efapi: 0, palmital: 0, passo: 0 },
   });
-  const lojas = ["efapi", "palmital", "passo"];
   const [activeTab, setActiveTab] = useState("products");
   const [promotion, setPromotion] = useState(null);
   const [promotionLoading, setPromotionLoading] = useState(false);
@@ -56,6 +56,10 @@ export default function ProductList() {
   // —— Edição rápida de preços ——
   const [showPricePanel, setShowPricePanel] = useState(false);
   const [priceEdits, setPriceEdits] = useState({});
+  const [showOnlyInStock, setShowOnlyInStock] = useState(false);
+  const [stockTotals, setStockTotals] = useState(null);
+  const [stockLoading, setStockLoading] = useState(false);
+  const [stockLoadError, setStockLoadError] = useState(false);
 
   // —— Ordenação / layout ——
   const [layoutEdits, setLayoutEdits] = useState({});
@@ -108,7 +112,7 @@ export default function ProductList() {
   // —— Preços rápidos ——
   const openPricePanel = () => {
     const map = {};
-    (filteredProducts ?? products ?? []).forEach((p) => {
+    (pricePanelProducts ?? filteredProducts ?? products ?? []).forEach((p) => {
       map[p?.id] = (p?.price ?? "").toString();
     });
     setPriceEdits(map);
@@ -157,7 +161,7 @@ export default function ProductList() {
   };
 
   const saveAllPrices = async () => {
-    const list = (filteredProducts ?? products ?? []).slice();
+    const list = (pricePanelProducts ?? filteredProducts ?? products ?? []).slice();
     for (const p of list) {
       // salva sequencialmente para manter simples e robusto
       // (se quiser otimizar: Promise.all com cuidado)
@@ -201,6 +205,32 @@ export default function ProductList() {
     const res = await api.get("/subcategories");
     const data = res?.data ?? [];
     setSubcategories(Array.isArray(data) ? data : []);
+  }, []);
+
+  const fetchStock = useCallback(async () => {
+    try {
+      setStockLoading(true);
+      setStockLoadError(false);
+      const res = await api.get("/stock");
+      const data = Array.isArray(res?.data) ? res.data : [];
+      const map = {};
+      data.forEach((item) => {
+        const id = item?.productId;
+        if (!id) return;
+        const total = lojas.reduce((sum, loja) => {
+          const value = Number(item?.[loja]);
+          return sum + (Number.isFinite(value) ? value : 0);
+        }, 0);
+        map[id] = total;
+      });
+      setStockTotals(map);
+    } catch (e) {
+      console.warn("Falha ao carregar estoque:", e?.response?.status);
+      setStockTotals({});
+      setStockLoadError(true);
+    } finally {
+      setStockLoading(false);
+    }
   }, []);
 
   const fetchPromotion = useCallback(async () => {
@@ -271,6 +301,13 @@ export default function ProductList() {
     return products.filter((p) => (p?.categoryName ?? "").toLowerCase() === cf);
   }, [products, categoryFilter]);
 
+  const pricePanelProducts = useMemo(() => {
+    const base = filteredProducts ?? products ?? [];
+    if (!showOnlyInStock) return base;
+    if (stockTotals === null || stockLoadError) return base;
+    return base.filter((p) => (stockTotals?.[p?.id] ?? 0) > 0);
+  }, [filteredProducts, products, showOnlyInStock, stockTotals, stockLoadError]);
+
   const filteredSubcategories = useMemo(() => {
     const cid = parseInt(form.categoryId);
     if (!Number.isFinite(cid)) return [];
@@ -281,11 +318,18 @@ export default function ProductList() {
   useEffect(() => {
     if (!showPricePanel) return;
     const map = {};
-    (filteredProducts ?? products ?? []).forEach((p) => {
+    (pricePanelProducts ?? filteredProducts ?? products ?? []).forEach((p) => {
       map[p?.id] = (p?.price ?? "").toString();
     });
     setPriceEdits(map);
-  }, [showPricePanel, filteredProducts, products]);
+  }, [showPricePanel, pricePanelProducts, filteredProducts, products]);
+
+  useEffect(() => {
+    if (!showPricePanel) return;
+    if (showOnlyInStock && stockTotals === null && !stockLoading) {
+      fetchStock();
+    }
+  }, [showPricePanel, showOnlyInStock, stockTotals, stockLoading, fetchStock]);
 
   useEffect(() => {
     if (activeTab !== "products" && showPricePanel) {
@@ -627,11 +671,38 @@ export default function ProductList() {
               <strong>Modo Preços aberto</strong>
               <button
                 onClick={saveAllPrices}
-                className="rounded-md bg-amber-600 px-3 py-1 text-xs font-semibold text-white shadow hover:bg-amber-700"
+                disabled={showOnlyInStock && stockLoading}
+                className="rounded-md bg-amber-600 px-3 py-1 text-xs font-semibold text-white shadow hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 💾 Salvar todos
               </button>
-              <span>Você está editando {filteredProducts.length} produto(s).</span>
+              <label className="flex items-center gap-2 rounded-full border border-amber-200 bg-white px-2 py-1 text-xs font-semibold text-amber-900">
+                <input
+                  type="checkbox"
+                  checked={showOnlyInStock}
+                  onChange={(e) => setShowOnlyInStock(e.target.checked)}
+                  className="h-4 w-4 rounded border-amber-400 text-amber-600 focus:ring-amber-500"
+                />
+                <span>Mostrar só os do site (com estoque)</span>
+              </label>
+              {showOnlyInStock && stockLoading && (
+                <span className="text-xs text-amber-700">Carregando estoque...</span>
+              )}
+              {showOnlyInStock && stockLoadError && !stockLoading && (
+                <>
+                  <span className="text-xs text-red-600">
+                    Não foi possível carregar estoque.
+                  </span>
+                  <button
+                    type="button"
+                    onClick={fetchStock}
+                    className="text-xs font-semibold text-red-600 underline underline-offset-2"
+                  >
+                    Tentar novamente
+                  </button>
+                </>
+              )}
+              <span>Você está editando {pricePanelProducts.length} produto(s).</span>
             </div>
           )}
 
@@ -641,7 +712,7 @@ export default function ProductList() {
               <h3 className="mb-3 text-base font-semibold text-green-700">Edição rápida de preços</h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                {filteredProducts.map((p) => (
+                {pricePanelProducts.map((p) => (
                   <div key={p?.id} className="flex items-center gap-3 rounded border border-gray-200 p-2">
                     <img
                       src={p?.imageUrl}
